@@ -5,6 +5,7 @@ import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useTripDetail, useUserDetail } from '@/app/provider'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatDistanceToNow } from 'date-fns'
 
 export default function TripsPage() {
   const router = useRouter()
@@ -88,6 +89,9 @@ export default function TripsPage() {
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {info.duration || '—'} · {info.group_size || '—'} · {info.budget || '—'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  Created {formatDistanceToNow(new Date(t._creationTime), { addSuffix: true })}
                 </div>
               </li>
             )
