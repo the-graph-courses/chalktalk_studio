@@ -13,5 +13,12 @@ export default defineSchema({
         tripId: v.string(),
         tripDetail: v.any(),
         uid: v.id('UserTable')
+    }),
+
+    SlideDeckTable: defineTable({
+        projectId: v.string(),
+        title: v.optional(v.string()),
+        project: v.any(),
+        uid: v.id('UserTable')
     })
 })

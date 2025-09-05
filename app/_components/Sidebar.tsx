@@ -39,6 +39,22 @@ export default function AppSidebar() {
         router.push('/trips')
     }
 
+    const handleNewSlideDeck = () => {
+        if (!user) {
+            router.push('/sign-in')
+            return
+        }
+        router.push('/studio')
+    }
+
+    const handleMySlideDecks = () => {
+        if (!user) {
+            router.push('/sign-in')
+            return
+        }
+        router.push('/decks')
+    }
+
     return (
         <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader>
@@ -55,15 +71,21 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton onClick={() => router.push('/editor')} tooltip="New Slide Deck">
-                                    <Presentation className="text-yellow-400" />
+                                <SidebarMenuButton onClick={handleMyTrips} tooltip="My Trips">
+                                    <Globe2 className="text-green-400" />
+                                    <span>My Trips</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton onClick={handleNewSlideDeck} tooltip="New Slide Deck">
+                                    <Presentation className="text-purple-400" />
                                     <span>New Slide Deck</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton onClick={handleMyTrips} tooltip="My Trips">
-                                    <Globe2 className="text-green-400" />
-                                    <span>My Trips</span>
+                                <SidebarMenuButton onClick={handleMySlideDecks} tooltip="My Slide Decks">
+                                    <Presentation className="text-orange-400" />
+                                    <span>My Slide Decks</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>
