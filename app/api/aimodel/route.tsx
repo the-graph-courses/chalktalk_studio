@@ -9,9 +9,9 @@ const TEST_MODE = true; // Set to true to bypass credit limits
 
 
 
-const PROMPT = `You are an AI Trip Planner Agent. Your goal is to help the user plan a trip by **asking one relevant trip-related question at a time**.
+const PROMPT = `You are an AI Trip Planner Agent. Your goal is to help the user plan a trip by asking one trip-related question at a time.
 
-Only ask questions about the following details in order, and wait for the user's answer before asking the next:
+If the user's initial prompt does not already contain all the details, ask questions about the following details in order, and wait for the user's answer before asking the next:
 
 1. Starting location (source)
 2. Destination city or country
@@ -38,6 +38,30 @@ JSON Response Format:
 }
 
 Make sure the JSON is valid and the ui field exactly matches one of these values.`
+
+const TRIP_MODIFICATION_PROMPT = `You are an AI Trip Modification Agent. The user has an existing trip plan and wants to make changes to it.
+
+Based on the user's request, modify the existing trip plan accordingly. You can:
+- Change hotels (add, remove, or replace)
+- Modify itinerary activities (add, remove, or replace activities for specific days)
+- Update trip details (budget, duration, etc.)
+- Adjust recommendations based on new preferences
+
+Always maintain the same JSON structure as the original trip plan. Only modify the parts that the user specifically requests to change.
+
+Respond in a conversational way, acknowledging what changes you're making, then provide the updated trip plan in the same JSON format.
+
+JSON Response Format for modifications:
+{
+  "resp": "I've updated your trip based on your request. Here's what I changed: [brief description of the specific modifications made]",
+  "trip_plan": {
+    // Updated trip plan with the same structure as before
+  }
+}
+
+Current trip plan to modify: {{CURRENT_TRIP}}
+
+User's modification request: {{USER_REQUEST}}`
 
 const FINAL_PROMPT = `Generate Travel Plan fwith give details, give me Hotels options list with HotelName, 
 Hotel address, Price, hotel image url, geo coordinates, rating, descriptions and  suggest itinerary with placeName, Place Details, Place Image Url,
@@ -91,8 +115,8 @@ Hotel address, Price, hotel image url, geo coordinates, rating, descriptions and
 
 
 export async function POST(req: NextRequest) {
-  const { messages, isFinal } = await req.json();
-  console.log('API Route called with isFinal:', isFinal);
+  const { messages, isFinal, tripCompleted, currentTripDetail } = await req.json();
+  console.log('API Route called with isFinal:', isFinal, 'tripCompleted:', tripCompleted);
   console.log('Messages received:', messages);
 
   const user = await currentUser();
@@ -110,13 +134,26 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    let systemPrompt = PROMPT;
+
+    // Determine which prompt to use based on the current state
+    if (isFinal) {
+      systemPrompt = FINAL_PROMPT;
+    } else if (tripCompleted && currentTripDetail) {
+      // This is a trip modification request
+      const userRequest = messages[messages.length - 1]?.content || '';
+      systemPrompt = TRIP_MODIFICATION_PROMPT
+        .replace('{{CURRENT_TRIP}}', JSON.stringify(currentTripDetail, null, 2))
+        .replace('{{USER_REQUEST}}', userRequest);
+    }
+
     const completion = await openai.chat.completions.create({
       model: 'google/gemini-2.5-flash',
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: isFinal ? FINAL_PROMPT : PROMPT
+          content: systemPrompt
         },
         ...messages
       ],
@@ -127,6 +164,8 @@ export async function POST(req: NextRequest) {
 
     if (isFinal) {
       console.log('Final trip plan generated:', JSON.stringify(parsedResponse, null, 2));
+    } else if (tripCompleted && parsedResponse.trip_plan) {
+      console.log('Trip modification completed:', JSON.stringify(parsedResponse.trip_plan, null, 2));
     }
 
     return NextResponse.json(parsedResponse);

@@ -13,6 +13,20 @@ export const CreateTripDetail = mutation({
             tripId: args.tripId,
             uid: args.uid
         });
+        return result;
+    }
+})
 
+export const GetTripsByUser = query({
+    args: {
+        uid: v.optional(v.id('UserTable')),
+    },
+    handler: async (ctx, args) => {
+        if (!args.uid) return [];
+        const trips = await ctx.db
+            .query('TripDetailTable')
+            .filter((q) => q.eq(q.field('uid'), args.uid))
+            .collect();
+        return trips.sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0));
     }
 })

@@ -22,6 +22,7 @@ function Provider({
     const CreateUser = useMutation(api.user.CreateNewUser)
     const [userDetail, setUserDetail] = useState<any>(null);
     const [tripDetailInfo, setTripDetailInfo] = useState<TripInfo | null>(null);
+    const [isGeneratingTrip, setIsGeneratingTrip] = useState<boolean>(false);
     const { user } = useUser();
 
     useEffect(() => {
@@ -42,7 +43,7 @@ function Provider({
 
     return (
         <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
-            <TripDetailContext.Provider value={{ tripDetailInfo, setTripDetailInfo }}>
+            <TripDetailContext.Provider value={{ tripDetailInfo, setTripDetailInfo, isGeneratingTrip, setIsGeneratingTrip }}>
                 {children}
             </TripDetailContext.Provider>
         </UserDetailContext.Provider>

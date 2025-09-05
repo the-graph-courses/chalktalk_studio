@@ -3,8 +3,24 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { ClockIcon } from 'lucide-react'
+import { ClockIcon, Loader2 } from 'lucide-react'
 import axios from 'axios'
+
+const isValidImageUrl = (url: string): boolean => {
+    if (!url) return false;
+    try {
+        const urlObj = new URL(url);
+        const validHostnames = [
+            'images.unsplash.com',
+            'plus.unsplash.com',
+            'assets.aceternity.com',
+            'places.googleapis.com'
+        ];
+        return validHostnames.includes(urlObj.hostname);
+    } catch {
+        return false;
+    }
+};
 
 interface Place {
     place_name: string
@@ -26,6 +42,8 @@ interface PlaceCardItemProps {
 
 function PlaceCardItem({ place }: PlaceCardItemProps) {
     const [photoUrl, setPhotoUrl] = useState<string>();
+    const [imageLoading, setImageLoading] = useState(true);
+    const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
         place && GetGooglePlaceDetail();
@@ -44,19 +62,31 @@ function PlaceCardItem({ place }: PlaceCardItemProps) {
         }
     }
 
+    const getImageSrc = () => {
+        if (imageError) return '/placeholder.svg';
+        if (photoUrl) return photoUrl;
+        if (isValidImageUrl(place.place_image_url)) return place.place_image_url;
+        return '/placeholder.svg';
+    };
+
     return (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-            <div className="relative h-48 w-full">
+            <div className="relative h-48 w-full bg-gray-100">
+                {imageLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    </div>
+                )}
                 <Image
-                    src={photoUrl || place.place_image_url || '/placeholder.jpg'}
+                    src={getImageSrc()}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     alt={place.place_name}
                     className="object-cover"
-                    onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (target.src !== '/placeholder.jpg') {
-                            target.src = '/placeholder.jpg';
-                        }
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => {
+                        setImageLoading(false);
+                        setImageError(true);
                     }}
                 />
             </div>

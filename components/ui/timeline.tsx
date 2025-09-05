@@ -9,6 +9,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { Calendar, Wallet2, Users } from "lucide-react";
 import { TripInfo } from "@/app/create-new-trip/_components/ChatBox";
 
+/**
+ * Timeline component that displays trip itinerary with scroll-based animations
+ * Features a vertical timeline with animated progress indicator and trip summary
+ */
+
+// Interface for individual timeline entries
 interface TimelineEntry {
   title: string;
   content: React.ReactNode;
@@ -40,7 +46,7 @@ export const Timeline = ({ data, tripData }: { data: TimelineEntry[], tripData: 
       ref={containerRef}
     >
       <div className="max-w-7xl mx-auto py-7 px-4 md:px-8 lg:px-10">
-        <h2 className="text-lg md:text-4xl mb-4 text-black dark:text-white max-w-4xl">
+        <h2 className="text-lg md:text-4xl mb-4 text-black dark:text-white max-w-4xl font-bold">
           Your Trip Plan from <span className='text-primary'>{tripData?.origin}</span> to <span className='text-primary'>{tripData?.destination}</span> is ready
         </h2>
         <div className="flex gap-4 items-center">

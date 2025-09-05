@@ -1,22 +1,4 @@
-# CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Development Commands
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server with TurboPack
-npm run dev
-
-# Build for production with TurboPack
-npm run build
-
-# Start production server
-npm run start
-```
 
 ## Architecture Overview
 

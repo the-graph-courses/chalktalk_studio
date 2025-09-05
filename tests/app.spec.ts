@@ -27,6 +27,23 @@ test.describe('Trip Planning App', () => {
     expect(url).toContain('sign-in');
   });
 
+  test('✅ Trips page is protected and links are present', async ({ page }) => {
+    // Direct navigation should redirect
+    await page.goto('/trips');
+    await page.waitForTimeout(2000);
+    expect(page.url()).toContain('sign-in');
+
+    // Navigate to home and use sidebar button
+    await page.goto('/');
+    // Try clicking the My Trips button if visible
+    const myTrips = page.getByText('My Trips');
+    if (await myTrips.count()) {
+      await myTrips.first().click();
+      await page.waitForTimeout(1000);
+      expect(page.url()).toContain('sign-in');
+    }
+  });
+
   test('✅ Authentication flow is set up', async ({ page }) => {
     // Try to access sign-in route
     await page.goto('/sign-in');

@@ -72,7 +72,13 @@ function ChatBox() {
     const [loading, setLoading] = useState<boolean>(false)
     const [isFinal, setIsFinal] = useState<boolean>(false)
     const [tripDetail, setTripDetail] = useState<TripInfo | null>(null)
-    const { tripDetailInfo, setTripDetailInfo } = useTripDetail() || { tripDetailInfo: null, setTripDetailInfo: () => { } }
+    const [tripCompleted, setTripCompleted] = useState<boolean>(false)
+    const { tripDetailInfo, setTripDetailInfo, isGeneratingTrip, setIsGeneratingTrip } = useTripDetail() || {
+        tripDetailInfo: null,
+        setTripDetailInfo: () => { },
+        isGeneratingTrip: false,
+        setIsGeneratingTrip: () => { }
+    }
     const SaveTripDetail = useMutation(api.tripDetail.CreateTripDetail)
     const { userDetail, setUserDetail } = useUserDetail()
 
@@ -92,7 +98,9 @@ function ChatBox() {
         try {
             const result = await axios.post('/api/aimodel', {
                 messages: [...messages, newMsg],
-                isFinal
+                isFinal,
+                tripCompleted,
+                currentTripDetail: tripDetail
             })
 
             setMessages((prev: Message[]) => [...prev, {
@@ -100,6 +108,20 @@ function ChatBox() {
                 content: result?.data?.resp,
                 ui: result?.data?.ui
             }])
+
+            // If this is a trip modification response, update the trip detail
+            if (result?.data?.trip_plan && tripCompleted) {
+                setTripDetail(result.data.trip_plan);
+                setTripDetailInfo(result.data.trip_plan);
+
+                // Add a follow-up message confirming the change and prompting for more modifications
+                setTimeout(() => {
+                    setMessages((prev: Message[]) => [...prev, {
+                        role: 'assistant',
+                        content: "✅ Changes applied successfully! Your trip has been updated. If you'd like to make any other changes, just let me know what else you'd like to modify."
+                    }]);
+                }, 1000);
+            }
         } finally {
             setLoading(false)
         }
@@ -119,7 +141,9 @@ function ChatBox() {
         try {
             const result = await axios.post('/api/aimodel', {
                 messages: [...messages, userSelectionMsg],
-                isFinal
+                isFinal,
+                tripCompleted,
+                currentTripDetail: tripDetail
             })
 
             setMessages((prev: Message[]) => [...prev, {
@@ -145,6 +169,7 @@ function ChatBox() {
             case 'final':
                 return <FinalUi viewTrip={() => console.log()}
                     disable={!tripDetail}
+                    loading={loading}
                 />
             default:
                 return null
@@ -161,14 +186,39 @@ function ChatBox() {
         }
     }, [messages])
 
+    // Load an existing trip from context when arriving from /trips
+    useEffect(() => {
+        if (tripDetail == null && tripDetailInfo) {
+            setTripDetail(tripDetailInfo)
+            setTripCompleted(true)
+            setMessages((prev: Message[]) => [
+                ...prev,
+                {
+                    role: 'assistant',
+                    content:
+                        "I've loaded your saved trip. Tell me what you'd like to change — hotels, activities for a day, budget, or duration — and I'll update it."
+                }
+            ])
+        } else if (tripDetailInfo === null && (tripDetail !== null || messages.length > 0 || tripCompleted)) {
+            // Reset state when creating a new trip (tripDetailInfo is cleared)
+            setTripDetail(null)
+            setTripCompleted(false)
+            setMessages([])
+            setIsFinal(false)
+        }
+    }, [tripDetailInfo])
+
     const generateFinalTrip = async () => {
         console.log('Starting final trip generation...')
         setLoading(true)
+        setIsGeneratingTrip(true)
 
         try {
             const result = await axios.post('/api/aimodel', {
                 messages: messages,
-                isFinal: true
+                isFinal: true,
+                tripCompleted: false,
+                currentTripDetail: null
             })
 
             console.log('FINAL TRIP GENERATION RESPONSE:', result.data)
@@ -176,6 +226,8 @@ function ChatBox() {
 
             if (result.data?.trip_plan) {
                 setTripDetail(result.data.trip_plan);
+                setTripDetailInfo(result.data.trip_plan);
+                setTripCompleted(true); // Mark trip as completed
 
                 const tripId = uuidv4();
                 console.log('Saving trip to database with ID:', tripId)
@@ -190,6 +242,12 @@ function ChatBox() {
                 } else {
                     console.error('User ID not found, cannot save trip to database')
                 }
+
+                // Add a helpful message after trip completion
+                setMessages((prev: Message[]) => [...prev, {
+                    role: 'assistant',
+                    content: "🎉 Your trip has been created successfully! If you'd like to make any changes to your itinerary, hotels, or activities, just let me know what you'd like to modify and I'll update your trip plan accordingly."
+                }])
             } else {
                 console.error('No trip_plan found in response:', result.data)
             }
@@ -197,6 +255,7 @@ function ChatBox() {
             console.error('Error generating final trip:', error)
         } finally {
             setLoading(false)
+            setIsGeneratingTrip(false)
         }
     }
 
