@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe2 } from 'lucide-react'
+import { Globe2, Presentation } from 'lucide-react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useTripDetail } from '@/app/provider'
@@ -52,6 +52,12 @@ export default function AppSidebar() {
                                 <SidebarMenuButton onClick={handleCreateNewTrip} tooltip="Create New Trip">
                                     <Globe2 className="text-blue-400" />
                                     <span>Create New Trip</span>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton onClick={() => router.push('/editor')} tooltip="New Slide Deck">
+                                    <Presentation className="text-yellow-400" />
+                                    <span>New Slide Deck</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
