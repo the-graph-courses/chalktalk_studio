@@ -4,6 +4,8 @@ import { useUser } from "@clerk/nextjs";
 import AppSidebar from "./Sidebar";
 import Header from "./Header";
 import TestPanel from "./TestPanel";
+import AIChatPanel from "./AIChatPanel";
+import PersistentChatPanel from "./PersistentChatPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
 
@@ -19,9 +21,19 @@ export default function LayoutWrapper({
 }) {
     const { isSignedIn, isLoaded } = useUser();
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
+    const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+    const [isPersistentChatOpen, setIsPersistentChatOpen] = useState(false);
 
     const toggleTestPanel = () => {
         setIsTestPanelOpen(!isTestPanelOpen);
+    };
+
+    const toggleAIChat = () => {
+        setIsAIChatOpen(!isAIChatOpen);
+    };
+
+    const togglePersistentChat = () => {
+        setIsPersistentChatOpen(!isPersistentChatOpen);
     };
 
     // Show loading state while Clerk is loading
@@ -29,10 +41,23 @@ export default function LayoutWrapper({
         return (
             <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
                 <div className="min-h-screen">
-                    <Header />
+                    <Header
+                        onToggleAIChat={toggleAIChat}
+                        onTogglePersistentChat={togglePersistentChat}
+                    />
                     <div className="flex-1">
                         {children}
                     </div>
+                    <AIChatPanel
+                        isOpen={isAIChatOpen}
+                        onClose={() => setIsAIChatOpen(false)}
+                        isTestPanelOpen={isPersistentChatOpen || isTestPanelOpen}
+                    />
+                    <PersistentChatPanel
+                        isOpen={isPersistentChatOpen}
+                        onClose={() => setIsPersistentChatOpen(false)}
+                        isTestPanelOpen={isAIChatOpen || isTestPanelOpen}
+                    />
                 </div>
             </SidebarAvailableContext.Provider>
         );
@@ -45,12 +70,34 @@ export default function LayoutWrapper({
                 <SidebarProvider>
                     <AppSidebar />
                     <SidebarInset className="overflow-hidden">
-                        <Header onToggleTestPanel={toggleTestPanel} />
-                        <div className={`flex-1 overflow-auto transition-all duration-300 ${isTestPanelOpen ? 'mr-96' : 'mr-0'
+                        <Header
+                            onToggleTestPanel={toggleTestPanel}
+                            onToggleAIChat={toggleAIChat}
+                            onTogglePersistentChat={togglePersistentChat}
+                        />
+                        <div className={`flex-1 overflow-auto transition-all duration-300 ${
+                            // Calculate margin based on number of open panels
+                            (() => {
+                                const openPanels = [isTestPanelOpen, isAIChatOpen, isPersistentChatOpen].filter(Boolean).length;
+                                if (openPanels >= 3) return 'mr-[72rem]'; // 3 * 24rem
+                                if (openPanels === 2) return 'mr-[48rem]'; // 2 * 24rem  
+                                if (openPanels === 1) return 'mr-96'; // 24rem
+                                return 'mr-0';
+                            })()
                             }`}>
                             {children}
                         </div>
                     </SidebarInset>
+                    <AIChatPanel
+                        isOpen={isAIChatOpen}
+                        onClose={() => setIsAIChatOpen(false)}
+                        isTestPanelOpen={isPersistentChatOpen || isTestPanelOpen}
+                    />
+                    <PersistentChatPanel
+                        isOpen={isPersistentChatOpen}
+                        onClose={() => setIsPersistentChatOpen(false)}
+                        isTestPanelOpen={isAIChatOpen || isTestPanelOpen}
+                    />
                     <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
                 </SidebarProvider>
             </SidebarAvailableContext.Provider>
@@ -61,11 +108,33 @@ export default function LayoutWrapper({
     return (
         <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
             <div className="min-h-screen">
-                <Header onToggleTestPanel={toggleTestPanel} />
-                <div className={`flex-1 transition-all duration-300 ${isTestPanelOpen ? 'mr-96' : 'mr-0'
+                <Header
+                    onToggleTestPanel={toggleTestPanel}
+                    onToggleAIChat={toggleAIChat}
+                    onTogglePersistentChat={togglePersistentChat}
+                />
+                <div className={`flex-1 transition-all duration-300 ${
+                    // Calculate margin based on number of open panels
+                    (() => {
+                        const openPanels = [isTestPanelOpen, isAIChatOpen, isPersistentChatOpen].filter(Boolean).length;
+                        if (openPanels >= 3) return 'mr-[72rem]'; // 3 * 24rem
+                        if (openPanels === 2) return 'mr-[48rem]'; // 2 * 24rem  
+                        if (openPanels === 1) return 'mr-96'; // 24rem
+                        return 'mr-0';
+                    })()
                     }`}>
                     {children}
                 </div>
+                <AIChatPanel
+                    isOpen={isAIChatOpen}
+                    onClose={() => setIsAIChatOpen(false)}
+                    isTestPanelOpen={isPersistentChatOpen || isTestPanelOpen}
+                />
+                <PersistentChatPanel
+                    isOpen={isPersistentChatOpen}
+                    onClose={() => setIsPersistentChatOpen(false)}
+                    isTestPanelOpen={isAIChatOpen || isTestPanelOpen}
+                />
                 <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
             </div>
         </SidebarAvailableContext.Provider>

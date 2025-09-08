@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { SignInButton, UserButton, useUser } from '@clerk/nextjs'
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useSidebarAvailable } from './LayoutWrapper'
-import { Settings } from 'lucide-react'
+import { Settings, Bot, Zap } from 'lucide-react'
 
 const menuOptions = [
     {
@@ -27,9 +27,13 @@ const menuOptions = [
 interface HeaderProps {
     onToggleTestPanel?: () => void;
     showTestPanelToggle?: boolean;
+    onToggleAIChat?: () => void;
+    showAIChatToggle?: boolean;
+    onTogglePersistentChat?: () => void;
+    showPersistentChatToggle?: boolean;
 }
 
-function Header({ onToggleTestPanel, showTestPanelToggle = true }: HeaderProps = {}) {
+function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat, showAIChatToggle = true, onTogglePersistentChat, showPersistentChatToggle = true }: HeaderProps = {}) {
     const { isSignedIn } = useUser();
     const { hasSidebar } = useSidebarAvailable();
 
@@ -47,8 +51,34 @@ function Header({ onToggleTestPanel, showTestPanelToggle = true }: HeaderProps =
                     <h2 className='text-sm lg:text-lg hover:scale-105 transition-all hover:text-primary'> {menu.label}</h2>
                 </Link>
             ))} </div>
-            {/* Authentication + Test Panel Toggle */}
+            {/* Authentication + Panel Toggles */}
             <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Persistent AI Chat Toggle - only show for signed in users */}
+                {isSignedIn && showPersistentChatToggle && onTogglePersistentChat && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onTogglePersistentChat}
+                        title="Toggle Persistent AI Chat"
+                        className="hidden md:flex"
+                    >
+                        <Bot className="size-4" />
+                    </Button>
+                )}
+
+                {/* Ephemeral AI Chat Toggle - only show for signed in users */}
+                {isSignedIn && showAIChatToggle && onToggleAIChat && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleAIChat}
+                        title="Toggle Ephemeral AI Chat"
+                        className="hidden md:flex"
+                    >
+                        <Zap className="size-4" />
+                    </Button>
+                )}
+
                 {/* Test Panel Toggle - only show for signed in users */}
                 {isSignedIn && showTestPanelToggle && onToggleTestPanel && (
                     <Button
