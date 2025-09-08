@@ -5,8 +5,9 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send, Paperclip, Loader2, Bot, User, Zap } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play } from 'lucide-react';
 import Image from 'next/image';
+import { getCurrentProjectId } from '@/utils/project';
 
 interface AIChatPanelProps {
     isOpen: boolean;
@@ -38,15 +39,94 @@ async function convertFilesToDataURLs(files: FileList) {
     );
 }
 
+// Helper function to get tool icon
+function getToolIcon(toolName: string) {
+    switch (toolName) {
+        case 'readDeck':
+            return <FileText className="size-4" />;
+        case 'readSlide':
+            return <FileText className="size-4" />;
+        case 'createSlide':
+            return <Plus className="size-4" />;
+        case 'replaceSlide':
+            return <Code className="size-4" />;
+        default:
+            return <Play className="size-4" />;
+    }
+}
+
+// Helper function to render tool calls
+function renderToolCall(part: any, messageId: string, index: number) {
+    const toolName = part.toolName || 'unknown';
+    const toolIcon = getToolIcon(toolName);
+
+    return (
+        <div key={`${messageId}-tool-${index}`} className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-400 mb-2">
+                {toolIcon}
+                <span>Tool: {toolName}</span>
+                <span className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
+                    {part.state || 'unknown'}
+                </span>
+            </div>
+
+            {/* Tool Input */}
+            {(part.state === 'input-available' || part.state === 'input-streaming') && part.input && (
+                <div className="mb-2">
+                    <div className="text-xs text-muted-foreground mb-1">Input:</div>
+                    <pre className="text-xs bg-background/50 p-2 rounded border overflow-x-auto">
+                        {JSON.stringify(part.input, null, 2)}
+                    </pre>
+                </div>
+            )}
+
+            {/* Tool Output */}
+            {part.state === 'output-available' && part.output && (
+                <div>
+                    <div className="text-xs text-muted-foreground mb-1">Result:</div>
+                    <div className="text-xs bg-green-50 dark:bg-green-950/20 p-2 rounded border">
+                        {typeof part.output === 'string' ? (
+                            <span className="text-green-700 dark:text-green-400">{part.output}</span>
+                        ) : (
+                            <pre className="text-green-700 dark:text-green-400 overflow-x-auto">
+                                {JSON.stringify(part.output, null, 2)}
+                            </pre>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Error */}
+            {part.state === 'output-error' && part.errorText && (
+                <div>
+                    <div className="text-xs text-muted-foreground mb-1">Error:</div>
+                    <div className="text-xs bg-red-50 dark:bg-red-950/20 p-2 rounded border text-red-700 dark:text-red-400">
+                        {part.errorText}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function AIChatPanel({ isOpen, onClose, isTestPanelOpen = false }: AIChatPanelProps) {
     const [input, setInput] = useState('');
     const [files, setFiles] = useState<FileList | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const { messages, sendMessage, status } = useChat({
+    const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
             api: '/api/chat',
+            prepareSendMessagesRequest({ messages }) {
+                const projectId = getCurrentProjectId();
+                return {
+                    body: {
+                        messages,
+                        projectId,
+                    },
+                };
+            },
         }),
     });
 
@@ -165,6 +245,15 @@ export default function AIChatPanel({ isOpen, onClose, isTestPanelOpen = false }
                                             </div>
                                         </div>
                                     );
+                                }
+                                // Handle tool calls
+                                if (part.type === 'tool-readDeck' || part.type === 'tool-readSlide' ||
+                                    part.type === 'tool-createSlide' || part.type === 'tool-replaceSlide') {
+                                    return renderToolCall(part, message.id, index);
+                                }
+                                // Handle dynamic tools
+                                if (part.type === 'dynamic-tool') {
+                                    return renderToolCall(part, message.id, index);
                                 }
                                 return null;
                             })}
