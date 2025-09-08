@@ -9,16 +9,12 @@ export default defineSchema({
         subscription: v.optional(v.string()),
     }),
 
-    TripDetailTable: defineTable({
-        tripId: v.string(),
-        tripDetail: v.any(),
-        uid: v.id('UserTable')
-    }),
 
     SlideDeckTable: defineTable({
         projectId: v.string(),
         title: v.optional(v.string()),
         project: v.string(), // Store as JSON string to avoid nesting limits
-        uid: v.id('UserTable')
+        uid: v.id('UserTable'),
+        lastModified: v.optional(v.number()) // Unix timestamp for last modification
     })
 })

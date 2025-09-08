@@ -1,11 +1,11 @@
 import Hero from "./_components/Hero";
-import { PopularCityList } from "./_components/PopularCityList";
+import { PopularTemplateList } from "./_components/PopularTemplateList";
 
 export default function Home() {
   return (
     <div>
       <Hero />
-      <PopularCityList />
+      <PopularTemplateList />
     </div>
   );
 }

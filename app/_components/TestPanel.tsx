@@ -58,12 +58,12 @@ const testEndpoints = [
         }
     },
     {
-        id: 'generate-slide',
+        id: 'create-slide',
         name: 'New Slide',
-        description: 'Create new slide at specified position (-1 for end)',
+        description: 'Create new empty slide at specified position (-1 for end)',
         icon: '➕',
         method: 'POST',
-        path: '/api/ai/tests/generate-slide',
+        path: '/api/ai/tests/create-slide',
         hasParams: true,
         params: {
             projectId: 'project_xemtydcq0f_1757338119773',
@@ -82,7 +82,14 @@ const testEndpoints = [
         params: {
             projectId: 'project_xemtydcq0f_1757338119773',
             slideIndex: 0,
-            newName: 'Test Panel Edited Slide'
+            newName: 'Test Panel Edited Slide',
+            newContent: `<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); overflow: hidden;">
+  <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Custom Test Content</h1>
+  <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">This is customizable content from the Test Panel. You can edit this text to test different slide content.</p>
+  <div style="position: absolute; bottom: 50px; right: 50px; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+    <span style="font-size: 24px;">✨</span>
+  </div>
+</div>`
         }
     }
 ]

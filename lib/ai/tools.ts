@@ -9,9 +9,9 @@ export const readDeckSchema = z.object({
     includeNames: z.boolean().default(true).describe('Whether to include slide names'),
 });
 
-export const generateSlideSchema = z.object({
+export const createSlideSchema = z.object({
     name: z.string().describe('Name/title for the new slide'),
-    content: z.string().describe('HTML content for the slide'),
+    content: z.string().optional().describe('Optional HTML content for the slide (if not provided, creates empty slide)'),
     insertAtIndex: z.number().optional().describe('Index to insert at (default: append)'),
 });
 
@@ -31,9 +31,9 @@ export const readDeckTool = tool({
     parameters: readDeckSchema,
 });
 
-export const generateSlideTool = tool({
-    description: 'Generate a new slide with specified content',
-    parameters: generateSlideSchema,
+export const createSlideTool = tool({
+    description: 'Create a new slide (optionally with content, otherwise creates empty slide)',
+    parameters: createSlideSchema,
 });
 
 export const editSlideTool = tool({
@@ -44,6 +44,6 @@ export const editSlideTool = tool({
 export const aiTools = {
     read_slide: readSlideTool,
     read_deck: readDeckTool,
-    generate_slide: generateSlideTool,
+    create_slide: createSlideTool,
     edit_slide: editSlideTool,
 };

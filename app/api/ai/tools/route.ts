@@ -102,8 +102,8 @@ export async function POST(request: Request) {
                 });
             }
 
-            case 'generate_slide': {
-                const { name, content, insertAtIndex } = parameters;
+            case 'create_slide': {
+                const { name, content = '', insertAtIndex } = parameters;
 
                 return Response.json({
                     success: true,

@@ -18,6 +18,7 @@ export const SaveDeck = mutation({
             await ctx.db.patch(existing._id, {
                 title: args.title,
                 project: args.project,
+                lastModified: Date.now(),
             });
             return existing._id;
         }
@@ -27,6 +28,7 @@ export const SaveDeck = mutation({
             title: args.title,
             project: args.project,
             uid: args.uid,
+            lastModified: Date.now(),
         });
         return result;
     }
@@ -131,6 +133,7 @@ export const SaveProject = mutation({
         if (existing) {
             await ctx.db.patch(existing._id, {
                 project: args.project,
+                lastModified: Date.now(),
             });
             return existing._id;
         }
@@ -162,6 +165,42 @@ export const CreateTestProject = mutation({
         });
 
         return { projectId: args.projectId, deckId: result, userId: testUser };
+    }
+})
+
+export const DeleteDeck = mutation({
+    args: {
+        deckId: v.id('SlideDeckTable'),
+        uid: v.id('UserTable'),
+    },
+    handler: async (ctx, args) => {
+        // Verify the deck belongs to the user before deleting
+        const deck = await ctx.db.get(args.deckId);
+        if (!deck || deck.uid !== args.uid) {
+            throw new Error('Deck not found or unauthorized');
+        }
+        await ctx.db.delete(args.deckId);
+        return { success: true };
+    }
+})
+
+export const RenameDeck = mutation({
+    args: {
+        deckId: v.id('SlideDeckTable'),
+        uid: v.id('UserTable'),
+        newTitle: v.string(),
+    },
+    handler: async (ctx, args) => {
+        // Verify the deck belongs to the user before renaming
+        const deck = await ctx.db.get(args.deckId);
+        if (!deck || deck.uid !== args.uid) {
+            throw new Error('Deck not found or unauthorized');
+        }
+        await ctx.db.patch(args.deckId, {
+            title: args.newTitle,
+            lastModified: Date.now(),
+        });
+        return { success: true };
     }
 })
 

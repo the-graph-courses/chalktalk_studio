@@ -1,9 +1,9 @@
 'use client'
 
-import { Globe2, Presentation } from 'lucide-react'
+import { Presentation } from 'lucide-react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useTripDetail } from '@/app/provider'
+import { useProjectDetail } from '@/app/provider'
 import {
     Sidebar,
     SidebarContent,
@@ -19,35 +19,19 @@ import {
 export default function AppSidebar() {
     const { user } = useUser()
     const router = useRouter()
-    const { setTripDetailInfo } = useTripDetail() || { setTripDetailInfo: () => { } }
+    const { setProjectDetailInfo } = useProjectDetail() || { setProjectDetailInfo: () => { } }
 
-    const handleCreateNewTrip = () => {
+    const handleCreateNewProject = () => {
         if (!user) {
             router.push('/sign-in')
             return
         }
-        // Clear any existing trip data when creating a new trip
-        setTripDetailInfo(null)
-        router.push('/create-new-trip')
-    }
-
-    const handleMyTrips = () => {
-        if (!user) {
-            router.push('/sign-in')
-            return
-        }
-        router.push('/trips')
-    }
-
-    const handleNewSlideDeck = () => {
-        if (!user) {
-            router.push('/sign-in')
-            return
-        }
+        // Clear any existing project data when creating a new project
+        setProjectDetailInfo(null)
         router.push('/studio')
     }
 
-    const handleMySlideDecks = () => {
+    const handleMyProjects = () => {
         if (!user) {
             router.push('/sign-in')
             return
@@ -65,27 +49,15 @@ export default function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem>
-                                <SidebarMenuButton onClick={handleCreateNewTrip} tooltip="Create New Trip">
-                                    <Globe2 className="text-blue-400" />
-                                    <span>Create New Trip</span>
+                                <SidebarMenuButton onClick={handleCreateNewProject} tooltip="Create New Presentation">
+                                    <Presentation className="text-blue-400" />
+                                    <span>New Presentation</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton onClick={handleMyTrips} tooltip="My Trips">
-                                    <Globe2 className="text-green-400" />
-                                    <span>My Trips</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton onClick={handleNewSlideDeck} tooltip="New Slide Deck">
-                                    <Presentation className="text-purple-400" />
-                                    <span>New Slide Deck</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton onClick={handleMySlideDecks} tooltip="My Slide Decks">
-                                    <Presentation className="text-orange-400" />
-                                    <span>My Slide Decks</span>
+                                <SidebarMenuButton onClick={handleMyProjects} tooltip="My Presentations">
+                                    <Presentation className="text-green-400" />
+                                    <span>My Presentations</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </SidebarMenu>

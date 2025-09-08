@@ -19,7 +19,7 @@ export async function POST(request: Request) {
           
           <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">The content of this slide has been replaced using absolute positioning for optimal layout control.</p>
           
-          <div data-type-icon class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; transform: rotate(15deg);">
+          <div class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; transform: rotate(15deg);">
             <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -27,19 +27,7 @@ export async function POST(request: Request) {
           </div>
         </div>
         
-        <style>
-          body { 
-            position: relative;
-            background: linear-gradient(135deg, #f0f2f5, #c3cfe2);
-            font-family: system-ui, -apple-system, sans-serif; 
-            overflow: hidden;
-          }
-          .gjs-icon {
-            display: inline-block;
-            vertical-align: middle;
-            fill: currentColor;
-          }
-        </style>
+
       `
     } = body;
 

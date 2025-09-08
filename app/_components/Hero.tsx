@@ -3,7 +3,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Send, ArrowDown } from 'lucide-react'
 import React from 'react'
-import { Globe2, MapPin, Heart } from 'lucide-react'
+import { Presentation, Lightbulb, Zap } from 'lucide-react'
 import HeroVideoDialog from "@/components/magicui/hero-video-dialog";
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
@@ -11,20 +11,20 @@ import { useRouter } from 'next/navigation'
 
 export const suggestions = [
     {
-        title: 'Create New Trip',
-        icon: <Globe2 className='text-blue-400 h-5 w-5' />
+        title: 'Create Business Presentation',
+        icon: <Presentation className='text-blue-400 h-5 w-5' />
     },
     {
-        title: 'Hidden gems in New York',
-        icon: <MapPin className='text-green-400 h-5 w-5' />
+        title: 'Educational Content',
+        icon: <Lightbulb className='text-green-400 h-5 w-5' />
     },
     {
-        title: 'Adventures in Europe',
-        icon: <Globe2 className='text-purple-400 h-5 w-5' />
+        title: 'Marketing Pitch Deck',
+        icon: <Zap className='text-purple-400 h-5 w-5' />
     },
     {
-        title: 'Romantic getaways in Asia',
-        icon: <Heart className='text-pink-400 h-5 w-5' />
+        title: 'Startup Investor Deck',
+        icon: <Presentation className='text-pink-400 h-5 w-5' />
     }
 ]
 
@@ -39,20 +39,20 @@ function Hero() {
             router.push('/sign-in')
             return;
         }
-        // Navigate to Create Trip Planner Web Page 
-        router.push('/create-new-trip')
+        // Navigate to ChalkTalk Studio 
+        router.push('/studio')
     }
 
     return (
         <div className='mt-24 w-full flex justify-center p-2'>
             <div className='max-w-3xl w-full flex flex-col gap-4 space-y-1 justify-center items-center'>
                 {/* Content */}
-                <h1 className='text-xl md:text-5xl font-bold'>Hey, I'm your personal <span className='text-primary'>Trip Planner</span></h1>
-                <p className='text-lg text-muted-foreground'> Tell me what you want, and I'll plan the details: Flights, Hotels, Trip Plans, all in seconds</p>
+                <h1 className='text-xl md:text-5xl font-bold'>Hey, I'm <span className='text-primary'>ChalkTalk</span></h1>
+                <p className='text-lg text-muted-foreground'>Transform your ideas into stunning presentations. AI-powered slide creation in seconds.</p>
 
                 {/* Input Box */}
                 <div className='border rounded-2xl p-4 w-full max-w-2xl relative'>
-                    <Textarea placeholder='Create an itinerary for 3 nights in Paris' className='w-full h-28 bg-transparent border-none focus-visible:ring-0 pr-12' />
+                    <Textarea placeholder='Create a business presentation about quarterly results' className='w-full h-28 bg-transparent border-none focus-visible:ring-0 pr-12' />
                     <Button size="icon" className='absolute bottom-6 right-6 cursor-pointer hover:scale-105 transition-transform' onClick={() => onSend()}>
                         <Send className='h-4 w-4' />
                     </Button>

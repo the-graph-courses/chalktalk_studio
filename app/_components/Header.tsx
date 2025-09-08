@@ -39,7 +39,7 @@ function Header({ onToggleTestPanel, showTestPanelToggle = true }: HeaderProps =
             <div className='flex items-center gap-3 min-w-0'>
                 {hasSidebar && <SidebarTrigger className="md:hidden" />}
                 <Image src="/logo.svg" alt="logo" width={30} height={30} className="flex-shrink-0" />
-                <h2 className='text-xl lg:text-2xl font-bold truncate'>AI Trip Planner</h2>
+                <h2 className='text-xl lg:text-2xl font-bold truncate'>ChalkTalk</h2>
             </div>
             {/* Menu Options */}
             <div className='hidden md:flex items-center gap-4 lg:gap-8 flex-shrink-0'> {menuOptions.map((menu, index) => (

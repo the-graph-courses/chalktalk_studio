@@ -98,42 +98,7 @@ export default function EditorPage({ params }: PageProps) {
         pages: [
             {
                 name: 'Slide 1',
-                component: `
-                <div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #f5f7fa, #c3cfe2); color: #1a1a1a; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
-                  <div style="position: absolute; top: 0; left: 550px; width: 300px; height: 100%; background-color: #baccec; transform: skewX(-12deg)"></div>
-    
-                  <h1 style="position: absolute; top: 40px; left: 40px; font-size: 50px; margin: 0; font-weight: 700;">
-                    Absolute Mode
-                  </h1>
-    
-                  <p style="position: absolute; top: 135px; left: 40px; font-size: 22px; max-width: 450px; line-height: 1.5; color: #333;">
-                    Enable free positioning for your elements — perfect for fixed layouts like presentations, business cards, or print-ready designs.
-                  </p>
-    
-                  <ul data-gjs-type="text" style="position: absolute; top: 290px; left: 40px; font-size: 18px; line-height: 2; list-style: none; padding: 0;">
-                    <li>🎯 Drag & place elements anywhere</li>
-                    <li>🧲 Smart snapping & axis locking</li>
-                    <li>⚙️ You custom logic</li>
-                  </ul>
-    
-                  <div style="position: absolute; left: 540px; top: 100px; width: 200px; height: 200px; background: rgba(255, 255, 255, 0.3); border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 80px;">
-                    📐
-                  </div>
-    
-                  <div style="position: absolute; top: 405px; left: 590px; font-size: 14px; color: #555;">
-                    Studio SDK · GrapesJS
-                  </div>
-              </div>
-    
-              <style>
-                body {
-                  position: relative;
-                  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-                  font-family: system-ui;
-                  overflow: hidden;
-                }
-              </style>
-                `
+                component: ''
             },
         ],
     }
@@ -155,60 +120,82 @@ export default function EditorPage({ params }: PageProps) {
             <StudioEditor
                 onReady={(editor) => {
                     editorRef.current = editor
+
+                    // Add scroll wheel zoom functionality
+                    const canvas = editor.Canvas.getElement()
+                    if (canvas) {
+                        const handleWheelZoom = (event: WheelEvent) => {
+                            // Only zoom if Shift key is pressed
+                            if (event.shiftKey) {
+                                event.preventDefault() // Prevent default scroll behavior
+
+                                // Determine scroll direction
+                                const delta = event.deltaY
+
+                                // Get current zoom level
+                                let zoom = editor.Canvas.getZoom()
+
+                                // Adjust zoom level (using same increment as the plugin buttons)
+                                if (delta < 0) {
+                                    // Scroll up, zoom in
+                                    zoom += 2
+                                } else {
+                                    // Scroll down, zoom out
+                                    zoom -= 2
+                                }
+
+                                // Set new zoom level with reasonable limits
+                                zoom = Math.max(10, Math.min(zoom, 300)) // Limit zoom between 10% and 300%
+                                editor.Canvas.setZoom(zoom)
+                            }
+                        }
+
+                        canvas.addEventListener('wheel', handleWheelZoom, { passive: false })
+
+                        // Store cleanup function for potential future use
+                        const cleanup = () => canvas.removeEventListener('wheel', handleWheelZoom)
+                        // Note: In a real-world app, you might want to store this cleanup function
+                        // and call it when the component unmounts
+                    }
                 }}
                 options={{
                     licenseKey,
+                    theme: 'light',
                     plugins: [canvasAbsoluteMode],
                     devices: {
                         default: [
                             { id: 'desktop', name: 'Desktop', width: '' }
                         ]
                     },
+                    project: {
+                        type: 'web',
+                        id: projectId
+                    },
+                    identity: {
+                        id: identityId,
+                    },
+                    assets: {
+                        storageType: 'cloud'
+                    },
                     storage: {
                         type: 'self',
-                        autosaveChanges: 1,
                         onSave: async ({ project }) => {
-                            await saveDeck({
-                                projectId,
-                                uid: userDetail._id,
-                                project: JSON.stringify(project),
-                            })
+                            try {
+                                await saveDeck({
+                                    projectId,
+                                    uid: userDetail._id,
+                                    project: JSON.stringify(project),
+                                })
+                            } catch (error) {
+                                console.error('Failed to save project:', error)
+                                throw error
+                            }
                         },
                         onLoad: async () => {
                             return { project: initialProject };
                         },
-                    },
-                    project: {
-                        id: projectId,
-                        type: 'web',
-                        default: {
-                            pages: [
-                                {
-                                    name: 'Fallback Slide',
-                                    component: `
-                                        <div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #ff6b6b, #4ecdc4); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
-                                            <h1 style="position: absolute; top: 180px; left: 60px; font-size: 36px; margin: 0; font-weight: 700;">
-                                                Fallback Project
-                                            </h1>
-                                            <p style="position: absolute; top: 240px; left: 60px; font-size: 18px; opacity: 0.9;">
-                                                Please reload to retry loading your project
-                                            </p>
-                                        </div>
-                                        <style>
-                                            body {
-                                                position: relative;
-                                                background: linear-gradient(135deg, #f0f2f5, #c3cfe2);
-                                                font-family: system-ui;
-                                                overflow: hidden;
-                                            }
-                                        </style>
-                                    `
-                                },
-                            ]
-                        },
-                    },
-                    identity: {
-                        id: identityId,
+                        autosaveChanges: 100,
+                        autosaveIntervalMs: 10000
                     },
                 }}
             />
