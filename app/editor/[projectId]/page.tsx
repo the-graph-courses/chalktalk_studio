@@ -2,13 +2,24 @@
 
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
-import { useEffect, useMemo, useRef, useState, use } from 'react'
+import { useMemo, use, useRef, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useUserDetail } from '@/app/provider'
 
 type PageProps = { params: Promise<{ projectId: string }> }
+
+// Global type declaration for AI tools
+declare global {
+    interface Window {
+        grapesjsAITools?: {
+            addSlide: (name: string, content: string, insertAtIndex?: number) => boolean
+            editSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
+            getEditor: () => any
+        }
+    }
+}
 
 export default function EditorPage({ params }: PageProps) {
     const { projectId } = use(params)
@@ -23,67 +34,113 @@ export default function EditorPage({ params }: PageProps) {
         userDetail ? { projectId, uid: userDetail._id } : 'skip'
     )
 
-    // Load deck when user is available
-    const loadArgs = user ? { projectId, uid: (user as any).id } : null
+    const editorRef = useRef<any>(null)
 
-    // Track editor remounts and hashes to avoid loops - ALWAYS call these hooks
-    const [editorKey, setEditorKey] = useState(0)
-    const lastSavedHashRef = useRef<string | null>(null)
-    const lastLoadedHashRef = useRef<string | null>(null)
-
-    // If project from Convex changes and it's not our own last save, remount editor
+    // Create global functions for AI tools to interact with the editor
     useEffect(() => {
-        if (!deck?.project) return
-        const currentHash = JSON.stringify(deck.project)
-        // Skip if this is the same as what we already loaded
-        if (currentHash === lastLoadedHashRef.current) return
-        // Skip if this equals the last saved hash we wrote (avoid loop)
-        if (currentHash === lastSavedHashRef.current) {
-            // Mark as loaded to prevent future remounts on same data
-            lastLoadedHashRef.current = currentHash
-            return
+        if (typeof window !== 'undefined') {
+            // @ts-ignore - Adding to window for AI tools access
+            window.grapesjsAITools = {
+                addSlide: (name: string, content: string, insertAtIndex?: number) => {
+                    if (!editorRef.current) return false
+                    const editor = editorRef.current
+                    const page = editor.Pages.add({
+                        name,
+                        component: content
+                    }, {
+                        select: true,
+                        at: insertAtIndex
+                    })
+                    return !!page
+                },
+                editSlide: (slideIndex: number, newContent: string, newName?: string) => {
+                    if (!editorRef.current) return false
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const page = pages[slideIndex]
+                    if (!page) return false
+
+                    // Update page name if provided
+                    if (newName) {
+                        page.set('name', newName)
+                    }
+
+                    // Select the page and update its content
+                    editor.Pages.select(page)
+                    editor.setComponents(newContent)
+                    return true
+                },
+                getEditor: () => editorRef.current
+            }
         }
-        // External update detected → remount editor with fresh project
-        lastLoadedHashRef.current = currentHash
-        setEditorKey((k) => k + 1)
-    }, [deck?.project])
 
-    if (!userDetail) return null
-    if (deck === undefined) return null
+        return () => {
+            if (typeof window !== 'undefined') {
+                // @ts-ignore
+                delete window.grapesjsAITools
+            }
+        }
+    }, [])
 
-    const initialProject = deck?.project || {
+    if (!userDetail) return <div>Loading user...</div>
+    if (deck === undefined) return <div>Loading deck...</div>
+
+    console.log('Deck loaded:', {
+        projectId,
+        deckExists: !!deck,
+        projectType: typeof deck?.project,
+        hasPages: !!(deck?.project?.pages || (typeof deck?.project === 'string' && deck.project.includes('pages')))
+    })
+
+    // Handle case where project might still be a string
+    let initialProject = deck?.project || {
         pages: [
             { name: 'Slide 1', component: '<h1>New Slide Deck</h1>' },
         ],
     }
 
+    // If project is still a string, parse it
+    if (typeof initialProject === 'string') {
+        console.log('Project is string, parsing...')
+        try {
+            initialProject = JSON.parse(initialProject)
+            console.log('Parsed project successfully, pages:', initialProject.pages?.length)
+        } catch (error) {
+            console.error('Failed to parse project in editor:', error)
+            return <div>Error: Invalid project format</div>
+        }
+    }
+
     return (
         <div className="h-full">
             <StudioEditor
-                key={editorKey}
+                onReady={(editor) => {
+                    editorRef.current = editor
+                }}
                 options={{
                     licenseKey,
                     storage: {
                         type: 'self',
-                        autosaveChanges: 5,
-                        project: initialProject,
+                        autosaveChanges: 1,
                         onSave: async ({ project }) => {
                             await saveDeck({
                                 projectId,
                                 uid: userDetail._id,
-                                project,
+                                project: JSON.stringify(project),
                             })
-                            // Remember what we wrote to avoid self-refresh loops
-                            try {
-                                lastSavedHashRef.current = JSON.stringify(project)
-                            } catch {
-                                lastSavedHashRef.current = null
-                            }
+                        },
+                        onLoad: async () => {
+                            return { project: initialProject };
                         },
                     },
                     project: {
                         id: projectId,
                         type: 'web',
+                        default: {
+                            pages: [
+                                { name: 'Home', component: '<h1>Fallback Project, reload to retry</h1>' },
+                            ]
+                        },
                     },
                     identity: {
                         id: identityId,

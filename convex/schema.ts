@@ -18,7 +18,7 @@ export default defineSchema({
     SlideDeckTable: defineTable({
         projectId: v.string(),
         title: v.optional(v.string()),
-        project: v.any(),
+        project: v.string(), // Store as JSON string to avoid nesting limits
         uid: v.id('UserTable')
     })
 })

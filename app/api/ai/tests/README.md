@@ -6,63 +6,82 @@ This directory contains organized tests for all AI tools in the ChalkTalk Studio
 
 ### Individual Tool Tests
 
-- **`/api/ai/tests/read-slide`** - Test reading a specific slide
-- **`/api/ai/tests/read-deck`** - Test reading an entire slide deck
-- **`/api/ai/tests/generate-slide`** - Test generating a new slide
-- **`/api/ai/tests/edit-slide`** - Test editing an existing slide
-- **`/api/ai/tests/chat`** - Test the AI chat functionality
-
-### Comprehensive Test
-
-- **`/api/ai/tests/all`** - Run all tests in sequence and get a summary
+- **`/api/ai/tests/chat`** - Test AI chat functionality with full response
+- **`/api/ai/tests/read-deck`** - Read entire slide deck with optional names
+- **`/api/ai/tests/read-slide`** - Read specific slide by index
+- **`/api/ai/tests/generate-slide`** - Create new slide at specified position (-1 for end)
+- **`/api/ai/tests/edit-slide`** - Edit existing slide content and name
 
 ## Usage
 
 ### Default Testing (uses default project ID)
+
 ```bash
-# Test individual tools
-curl -X POST http://localhost:3000/api/ai/tests/read-deck
-curl -X POST http://localhost:3000/api/ai/tests/read-slide
-curl -X POST http://localhost:3000/api/ai/tests/generate-slide
-curl -X POST http://localhost:3000/api/ai/tests/edit-slide
+# Test AI chat functionality with full response
 curl -X POST http://localhost:3000/api/ai/tests/chat
 
-# Run all tests
-curl -X POST http://localhost:3000/api/ai/tests/all
+# Test reading slide deck
+curl -X POST http://localhost:3000/api/ai/tests/read-deck
+
+# Test reading specific slide (reads slide 0 by default)
+curl -X POST http://localhost:3000/api/ai/tests/read-slide
+
+# Test creating new slide
+curl -X POST http://localhost:3000/api/ai/tests/generate-slide
+
+# Test editing existing slide (edits slide 0 by default)
+curl -X POST http://localhost:3000/api/ai/tests/edit-slide
 ```
 
 ### Custom Parameters
+
 ```bash
-# Test with specific project ID
+# Test chat with custom message and project ID
+curl -X POST http://localhost:3000/api/ai/tests/chat \
+  -H "Content-Type: application/json" \
+  -d '{"projectId":"your-project-id","message":"Your custom message here"}'
+
+# Test reading deck with all parameters
 curl -X POST http://localhost:3000/api/ai/tests/read-deck \
   -H "Content-Type: application/json" \
-  -d '{"projectId":"your-project-id"}'
+  -d '{"projectId":"your-project-id","includeNames":true}'
 
 # Test reading specific slide
 curl -X POST http://localhost:3000/api/ai/tests/read-slide \
   -H "Content-Type: application/json" \
   -d '{"projectId":"your-project-id","slideIndex":1}'
 
-# Test generating slide with custom content
+# Test creating new slide with all parameters
 curl -X POST http://localhost:3000/api/ai/tests/generate-slide \
   -H "Content-Type: application/json" \
-  -d '{"projectId":"your-project-id","name":"My Custom Slide","content":"<div>Custom HTML</div>"}'
+  -d '{
+    "projectId": "your-project-id",
+    "name": "My Custom Slide",
+    "content": "<div style=\"padding: 40px; text-align: center;\"><h1>My Custom Slide</h1><p>Custom content here</p></div>",
+    "insertAtIndex": -1
+  }'
 
-# Test editing slide with custom content
+# Test editing slide with all parameters
 curl -X POST http://localhost:3000/api/ai/tests/edit-slide \
   -H "Content-Type: application/json" \
-  -d '{"projectId":"your-project-id","slideIndex":0,"newName":"Updated Slide","newContent":"<div>New content</div>"}'
+  -d '{
+    "projectId": "your-project-id",
+    "slideIndex": 0,
+    "newName": "Updated Slide Name",
+    "newContent": "<div style=\"padding: 40px; background: #f0f0f0;\"><h1>Updated Content</h1><p>This slide has been modified</p></div>"
+  }'
 ```
 
 ## Default Values
 
-- **Default Project ID**: `project_pezn9p05voi_1757116077136`
+- **Default Project ID**: `project_xemtydcq0f_1757338119773`
 - **Default Slide Index**: `0`
 - **Default Include Names**: `true`
 
 ## Test Results Format
 
 All tests return a consistent format:
+
 ```json
 {
   "test": "test_name",
@@ -74,30 +93,31 @@ All tests return a consistent format:
 }
 ```
 
-## Comprehensive Test Summary
+## Running Multiple Tests
 
-The `/all` endpoint provides a summary:
-```json
-{
-  "test": "all_tools",
-  "projectId": "project_id",
-  "summary": {
-    "total": 5,
-    "passed": 5,
-    "failed": 0,
-    "success": true
-  },
-  "results": [...],
-  "timestamp": "2025-09-06T15:31:45.821Z"
-}
+To run all tests in sequence, you can use this simple bash script:
+
+```bash
+#!/bin/bash
+echo "💬 Testing AI Chat..."
+curl -X POST http://localhost:3000/api/ai/tests/chat
+echo -e "\n\n📖 Testing Read Deck..."
+curl -X POST http://localhost:3000/api/ai/tests/read-deck
+echo -e "\n\n📄 Testing Read Slide..."
+curl -X POST http://localhost:3000/api/ai/tests/read-slide
+echo -e "\n\n➕ Testing New Slide..."
+curl -X POST http://localhost:3000/api/ai/tests/generate-slide
+echo -e "\n\n✏️ Testing Edit Slide..."
+curl -X POST http://localhost:3000/api/ai/tests/edit-slide
+echo -e "\n\n✅ All tests completed!"
 ```
 
 ## Core AI Tools
 
 The tests validate these core endpoints:
+
 - **`/api/ai/tools`** - Direct tool execution
 - **`/api/ai/chat`** - AI chat with tool integration
-- **`/api/ai/test`** - Basic AI connection test
 
 ## Notes
 
@@ -105,3 +125,4 @@ The tests validate these core endpoints:
 - The `edit-slide` and `generate-slide` tests will modify your project
 - Tests include automatic retry and error handling
 - Chat tests validate streaming responses work correctly
+- Run individual tests as needed rather than all at once to better isolate issues

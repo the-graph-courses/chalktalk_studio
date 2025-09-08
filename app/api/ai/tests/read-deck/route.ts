@@ -1,7 +1,15 @@
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { projectId = 'project_pezn9p05voi_1757116077136', includeNames = true } = body;
+    let body = {};
+    try {
+      const text = await request.text();
+      if (text) {
+        body = JSON.parse(text);
+      }
+    } catch {
+      // Ignore JSON parsing errors, use empty body
+    }
+    const { projectId = 'project_xemtydcq0f_1757338119773', includeNames = true } = body;
 
     const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
       method: 'POST',

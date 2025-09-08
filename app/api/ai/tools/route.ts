@@ -15,7 +15,16 @@ export async function POST(request: Request) {
             return Response.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        const projectData = project.project;
+        // Handle case where project might still be a string
+        let projectData = project.project;
+        if (typeof projectData === 'string') {
+            try {
+                projectData = JSON.parse(projectData);
+            } catch (error) {
+                console.error('Failed to parse project data in tools API:', error);
+                return Response.json({ error: 'Invalid project data format' }, { status: 500 });
+            }
+        }
 
         switch (toolName) {
             case 'read_slide': {
@@ -95,33 +104,14 @@ export async function POST(request: Request) {
 
             case 'generate_slide': {
                 const { name, content, insertAtIndex } = parameters;
-                const newSlide = { name, component: content };
-
-                // Clone current project data
-                const updatedProject = { ...projectData };
-                if (!updatedProject.pages) {
-                    updatedProject.pages = [];
-                }
-
-                // Insert at specified index or append
-                if (insertAtIndex !== undefined && insertAtIndex >= 0) {
-                    updatedProject.pages.splice(insertAtIndex, 0, newSlide);
-                } else {
-                    updatedProject.pages.push(newSlide);
-                }
-
-                // Save updated project
-                await fetchMutation(api.slideDeck.SaveProject, {
-                    projectId,
-                    project: updatedProject,
-                });
 
                 return Response.json({
                     success: true,
+                    command: 'addSlide',
                     data: {
-                        slideIndex: insertAtIndex ?? updatedProject.pages.length - 1,
-                        name: newSlide.name,
-                        totalSlides: updatedProject.pages.length,
+                        name,
+                        content,
+                        insertAtIndex,
                     },
                 });
             }
@@ -129,59 +119,18 @@ export async function POST(request: Request) {
             case 'edit_slide': {
                 const { slideIndex, newContent, newName } = parameters;
 
-                // Clone current project data
-                const updatedProject = { ...projectData };
-                if (!updatedProject.pages?.[slideIndex]) {
+                // Check if slide exists
+                if (!projectData.pages?.[slideIndex]) {
                     return Response.json({ error: `Slide ${slideIndex} not found` }, { status: 404 });
                 }
 
-                const slide = updatedProject.pages[slideIndex];
-
-                // Handle different project structures for editing
-                if (slide.component && !slide.frames) {
-                    // Simple structure (our test projects)
-                    updatedProject.pages[slideIndex] = {
-                        ...slide,
-                        component: newContent,
-                        ...(newName && { name: newName }),
-                    };
-                } else if (slide.frames?.[0]?.component) {
-                    // Complex GrapesJS structure - prefer setting HTML component and removing frames
-                    const updatedSlide: any = { ...slide };
-
-                    // Set the HTML on component to ensure Studio can re-parse/render the slide
-                    updatedSlide.component = newContent;
-
-                    // Remove frames to avoid older nested structure overriding the HTML
-                    delete updatedSlide.frames;
-
-                    // Update name if provided
-                    if (newName) {
-                        updatedSlide.name = newName;
-                    }
-
-                    updatedProject.pages[slideIndex] = updatedSlide;
-                } else {
-                    // Fallback: ensure at least component is set
-                    updatedProject.pages[slideIndex] = {
-                        ...slide,
-                        component: newContent,
-                        ...(newName && { name: newName }),
-                    };
-                }
-
-                // Save updated project
-                await fetchMutation(api.slideDeck.SaveProject, {
-                    projectId,
-                    project: updatedProject,
-                });
-
                 return Response.json({
                     success: true,
+                    command: 'editSlide',
                     data: {
                         slideIndex,
-                        name: updatedProject.pages[slideIndex].name,
-                        updated: true,
+                        newContent,
+                        newName,
                     },
                 });
             }

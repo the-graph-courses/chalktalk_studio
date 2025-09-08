@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { SignInButton, UserButton, useUser } from '@clerk/nextjs'
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useSidebarAvailable } from './LayoutWrapper'
+import { Settings } from 'lucide-react'
 
 const menuOptions = [
     {
@@ -23,7 +24,12 @@ const menuOptions = [
 
 ]
 
-function Header() {
+interface HeaderProps {
+    onToggleTestPanel?: () => void;
+    showTestPanelToggle?: boolean;
+}
+
+function Header({ onToggleTestPanel, showTestPanelToggle = true }: HeaderProps = {}) {
     const { isSignedIn } = useUser();
     const { hasSidebar } = useSidebarAvailable();
 
@@ -41,8 +47,21 @@ function Header() {
                     <h2 className='text-sm lg:text-lg hover:scale-105 transition-all hover:text-primary'> {menu.label}</h2>
                 </Link>
             ))} </div>
-            {/* Authentication */}
-            <div className="flex-shrink-0">
+            {/* Authentication + Test Panel Toggle */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Test Panel Toggle - only show for signed in users */}
+                {isSignedIn && showTestPanelToggle && onToggleTestPanel && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleTestPanel}
+                        title="Toggle AI Tests Panel"
+                        className="hidden md:flex"
+                    >
+                        <Settings className="size-4" />
+                    </Button>
+                )}
+
                 {isSignedIn ? (
                     <UserButton afterSignOutUrl="/" />
                 ) : (

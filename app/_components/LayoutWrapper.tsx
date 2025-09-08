@@ -3,8 +3,9 @@
 import { useUser } from "@clerk/nextjs";
 import AppSidebar from "./Sidebar";
 import Header from "./Header";
+import TestPanel from "./TestPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 
 // Create a context to track if sidebar is available
 const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSidebar: false });
@@ -17,6 +18,11 @@ export default function LayoutWrapper({
     children: React.ReactNode;
 }) {
     const { isSignedIn, isLoaded } = useUser();
+    const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
+
+    const toggleTestPanel = () => {
+        setIsTestPanelOpen(!isTestPanelOpen);
+    };
 
     // Show loading state while Clerk is loading
     if (!isLoaded) {
@@ -39,11 +45,13 @@ export default function LayoutWrapper({
                 <SidebarProvider>
                     <AppSidebar />
                     <SidebarInset className="overflow-hidden">
-                        <Header />
-                        <div className="flex-1 overflow-auto">
+                        <Header onToggleTestPanel={toggleTestPanel} />
+                        <div className={`flex-1 overflow-auto transition-all duration-300 ${isTestPanelOpen ? 'mr-96' : 'mr-0'
+                            }`}>
                             {children}
                         </div>
                     </SidebarInset>
+                    <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
                 </SidebarProvider>
             </SidebarAvailableContext.Provider>
         );
@@ -53,10 +61,12 @@ export default function LayoutWrapper({
     return (
         <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
             <div className="min-h-screen">
-                <Header />
-                <div className="flex-1">
+                <Header onToggleTestPanel={toggleTestPanel} />
+                <div className={`flex-1 transition-all duration-300 ${isTestPanelOpen ? 'mr-96' : 'mr-0'
+                    }`}>
                     {children}
                 </div>
+                <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
             </div>
         </SidebarAvailableContext.Provider>
     );

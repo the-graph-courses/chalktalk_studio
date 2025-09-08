@@ -6,7 +6,7 @@ export const SaveDeck = mutation({
         projectId: v.string(),
         uid: v.id('UserTable'),
         title: v.optional(v.string()),
-        project: v.any(),
+        project: v.string(),
     },
     handler: async (ctx, args) => {
         const existing = await ctx.db
@@ -45,7 +45,27 @@ export const GetDeck = query({
                 q.eq(q.field('uid'), args.uid),
             ))
             .first();
-        return deck ?? null;
+
+        if (!deck) return null;
+
+        // Parse the JSON string back to object
+        try {
+            // Check if it's already an object (shouldn't happen but let's be safe)
+            if (typeof deck.project === 'object') {
+                return deck;
+            }
+            // Parse the JSON string
+            return {
+                ...deck,
+                project: JSON.parse(deck.project)
+            };
+        } catch (error) {
+            console.error('Failed to parse project JSON in GetDeck:', error);
+            console.error('Project ID:', args.projectId);
+            console.error('Raw project type:', typeof deck.project);
+            // Return the deck as-is if parsing fails
+            return deck;
+        }
     }
 })
 
@@ -72,14 +92,35 @@ export const GetProject = query({
             .query('SlideDeckTable')
             .filter(q => q.eq(q.field('projectId'), args.projectId))
             .first();
-        return deck ?? null;
+
+        if (!deck) return null;
+
+        // Parse the JSON string back to object
+        try {
+            // Check if it's already an object (shouldn't happen but let's be safe)
+            if (typeof deck.project === 'object') {
+                return deck;
+            }
+            // Parse the JSON string
+            return {
+                ...deck,
+                project: JSON.parse(deck.project)
+            };
+        } catch (error) {
+            console.error('Failed to parse project JSON:', error);
+            console.error('Project ID:', args.projectId);
+            console.error('Raw project type:', typeof deck.project);
+            console.error('Raw project sample:', deck.project?.substring?.(0, 100));
+            // Return the deck as-is if parsing fails
+            return deck;
+        }
     }
 })
 
 export const SaveProject = mutation({
     args: {
         projectId: v.string(),
-        project: v.any(),
+        project: v.string(),
     },
     handler: async (ctx, args) => {
         const existing = await ctx.db
@@ -102,7 +143,7 @@ export const SaveProject = mutation({
 export const CreateTestProject = mutation({
     args: {
         projectId: v.string(),
-        project: v.any(),
+        project: v.string(),
         title: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
@@ -135,12 +176,19 @@ export const DebugProject = query({
             .first();
 
         // Return the full project structure for debugging
+        let parsedProject = null;
+        try {
+            parsedProject = deck?.project ? JSON.parse(deck.project) : null;
+        } catch (error) {
+            console.error('Failed to parse project JSON in debug:', error);
+        }
+
         return {
             found: !!deck,
             projectId: args.projectId,
             title: deck?.title,
-            projectStructure: deck?.project ? JSON.stringify(deck.project, null, 2) : null,
-            projectKeys: deck?.project ? Object.keys(deck.project) : null,
+            projectStructure: parsedProject ? JSON.stringify(parsedProject, null, 2) : null,
+            projectKeys: parsedProject ? Object.keys(parsedProject) : null,
         };
     }
 })
