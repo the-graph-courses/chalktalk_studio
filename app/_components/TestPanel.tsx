@@ -68,7 +68,6 @@ const testEndpoints = [
         params: {
             projectId: 'project_xemtydcq0f_1757338119773',
             name: 'Test Panel Generated Slide',
-            content: '<div style="padding: 40px; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); color: white; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;"><h1 style="font-size: 48px; margin-bottom: 20px; text-align: center;">🤖 AI Generated Slide</h1><p style="font-size: 24px; text-align: center; opacity: 0.9;">This slide was created by the AI tools test suite</p><div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.2); border-radius: 10px;"><span style="font-size: 18px;">✨ Automatically generated content</span></div></div>',
             insertAtIndex: -1
         }
     },
@@ -83,8 +82,7 @@ const testEndpoints = [
         params: {
             projectId: 'project_xemtydcq0f_1757338119773',
             slideIndex: 0,
-            newName: 'Test Panel Edited Slide',
-            newContent: '<div style="padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;"><h1 style="font-size: 56px; margin-bottom: 20px; text-align: center;">✏️ Edited by AI</h1><p style="font-size: 28px; text-align: center; opacity: 0.9; margin-bottom: 30px;">This slide content was modified by the AI tools test suite</p><div style="display: flex; gap: 20px; justify-content: center;"><div style="padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 20px; backdrop-filter: blur(10px);"><span style="font-size: 16px;">🔧 Modified</span></div><div style="padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 20px; backdrop-filter: blur(10px);"><span style="font-size: 16px;">✅ Updated</span></div></div></div>'
+            newName: 'Test Panel Edited Slide'
         }
     }
 ]
