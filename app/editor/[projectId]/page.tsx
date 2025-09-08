@@ -17,6 +17,7 @@ declare global {
         grapesjsAITools?: {
             addSlide: (name: string, content: string, insertAtIndex?: number) => boolean
             editSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
+            replaceSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
             getEditor: () => any
         }
     }
@@ -55,6 +56,23 @@ export default function EditorPage({ params }: PageProps) {
                     return !!page
                 },
                 editSlide: (slideIndex: number, newContent: string, newName?: string) => {
+                    if (!editorRef.current) return false
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const page = pages[slideIndex]
+                    if (!page) return false
+
+                    // Update page name if provided
+                    if (newName) {
+                        page.set('name', newName)
+                    }
+
+                    // Select the page and update its content
+                    editor.Pages.select(page)
+                    editor.setComponents(newContent)
+                    return true
+                },
+                replaceSlide: (slideIndex: number, newContent: string, newName?: string) => {
                     if (!editorRef.current) return false
                     const editor = editorRef.current
                     const pages = editor.Pages.getAll()

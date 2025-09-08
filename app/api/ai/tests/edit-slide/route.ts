@@ -10,12 +10,12 @@ export async function POST(request: Request) {
       // Ignore JSON parsing errors, use empty body
     }
     const {
-      projectId = 'project_xemtydcq0f_1757338119773',
+      projectId = 'project_tfk2w50d5ki_1757347069126',
       slideIndex = 0,
-      newName = 'AI Edited Slide',
+      newName = 'AI Replaced Slide',
       newContent = `
         <div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); color: #333; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
-          <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">AI Edited Slide</h1>
+          <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">AI Replaced Slide</h1>
           
           <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">The content of this slide has been replaced using absolute positioning for optimal layout control.</p>
           
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        toolName: 'edit_slide',
+        toolName: 'replace_slide',
         parameters: { slideIndex, newContent, newName },
         projectId,
       }),
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const result = await response.json();
 
     return Response.json({
-      test: 'edit_slide',
+      test: 'replace_slide',
       projectId,
       slideIndex,
       newName,
@@ -53,9 +53,9 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Edit slide test error:', error);
+    console.error('replace slide test error:', error);
     return Response.json({
-      test: 'edit_slide',
+      test: 'replace_slide',
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });

@@ -116,7 +116,7 @@ export async function POST(request: Request) {
                 });
             }
 
-            case 'edit_slide': {
+            case 'replace_slide': {
                 const { slideIndex, newContent, newName } = parameters;
 
                 // Check if slide exists
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
 
                 return Response.json({
                     success: true,
-                    command: 'editSlide',
+                    command: 'replaceSlide',
                     data: {
                         slideIndex,
                         newContent,

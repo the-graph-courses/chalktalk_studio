@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       // Ignore JSON parsing errors, use empty body
     }
     const {
-      projectId = 'project_xemtydcq0f_1757338119773',
+      projectId = 'project_tfk2w50d5ki_1757347069126',
       name = 'Empty Slide',
       content = '',
       insertAtIndex

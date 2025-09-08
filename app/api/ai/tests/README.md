@@ -10,7 +10,7 @@ This directory contains organized tests for all AI tools in the ChalkTalk Studio
 - **`/api/ai/tests/read-deck`** - Read entire slide deck with optional names
 - **`/api/ai/tests/read-slide`** - Read specific slide by index
 - **`/api/ai/tests/create-slide`** - Create new empty slide at specified position (-1 for end)
-- **`/api/ai/tests/edit-slide`** - Edit existing slide content and name
+- **`/api/ai/tests/replace-slide`** - replace existing slide content and name
 
 ## Usage
 
@@ -29,8 +29,8 @@ curl -X POST http://localhost:3000/api/ai/tests/read-slide
 # Test creating new slide
 curl -X POST http://localhost:3000/api/ai/tests/create-slide
 
-# Test editing existing slide (edits slide 0 by default)
-curl -X POST http://localhost:3000/api/ai/tests/edit-slide
+# Test replaceing existing slide (replaces slide 0 by default)
+curl -X POST http://localhost:3000/api/ai/tests/replace-slide
 ```
 
 ### Custom Parameters
@@ -61,8 +61,8 @@ curl -X POST http://localhost:3000/api/ai/tests/create-slide \
     "insertAtIndex": -1
   }'
 
-# Test editing slide with all parameters
-curl -X POST http://localhost:3000/api/ai/tests/edit-slide \
+# Test replaceing slide with all parameters
+curl -X POST http://localhost:3000/api/ai/tests/replace-slide \
   -H "Content-Type: application/json" \
   -d '{
     "projectId": "your-project-id",
@@ -74,7 +74,7 @@ curl -X POST http://localhost:3000/api/ai/tests/edit-slide \
 
 ## Default Values
 
-- **Default Project ID**: `project_xemtydcq0f_1757338119773`
+- **Default Project ID**: `project_tfk2w50d5ki_1757347069126`
 - **Default Slide Index**: `0`
 - **Default Include Names**: `true`
 
@@ -107,8 +107,8 @@ echo -e "\n\n📄 Testing Read Slide..."
 curl -X POST http://localhost:3000/api/ai/tests/read-slide
 echo -e "\n\n➕ Testing New Slide..."
 curl -X POST http://localhost:3000/api/ai/tests/create-slide
-echo -e "\n\n✏️ Testing Edit Slide..."
-curl -X POST http://localhost:3000/api/ai/tests/edit-slide
+echo -e "\n\n✏️ Testing replace Slide..."
+curl -X POST http://localhost:3000/api/ai/tests/replace-slide
 echo -e "\n\n✅ All tests completed!"
 ```
 
@@ -122,7 +122,7 @@ The tests validate these core endpoints:
 ## Notes
 
 - All tests use the real project data and make actual changes to the database
-- The `edit-slide` and `create-slide` tests will modify your project
+- The `replace-slide` and `create-slide` tests will modify your project
 - Tests include automatic retry and error handling
 - Chat tests validate streaming responses work correctly
 - Run individual tests as needed rather than all at once to better isolate issues

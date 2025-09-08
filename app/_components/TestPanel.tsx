@@ -20,18 +20,6 @@ interface TestPanelProps {
 
 const testEndpoints = [
     {
-        id: 'chat',
-        name: 'AI Chat',
-        description: 'Test AI chat functionality with full response',
-        icon: '💬',
-        method: 'POST',
-        path: '/api/ai/tests/chat',
-        hasParams: true,
-        params: {
-            message: 'Hello! Please respond with a brief confirmation that you can help with slide generation.'
-        }
-    },
-    {
         id: 'read-deck',
         name: 'Read Deck',
         description: 'Read entire slide deck with optional names',
@@ -40,7 +28,7 @@ const testEndpoints = [
         path: '/api/ai/tests/read-deck',
         hasParams: true,
         params: {
-            projectId: 'project_xemtydcq0f_1757338119773',
+            projectId: 'project_tfk2w50d5ki_1757347069126',
             includeNames: true
         }
     },
@@ -53,7 +41,7 @@ const testEndpoints = [
         path: '/api/ai/tests/read-slide',
         hasParams: true,
         params: {
-            projectId: 'project_xemtydcq0f_1757338119773',
+            projectId: 'project_tfk2w50d5ki_1757347069126',
             slideIndex: 0
         }
     },
@@ -66,23 +54,23 @@ const testEndpoints = [
         path: '/api/ai/tests/create-slide',
         hasParams: true,
         params: {
-            projectId: 'project_xemtydcq0f_1757338119773',
+            projectId: 'project_tfk2w50d5ki_1757347069126',
             name: 'Test Panel Generated Slide',
             insertAtIndex: -1
         }
     },
     {
-        id: 'edit-slide',
-        name: 'Edit Slide',
-        description: 'Edit existing slide content and name',
+        id: 'replace-slide',
+        name: 'replace Slide',
+        description: 'replace existing slide content and name',
         icon: '✏️',
         method: 'POST',
-        path: '/api/ai/tests/edit-slide',
+        path: '/api/ai/tests/replace-slide',
         hasParams: true,
         params: {
-            projectId: 'project_xemtydcq0f_1757338119773',
+            projectId: 'project_tfk2w50d5ki_1757347069126',
             slideIndex: 0,
-            newName: 'Test Panel Edited Slide',
+            newName: 'Test Panel Replaced Slide',
             newContent: `<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); overflow: hidden;">
   <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Custom Test Content</h1>
   <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">This is customizable content from the Test Panel. You can edit this text to test different slide content.</p>
@@ -131,8 +119,8 @@ export default function TestPanel({ isOpen, onClose }: TestPanelProps) {
                                     commandData.insertAtIndex
                                 )
                                 break
-                            case 'editSlide':
-                                commandExecuted = aiTools.editSlide(
+                            case 'replaceSlide':
+                                commandExecuted = aiTools.replaceSlide(
                                     commandData.slideIndex,
                                     commandData.newContent,
                                     commandData.newName
@@ -140,7 +128,7 @@ export default function TestPanel({ isOpen, onClose }: TestPanelProps) {
                                 break
                         }
                     } catch (error) {
-                        console.error('Error executing editor command:', error)
+                        console.error('Error executing replaceor command:', error)
                     }
                 }
             }
