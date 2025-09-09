@@ -176,8 +176,11 @@ export default function DecksPage() {
     const deleteDeck = useMutation(api.slideDeck.DeleteDeck)
     const renameDeck = useMutation(api.slideDeck.RenameDeck)
 
+    const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`
+
     const handleNewPresentation = () => {
-        router.push('/studio')
+        const newId = generateId('project')
+        router.push(`/editor/${newId}`)
     }
 
     const handleDelete = async (deckId: Id<'SlideDeckTable'>) => {

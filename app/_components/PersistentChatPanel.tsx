@@ -5,7 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, UIMessage } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send, Paperclip, Loader2, Bot, User, History, Plus, ChevronDown, Trash2, FileText, Code, Play } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, Bot, User, MessageSquare, Plus, ChevronDown, Trash2, FileText, Code, Play } from 'lucide-react';
 import Image from 'next/image';
 import { Id } from '@/convex/_generated/dataModel';
 import { useQuery, useMutation } from "convex/react";
@@ -164,12 +164,12 @@ export default function PersistentChatPanel({ isOpen, onClose, isTestPanelOpen =
         messages: currentChatMessages as UIMessage[] || [],
         transport: new DefaultChatTransport({
             api: '/api/chat/persistent',
-            prepareSendMessagesRequest({ messages, id }) {
+            prepareSendMessagesRequest({ messages, id, data }) {
                 const projectId = getCurrentProjectId();
                 return {
                     body: {
                         message: messages[messages.length - 1],
-                        id,
+                        id: data?.chatId ?? id,
                         uid: getUserQuery?._id,
                         projectId,
                     },
@@ -179,13 +179,15 @@ export default function PersistentChatPanel({ isOpen, onClose, isTestPanelOpen =
     });
 
     const isLoading = status === 'streaming' || status === 'submitted';
+    const initialChatLoaded = useRef(false);
 
-    // Auto-select the first chat (don't create automatically)
+    // Auto-select the first chat on initial load
     useEffect(() => {
-        if (chatHistory && chatHistory.length > 0 && !currentChatId) {
+        if (chatHistory && chatHistory.length > 0 && !initialChatLoaded.current) {
             setCurrentChatId(chatHistory[0]._id);
+            initialChatLoaded.current = true;
         }
-    }, [chatHistory, currentChatId]);
+    }, [chatHistory]);
 
     // Update messages when switching chats
     useEffect(() => {
@@ -217,12 +219,16 @@ export default function PersistentChatPanel({ isOpen, onClose, isTestPanelOpen =
         if (!input.trim() && (!files || files.length === 0)) return;
         if (!getUserQuery) return;
 
+        // Use a local variable for the new chat ID.
+        let chatIdForMessage = currentChatId;
+
         // Create chat if none exists
-        let chatId = currentChatId;
-        if (!chatId) {
+        if (!chatIdForMessage) {
             try {
-                chatId = await createChatMutation({ uid: getUserQuery._id });
-                setCurrentChatId(chatId);
+                // Important: assign to the local variable
+                chatIdForMessage = await createChatMutation({ uid: getUserQuery._id });
+                // Set state for subsequent renders/messages
+                setCurrentChatId(chatIdForMessage);
             } catch (error) {
                 console.error("Failed to create chat:", error);
                 return;
@@ -231,10 +237,15 @@ export default function PersistentChatPanel({ isOpen, onClose, isTestPanelOpen =
 
         const fileParts = files && files.length > 0 ? await convertFilesToDataURLs(files) : [];
 
-        sendMessage({
-            role: 'user',
-            parts: [{ type: 'text', text: input }, ...fileParts],
-        });
+        sendMessage(
+            {
+                role: 'user',
+                parts: [{ type: 'text', text: input }, ...fileParts],
+            },
+            // Pass the correct chat ID in the `data` payload
+            { data: { chatId: chatIdForMessage } }
+        );
+
 
         setInput('');
         setFiles(undefined);
@@ -320,7 +331,7 @@ export default function PersistentChatPanel({ isOpen, onClose, isTestPanelOpen =
                             title="Chat History"
                             className="size-8"
                         >
-                            <History className="size-4" />
+                            <MessageSquare className="size-4" />
                         </Button>
 
                         {showHistory && (
@@ -384,9 +395,9 @@ export default function PersistentChatPanel({ isOpen, onClose, isTestPanelOpen =
                     </div>
                 )}
 
-                {messages.map((message) => (
+                {messages.map((message, index) => (
                     <div
-                        key={message.id}
+                        key={message.id || `message-${index}`}
                         className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
                             }`}
                     >

@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToModelMessages, UIMessage } from 'ai';
+import { streamText, convertToModelMessages, UIMessage, stepCountIs } from 'ai';
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { createSlideTools } from '@/lib/slide-tools';
@@ -11,11 +11,18 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 export async function POST(req: Request) {
     const { message, id: chatId, uid, projectId } = await req.json();
 
-    // Load previous messages from Convex
-    const previousMessages = await convex.query(api.chat.loadChat, { chatId, uid });
+    let previousMessages: UIMessage[] = [];
+
+    // If a chatId is provided, load previous messages
+    if (chatId) {
+        const loadedMessages = await convex.query(api.chat.loadChat, { chatId, uid });
+        if (loadedMessages) {
+            previousMessages = loadedMessages as UIMessage[];
+        }
+    }
 
     // Append new message
-    const messages: UIMessage[] = [...(previousMessages as UIMessage[]), message];
+    const messages: UIMessage[] = [...previousMessages, message];
 
     const tools = createSlideTools(projectId);
 
@@ -42,7 +49,10 @@ When creating or replacing slide content, use HTML with inline styles and absolu
 
 Note: You cannot interact with slide presentations from this context. Tools are only available when editing a presentation.`}
 
-Be helpful, concise, and focused on presentation and design-related tasks. When users upload images or PDFs, analyze them thoroughly and provide relevant insights.`
+Be helpful, concise, and focused on presentation and design-related tasks. When users upload images or PDFs, analyze them thoroughly and provide relevant insights.`,
+
+        // Stop after a maximum of 5 steps if tools were called
+        stopWhen: stepCountIs(5),
     });
 
     // Consume the stream to ensure it runs to completion for persistence
@@ -53,7 +63,7 @@ Be helpful, concise, and focused on presentation and design-related tasks. When 
         onFinish: async ({ messages }) => {
             // Save the updated messages to Convex
             await convex.mutation(api.chat.saveChat, {
-                chatId,
+                chatId, // The chatId from the request is the correct one to save to
                 uid,
                 messages,
             });

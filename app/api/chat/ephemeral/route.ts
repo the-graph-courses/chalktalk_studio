@@ -1,12 +1,12 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+import { streamText, convertToModelMessages, type UIMessage, tool, stepCountIs } from 'ai';
 import { createSlideTools } from '@/lib/slide-tools';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-    const { messages, projectId }: { messages: UIMessage[]; projectId?: string } = await req.json();
+    const { messages, projectId }: { messages: UIMessage[]; projectId: string } = await req.json();
 
     const tools = createSlideTools(projectId);
 
@@ -22,18 +22,18 @@ export async function POST(req: Request) {
 4. Providing feedback on presentation content
 5. Suggesting improvements for slides
 
-${projectId ? `
 You have access to tools to interact with slide presentations:
 - readDeck: Read all slides in the current presentation
 - readSlide: Read a specific slide by index
 - createSlide: Create a new slide with HTML content
 - replaceSlide: Replace content of an existing slide
 
-When creating or replacing slide content, use HTML with inline styles and absolute positioning for layout control. Make the content visually appealing and professional.` : `
-
-Note: You cannot interact with slide presentations from this context. Tools are only available when editing a presentation.`}
+When creating or replacing slide content, use HTML with inline styles and absolute positioning for layout control. Make the content visually appealing and professional.
 
 Be helpful, concise, and focused on presentation and design-related tasks. When users upload images or PDFs, analyze them thoroughly and provide relevant insights.`,
+
+        // Stop after a maximum of 5 steps if tools were called
+        stopWhen: stepCountIs(5),
     });
 
     return result.toUIMessageStreamResponse();

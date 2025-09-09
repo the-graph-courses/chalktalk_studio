@@ -34,13 +34,16 @@ function Hero() {
 
     const router = useRouter()
 
+    const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`
+
     const onSend = () => {
         if (!user.user) {
             router.push('/sign-in')
             return;
         }
         // Navigate to ChalkTalk Studio 
-        router.push('/studio')
+        const newId = generateId('project')
+        router.push(`/editor/${newId}`)
     }
 
     return (

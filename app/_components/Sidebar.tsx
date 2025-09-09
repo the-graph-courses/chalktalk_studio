@@ -3,7 +3,6 @@
 import { Presentation } from 'lucide-react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useProjectDetail } from '@/app/provider'
 import {
     Sidebar,
     SidebarContent,
@@ -19,16 +18,16 @@ import {
 export default function AppSidebar() {
     const { user } = useUser()
     const router = useRouter()
-    const { setProjectDetailInfo } = useProjectDetail() || { setProjectDetailInfo: () => { } }
+
+    const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`
 
     const handleCreateNewProject = () => {
         if (!user) {
             router.push('/sign-in')
             return
         }
-        // Clear any existing project data when creating a new project
-        setProjectDetailInfo(null)
-        router.push('/studio')
+        const newId = generateId('project')
+        router.push(`/editor/${newId}`)
     }
 
     const handleMyProjects = () => {

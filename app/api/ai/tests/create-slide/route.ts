@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       name = 'Empty Slide',
       content = '',
       insertAtIndex
-    } = body;
+    } = body as any;
 
     const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
       method: 'POST',

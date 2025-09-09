@@ -9,7 +9,7 @@ import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
 
-interface AIChatPanelProps {
+interface EphemeralChatPanelProps {
     isOpen: boolean;
     onClose: () => void;
     isTestPanelOpen?: boolean;
@@ -109,7 +109,7 @@ function renderToolCall(part: any, messageId: string, index: number) {
     );
 }
 
-export default function AIChatPanel({ isOpen, onClose, isTestPanelOpen = false }: AIChatPanelProps) {
+export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = false }: EphemeralChatPanelProps) {
     const [input, setInput] = useState('');
     const [files, setFiles] = useState<FileList | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,7 +117,7 @@ export default function AIChatPanel({ isOpen, onClose, isTestPanelOpen = false }
 
     const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
-            api: '/api/chat',
+            api: '/api/chat/ephemeral',
             prepareSendMessagesRequest({ messages }) {
                 const projectId = getCurrentProjectId();
                 return {
@@ -191,9 +191,9 @@ export default function AIChatPanel({ isOpen, onClose, isTestPanelOpen = false }
                     </div>
                 )}
 
-                {messages.map((message) => (
+                {messages.map((message, index) => (
                     <div
-                        key={message.id}
+                        key={message.id || `message-${index}`}
                         className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
                             }`}
                     >

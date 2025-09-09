@@ -6,7 +6,6 @@ import { api } from '@/convex/_generated/api';
 import { useMutation } from 'convex/react';
 import { useUser } from '@clerk/nextjs';
 import { UserDetailContext } from '@/context/UserDetailContext';
-import { ProjectContextType, ProjectDetailContext, ProjectInfo } from '@/context/ProjectDetailContext';
 
 
 
@@ -20,8 +19,6 @@ function Provider({
 
     const CreateUser = useMutation(api.user.CreateNewUser)
     const [userDetail, setUserDetail] = useState<any>(null);
-    const [projectDetailInfo, setProjectDetailInfo] = useState<ProjectInfo | null>(null);
-    const [isGeneratingProject, setIsGeneratingProject] = useState<boolean>(false);
     const { user } = useUser();
 
     useEffect(() => {
@@ -42,9 +39,7 @@ function Provider({
 
     return (
         <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
-            <ProjectDetailContext.Provider value={{ projectDetailInfo, setProjectDetailInfo, isGeneratingProject, setIsGeneratingProject }}>
-                {children}
-            </ProjectDetailContext.Provider>
+            {children}
         </UserDetailContext.Provider>
     )
 }
@@ -53,8 +48,4 @@ export default Provider
 
 export const useUserDetail = () => {
     return useContext(UserDetailContext);
-}
-
-export const useProjectDetail = (): ProjectContextType | undefined => {
-    return useContext(ProjectDetailContext);
 }
