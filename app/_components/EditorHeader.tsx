@@ -23,7 +23,8 @@ import {
     Eye,
     Share2,
     Undo2,
-    Redo2
+    Redo2,
+    MousePointer2
 } from 'lucide-react'
 
 interface EditorHeaderProps {
@@ -37,6 +38,7 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
     const [title, setTitle] = useState(initialTitle || 'Untitled Presentation')
     const [isEditing, setIsEditing] = useState(false)
     const [tempTitle, setTempTitle] = useState(title)
+    const [marqueeActive, setMarqueeActive] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
 
     const router = useRouter()
@@ -279,6 +281,21 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
         }
     }
 
+    const handleToggleMarquee = () => {
+        if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
+            const editor = window.grapesjsAITools.getEditor()
+            if (editor) {
+                if (marqueeActive) {
+                    editor.runCommand('marquee-select:toggle', { stop: true })
+                    setMarqueeActive(false)
+                } else {
+                    editor.runCommand('marquee-select:toggle')
+                    setMarqueeActive(true)
+                }
+            }
+        }
+    }
+
     return (
         <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shadow-sm">
             {/* Left side - Logo and title */}
@@ -359,6 +376,11 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                             <Redo2 className="mr-2 h-4 w-4" />
                             Redo
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleToggleMarquee}>
+                            <MousePointer2 className="mr-2 h-4 w-4" />
+                            {marqueeActive ? 'Disable' : 'Enable'} Marquee Select
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -396,6 +418,14 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleRedo}>
                     <Redo2 className="h-4 w-4" />
+                </Button>
+                <Button
+                    variant={marqueeActive ? "default" : "ghost"}
+                    size="sm"
+                    onClick={handleToggleMarquee}
+                    title={marqueeActive ? "Disable marquee selection (Shift+drag)" : "Enable marquee selection (Shift+drag)"}
+                >
+                    <MousePointer2 className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleSave}>
                     <Save className="h-4 w-4" />

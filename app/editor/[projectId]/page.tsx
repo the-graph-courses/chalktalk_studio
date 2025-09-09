@@ -2,7 +2,7 @@
 
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
-import { canvasAbsoluteMode } from '@grapesjs/studio-sdk-plugins'
+import { canvasAbsoluteMode, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
 import marqueeSelect from '@/lib/marquee-select'
 import { useMemo, use, useRef, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
@@ -262,7 +262,79 @@ export default function EditorPage({ params }: PageProps) {
                     options={{
                         licenseKey,
                         theme: 'light',
-                        plugins: [canvasAbsoluteMode, marqueeSelect],
+                        plugins: [
+                            canvasAbsoluteMode, 
+                            marqueeSelect,
+                            iconifyComponent.init({
+                                block: { 
+                                    category: 'Media', 
+                                    label: 'Icon' 
+                                },
+                                collections: [
+                                    'mdi',        // Material Design Icons
+                                    'fa-solid',   // Font Awesome Solid
+                                    'heroicons',  // Heroicons
+                                    'lucide',     // Lucide Icons
+                                    'tabler'      // Tabler Icons
+                                ],
+                                extendIconComponent: true
+                            }),
+                            rteProseMirror?.init({
+                                // Enable RTE on single click instead of double-click for better UX
+                                enableOnClick: true,
+                                // Don't disable RTE on Escape key to prevent accidental exits
+                                disableOnEsc: false,
+                                // Customize toolbar with additional formatting options
+                                toolbar({ items, layouts, proseMirror, commands }) {
+                                    const { view } = proseMirror;
+                                    return [
+                                        // Default toolbar items (bold, italic, etc.)
+                                        ...items,
+                                        // Add separator
+                                        layouts.separator,
+                                        // Custom button for slide-specific functionality
+                                        {
+                                            id: 'slideFormatting',
+                                            type: 'button',
+                                            icon: 'palette',
+                                            tooltip: 'Apply slide formatting',
+                                            onClick: () => {
+                                                // Get current selected text
+                                                const selectedText = commands.text.selected();
+                                                if (selectedText) {
+                                                    // Apply slide-specific formatting
+                                                    const { state, dispatch } = view;
+                                                    const formattedText = `✨ ${selectedText} ✨`;
+                                                    dispatch(state.tr.replaceSelectionWith(state.schema.text(formattedText)));
+                                                }
+                                            }
+                                        },
+                                        // Dropdown for common slide variables/placeholders
+                                        {
+                                            id: 'slideVariables',
+                                            type: 'selectField',
+                                            emptyState: 'Insert Variables',
+                                            options: [
+                                                { id: '{{ title }}', label: 'Slide Title' },
+                                                { id: '{{ subtitle }}', label: 'Subtitle' },
+                                                { id: '{{ author }}', label: 'Author Name' },
+                                                { id: '{{ date }}', label: 'Current Date' },
+                                                { id: '{{ company }}', label: 'Company Name' }
+                                            ],
+                                            onChange: ({ value }: { value: string }) => {
+                                                commands.text.replace(value, { select: true });
+                                            }
+                                        }
+                                    ];
+                                },
+                                // Handle Enter key for better slide formatting
+                                onEnter({ commands }) {
+                                    // Create a line break for better slide formatting
+                                    commands.text.createBreak();
+                                    return true;
+                                }
+                            })
+                        ],
                         templates: {
                             onLoad: async () => TEMPLATES,
                         },
