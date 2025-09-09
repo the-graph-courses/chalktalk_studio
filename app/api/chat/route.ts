@@ -1,19 +1,14 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages, type UIMessage, tool, stepCountIs } from 'ai';
 import { createSlideTools } from '@/lib/slide-tools';
-import { auth } from '@clerk/nextjs/server';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-    const { userId } = await auth();
-    if (!userId) {
-        return new Response('Unauthorized', { status: 401 });
-    }
     const { messages, projectId }: { messages: UIMessage[]; projectId: string } = await req.json();
 
-    const tools = createSlideTools(projectId, userId);
+    const tools = createSlideTools(projectId);
 
     const result = streamText({
         model: openai('gpt-4o'),

@@ -6,6 +6,7 @@ export default defineSchema({
         name: v.string(),
         imageUrl: v.string(),
         email: v.string(),
+        clerkId: v.string(), // Add this field
         subscription: v.optional(v.string()),
     }),
 
@@ -18,9 +19,4 @@ export default defineSchema({
         lastModified: v.optional(v.number()) // Unix timestamp for last modification
     }),
 
-    ChatTable: defineTable({
-        uid: v.id('UserTable'),
-        title: v.optional(v.string()),
-        messages: v.array(v.any()), // Can store any JSON serializable UIMessage
-    }).index('by_uid', ['uid'])
 })

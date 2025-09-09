@@ -29,11 +29,9 @@ interface HeaderProps {
     showTestPanelToggle?: boolean;
     onToggleAIChat?: () => void;
     showAIChatToggle?: boolean;
-    onTogglePersistentChat?: () => void;
-    showPersistentChatToggle?: boolean;
 }
 
-function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat, showAIChatToggle = true, onTogglePersistentChat, showPersistentChatToggle = true }: HeaderProps = {}) {
+function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat, showAIChatToggle = true }: HeaderProps = {}) {
     const { isSignedIn } = useUser();
     const { hasSidebar } = useSidebarAvailable();
 
@@ -53,26 +51,14 @@ function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat,
             ))} </div>
             {/* Authentication + Panel Toggles */}
             <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Persistent AI Chat Toggle - only show for signed in users */}
-                {isSignedIn && showPersistentChatToggle && onTogglePersistentChat && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onTogglePersistentChat}
-                        title="Toggle Persistent AI Chat"
-                        className="hidden md:flex"
-                    >
-                        <Bot className="size-4" />
-                    </Button>
-                )}
 
-                {/* Ephemeral AI Chat Toggle - only show for signed in users */}
+                {/* AI Chat Toggle - only show for signed in users */}
                 {isSignedIn && showAIChatToggle && onToggleAIChat && (
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={onToggleAIChat}
-                        title="Toggle Ephemeral AI Chat"
+                        title="Toggle AI Chat"
                         className="hidden md:flex"
                     >
                         <Zap className="size-4" />

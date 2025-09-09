@@ -1,32 +1,32 @@
+import { auth } from '@clerk/nextjs/server';
+import { executeSlideToolServer } from '@/lib/slide-tools-server';
+
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     let body = {};
     try {
       const text = await request.text();
-      if (text) {
-        body = JSON.parse(text);
-      }
-    } catch {
-      // Ignore JSON parsing errors, use empty body
-    }
+      if (text) body = JSON.parse(text);
+    } catch { }
+
     const {
-      projectId = 'project_tfk2w50d5ki_1757347069126',
+      projectId = 'project_5ixc4na0jc4_1757422475707',
       name = 'Empty Slide',
       content = '',
       insertAtIndex
     } = body as any;
 
-    const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        toolName: 'create_slide',
-        parameters: { name, content, insertAtIndex },
-        projectId,
-      }),
-    });
-
-    const result = await response.json();
+    const result = await executeSlideToolServer(
+      'create_slide',
+      { name, content, insertAtIndex },
+      projectId,
+      userId
+    );
 
     return Response.json({
       test: 'create_slide',

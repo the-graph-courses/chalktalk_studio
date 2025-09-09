@@ -5,7 +5,6 @@ import AppSidebar from "./Sidebar";
 import Header from "./Header";
 import TestPanel from "./TestPanel";
 import EphemeralChatPanel from "./EphemeralChatPanel";
-import PersistentChatPanel from "./PersistentChatPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
 import { useParams } from 'next/navigation';
@@ -26,7 +25,6 @@ export default function LayoutWrapper({
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-    const [isPersistentChatOpen, setIsPersistentChatOpen] = useState(false);
 
     const toggleTestPanel = () => {
         setIsTestPanelOpen(!isTestPanelOpen);
@@ -36,9 +34,6 @@ export default function LayoutWrapper({
         setIsAIChatOpen(!isAIChatOpen);
     };
 
-    const togglePersistentChat = () => {
-        setIsPersistentChatOpen(!isPersistentChatOpen);
-    };
 
     // Show loading state while Clerk is loading
     if (!isLoaded) {
@@ -47,7 +42,6 @@ export default function LayoutWrapper({
                 <div className="min-h-screen">
                     <Header
                         onToggleAIChat={toggleAIChat}
-                        onTogglePersistentChat={togglePersistentChat}
                     />
                     <div className="flex-1">
                         {children}
@@ -57,12 +51,7 @@ export default function LayoutWrapper({
                             <EphemeralChatPanel
                                 isOpen={isAIChatOpen}
                                 onClose={() => setIsAIChatOpen(false)}
-                                isTestPanelOpen={isPersistentChatOpen || isTestPanelOpen}
-                            />
-                            <PersistentChatPanel
-                                isOpen={isPersistentChatOpen}
-                                onClose={() => setIsPersistentChatOpen(false)}
-                                isTestPanelOpen={isAIChatOpen || isTestPanelOpen}
+                                isTestPanelOpen={isTestPanelOpen}
                             />
                         </>
                     )}
@@ -81,12 +70,11 @@ export default function LayoutWrapper({
                         <Header
                             onToggleTestPanel={toggleTestPanel}
                             onToggleAIChat={projectId ? toggleAIChat : undefined}
-                            onTogglePersistentChat={projectId ? togglePersistentChat : undefined}
                         />
                         <div className={`flex-1 overflow-auto transition-all duration-300 ${
                             // Calculate margin based on number of open panels
                             (() => {
-                                const openPanels = [isTestPanelOpen, isAIChatOpen, isPersistentChatOpen].filter(Boolean).length;
+                                const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
                                 if (openPanels >= 3) return 'mr-[72rem]'; // 3 * 24rem
                                 if (openPanels === 2) return 'mr-[48rem]'; // 2 * 24rem  
                                 if (openPanels === 1) return 'mr-96'; // 24rem
@@ -101,12 +89,7 @@ export default function LayoutWrapper({
                             <EphemeralChatPanel
                                 isOpen={isAIChatOpen}
                                 onClose={() => setIsAIChatOpen(false)}
-                                isTestPanelOpen={isPersistentChatOpen || isTestPanelOpen}
-                            />
-                            <PersistentChatPanel
-                                isOpen={isPersistentChatOpen}
-                                onClose={() => setIsPersistentChatOpen(false)}
-                                isTestPanelOpen={isAIChatOpen || isTestPanelOpen}
+                                isTestPanelOpen={isTestPanelOpen}
                             />
                             <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
                         </>
@@ -123,12 +106,11 @@ export default function LayoutWrapper({
                 <Header
                     onToggleTestPanel={toggleTestPanel}
                     onToggleAIChat={projectId ? toggleAIChat : undefined}
-                    onTogglePersistentChat={projectId ? togglePersistentChat : undefined}
                 />
                 <div className={`flex-1 transition-all duration-300 ${
                     // Calculate margin based on number of open panels
                     (() => {
-                        const openPanels = [isTestPanelOpen, isAIChatOpen, isPersistentChatOpen].filter(Boolean).length;
+                        const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
                         if (openPanels >= 3) return 'mr-[72rem]'; // 3 * 24rem
                         if (openPanels === 2) return 'mr-[48rem]'; // 2 * 24rem  
                         if (openPanels === 1) return 'mr-96'; // 24rem
@@ -142,12 +124,7 @@ export default function LayoutWrapper({
                         <EphemeralChatPanel
                             isOpen={isAIChatOpen}
                             onClose={() => setIsAIChatOpen(false)}
-                            isTestPanelOpen={isPersistentChatOpen || isTestPanelOpen}
-                        />
-                        <PersistentChatPanel
-                            isOpen={isPersistentChatOpen}
-                            onClose={() => setIsPersistentChatOpen(false)}
-                            isTestPanelOpen={isAIChatOpen || isTestPanelOpen}
+                            isTestPanelOpen={isTestPanelOpen}
                         />
                         <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
                     </>

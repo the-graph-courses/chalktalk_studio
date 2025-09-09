@@ -55,10 +55,46 @@ function getToolIcon(toolName: string) {
     }
 }
 
+// Helper function to execute editor commands
+function executeEditorCommand(output: any): boolean {
+    if (typeof window === 'undefined') return false;
+
+    // @ts-ignore - Access global grapesjsAITools
+    const aiTools = window.grapesjsAITools;
+    if (!aiTools || !output?.command) return false;
+
+    const { command, data: commandData } = output;
+
+    try {
+        switch (command) {
+            case 'addSlide':
+                return aiTools.addSlide(
+                    commandData.name,
+                    commandData.content,
+                    commandData.insertAtIndex
+                );
+            case 'replaceSlide':
+                return aiTools.replaceSlide(
+                    commandData.slideIndex,
+                    commandData.newContent,
+                    commandData.newName
+                );
+            default:
+                return false;
+        }
+    } catch (error) {
+        console.error('Error executing editor command:', error);
+        return false;
+    }
+}
+
 // Helper function to render tool calls
-function renderToolCall(part: any, messageId: string, index: number) {
+function renderToolCall(part: any, messageId: string, index: number, executedCommandIds: Set<string>) {
     const toolName = part.toolName || 'unknown';
     const toolIcon = getToolIcon(toolName);
+
+    const toolCallId = `${messageId}-tool-${index}`;
+    const commandExecuted = executedCommandIds.has(toolCallId);
 
     return (
         <div key={`${messageId}-tool-${index}`} className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -68,6 +104,11 @@ function renderToolCall(part: any, messageId: string, index: number) {
                 <span className="text-xs bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">
                     {part.state || 'unknown'}
                 </span>
+                {commandExecuted && (
+                    <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 px-2 py-1 rounded">
+                        ✓ Executed
+                    </span>
+                )}
             </div>
 
             {/* Tool Input */}
@@ -85,7 +126,11 @@ function renderToolCall(part: any, messageId: string, index: number) {
                 <div>
                     <div className="text-xs text-muted-foreground mb-1">Result:</div>
                     <div className="text-xs bg-green-50 dark:bg-green-950/20 p-2 rounded border">
-                        {typeof part.output === 'string' ? (
+                        {commandExecuted ? (
+                            <div className="text-green-700 dark:text-green-400">
+                                {part.output.message || 'Command executed successfully'}
+                            </div>
+                        ) : typeof part.output === 'string' ? (
                             <span className="text-green-700 dark:text-green-400">{part.output}</span>
                         ) : (
                             <pre className="text-green-700 dark:text-green-400 overflow-x-auto">
@@ -114,6 +159,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const [files, setFiles] = useState<FileList | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [executedCommandIds, setExecutedCommandIds] = useState<Set<string>>(new Set());
 
     const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
@@ -139,6 +185,32 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     React.useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Execute tool commands once when output becomes available
+    React.useEffect(() => {
+        for (const message of messages) {
+            if (message.role === 'assistant') {
+                message.parts?.forEach((part: any, index: number) => {
+                    const toolCallId = `${message.id}-tool-${index}`;
+                    if (
+                        (part.type?.startsWith?.('tool-') || part.type === 'dynamic-tool') &&
+                        part.state === 'output-available' &&
+                        part.output?.command &&
+                        !executedCommandIds.has(toolCallId)
+                    ) {
+                        const executed = executeEditorCommand(part.output);
+                        if (executed) {
+                            setExecutedCommandIds(prev => {
+                                const next = new Set(prev);
+                                next.add(toolCallId);
+                                return next;
+                            });
+                        }
+                    }
+                });
+            }
+        }
+    }, [messages, executedCommandIds]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -173,7 +245,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
             <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-2">
                     <Zap className="size-5 text-primary" />
-                    <h2 className="text-lg font-semibold">Ephemeral AI Chat</h2>
+                    <h2 className="text-lg font-semibold">AI Chat</h2>
                 </div>
                 <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="size-4" />
@@ -187,7 +259,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                         <Zap className="size-12 mx-auto mb-4 opacity-50" />
                         <p className="text-sm">Hi! I'm your ephemeral AI assistant for ChalkTalk Studio.</p>
                         <p className="text-xs mt-2">I can help with presentations, analyze images/PDFs, and answer questions.</p>
-                        <p className="text-xs mt-1 text-orange-500">⚡ Note: This chat is not saved - use the 🤖 button for persistent chats!</p>
+                        <p className="text-xs mt-1 text-orange-500">⚡ Note: This chat is not saved and will be lost when you close it.</p>
                     </div>
                 )}
 
@@ -249,11 +321,11 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                                 // Handle tool calls
                                 if (part.type === 'tool-readDeck' || part.type === 'tool-readSlide' ||
                                     part.type === 'tool-createSlide' || part.type === 'tool-replaceSlide') {
-                                    return renderToolCall(part, message.id, index);
+                                    return renderToolCall(part, message.id, index, executedCommandIds);
                                 }
                                 // Handle dynamic tools
                                 if (part.type === 'dynamic-tool') {
-                                    return renderToolCall(part, message.id, index);
+                                    return renderToolCall(part, message.id, index, executedCommandIds);
                                 }
                                 return null;
                             })}

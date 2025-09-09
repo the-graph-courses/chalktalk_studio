@@ -28,7 +28,7 @@ const testEndpoints = [
         path: '/api/ai/tests/read-deck',
         hasParams: true,
         params: {
-            projectId: 'project_tfk2w50d5ki_1757347069126',
+            projectId: 'project_5ixc4na0jc4_1757422475707',
             includeNames: true
         }
     },
@@ -41,7 +41,7 @@ const testEndpoints = [
         path: '/api/ai/tests/read-slide',
         hasParams: true,
         params: {
-            projectId: 'project_tfk2w50d5ki_1757347069126',
+            projectId: 'project_5ixc4na0jc4_1757422475707',
             slideIndex: 0
         }
     },
@@ -54,7 +54,7 @@ const testEndpoints = [
         path: '/api/ai/tests/create-slide',
         hasParams: true,
         params: {
-            projectId: 'project_tfk2w50d5ki_1757347069126',
+            projectId: 'project_5ixc4na0jc4_1757422475707',
             name: 'Test Panel Generated Slide',
             insertAtIndex: -1
         }
@@ -68,7 +68,7 @@ const testEndpoints = [
         path: '/api/ai/tests/replace-slide',
         hasParams: true,
         params: {
-            projectId: 'project_tfk2w50d5ki_1757347069126',
+            projectId: 'project_5ixc4na0jc4_1757422475707',
             slideIndex: 0,
             newName: 'Test Panel Replaced Slide',
             newContent: `<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); overflow: hidden;">

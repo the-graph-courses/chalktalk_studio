@@ -1,14 +1,15 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { executeSlideToolServer } from './slide-tools-server';
 
 /**
  * Slide deck tools for AI chat interfaces
  * These tools interact with the current slide deck in the editor
  */
 
-export function createSlideTools(projectId?: string) {
-    if (!projectId) {
-        // Return undefined if no project ID to indicate no tools available
+export function createSlideTools(projectId?: string, userId?: string) {
+    // Both projectId and userId are required for authenticated tool calls
+    if (!projectId || !userId) {
         return undefined;
     }
 
@@ -19,27 +20,11 @@ export function createSlideTools(projectId?: string) {
                 includeNames: z.boolean().default(true).describe('Whether to include slide names in the response'),
             }),
             execute: async ({ includeNames }) => {
-                const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        toolName: 'read_deck',
-                        parameters: { includeNames },
-                        projectId,
-                    }),
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(`Failed to read deck: ${error.error || 'Unknown error'}`);
+                try {
+                    return await executeSlideToolServer('read_deck', { includeNames }, projectId, userId);
+                } catch (error) {
+                    return { error: error instanceof Error ? error.message : 'Unknown error' };
                 }
-
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(`Failed to read deck: ${result.error || 'Unknown error'}`);
-                }
-
-                return result.data;
             },
         }),
 
@@ -49,27 +34,11 @@ export function createSlideTools(projectId?: string) {
                 slideIndex: z.number().min(0).describe('The index of the slide to read (starting from 0)'),
             }),
             execute: async ({ slideIndex }) => {
-                const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        toolName: 'read_slide',
-                        parameters: { slideIndex },
-                        projectId,
-                    }),
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(`Failed to read slide: ${error.error || 'Unknown error'}`);
+                try {
+                    return await executeSlideToolServer('read_slide', { slideIndex }, projectId, userId);
+                } catch (error) {
+                    return { error: error instanceof Error ? error.message : 'Unknown error' };
                 }
-
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(`Failed to read slide: ${result.error || 'Unknown error'}`);
-                }
-
-                return result.data;
             },
         }),
 
@@ -81,41 +50,18 @@ export function createSlideTools(projectId?: string) {
                 insertAtIndex: z.number().optional().describe('Index to insert the slide at. Use -1 or omit to add at the end.'),
             }),
             execute: async ({ name, content, insertAtIndex }) => {
-                const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        toolName: 'create_slide',
-                        parameters: { name, content, insertAtIndex },
-                        projectId,
-                    }),
-                });
+                try {
+                    const result = await executeSlideToolServer('create_slide', { name, content, insertAtIndex }, projectId, userId);
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(`Failed to create slide: ${error.error || 'Unknown error'}`);
-                }
-
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(`Failed to create slide: ${result.error || 'Unknown error'}`);
-                }
-
-                // Execute the editor command if available
-                if (typeof window !== 'undefined' && window.grapesjsAITools && result.command === 'addSlide') {
-                    const { name, content, insertAtIndex } = result.data;
-                    const executed = window.grapesjsAITools.addSlide(name, content, insertAtIndex);
+                    // The result now contains a `command` field that the client can use.
+                    // We simply pass it through.
                     return {
-                        ...result.data,
-                        executed,
-                        message: executed ? 'Slide created and added to the editor' : 'Slide created but could not be added to the editor'
+                        ...result,
+                        message: 'Slide created successfully. The editor will now add it.'
                     };
+                } catch (error) {
+                    return { error: error instanceof Error ? error.message : 'Unknown error' };
                 }
-
-                return {
-                    ...result.data,
-                    message: 'Slide created successfully'
-                };
             },
         }),
 
@@ -127,41 +73,16 @@ export function createSlideTools(projectId?: string) {
                 newName: z.string().optional().describe('New name for the slide (optional)'),
             }),
             execute: async ({ slideIndex, newContent, newName }) => {
-                const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        toolName: 'replace_slide',
-                        parameters: { slideIndex, newContent, newName },
-                        projectId,
-                    }),
-                });
+                try {
+                    const result = await executeSlideToolServer('replace_slide', { slideIndex, newContent, newName }, projectId, userId);
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(`Failed to replace slide: ${error.error || 'Unknown error'}`);
-                }
-
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(`Failed to replace slide: ${result.error || 'Unknown error'}`);
-                }
-
-                // Execute the editor command if available
-                if (typeof window !== 'undefined' && window.grapesjsAITools && result.command === 'replaceSlide') {
-                    const { slideIndex, newContent, newName } = result.data;
-                    const executed = window.grapesjsAITools.replaceSlide(slideIndex, newContent, newName);
                     return {
-                        ...result.data,
-                        executed,
-                        message: executed ? 'Slide replaced and updated in the editor' : 'Slide replaced but could not be updated in the editor'
+                        ...result,
+                        message: 'Slide replaced successfully. The editor will now update it.'
                     };
+                } catch (error) {
+                    return { error: error instanceof Error ? error.message : 'Unknown error' };
                 }
-
-                return {
-                    ...result.data,
-                    message: 'Slide replaced successfully'
-                };
             },
         }),
     };

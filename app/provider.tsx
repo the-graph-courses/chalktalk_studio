@@ -32,7 +32,7 @@ function Provider({
             email: user?.primaryEmailAddress?.emailAddress || "",
             imageUrl: user?.imageUrl || "",
             name: user?.fullName || "",
-            // Save New User if Not Exist 
+            clerkId: user?.id || "", // Add this
         });
         setUserDetail(result)
     }

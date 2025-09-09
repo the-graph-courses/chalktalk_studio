@@ -1,27 +1,27 @@
+import { auth } from '@clerk/nextjs/server';
+import { executeSlideToolServer } from '@/lib/slide-tools-server';
+
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     let body = {};
     try {
       const text = await request.text();
-      if (text) {
-        body = JSON.parse(text);
-      }
-    } catch {
-      // Ignore JSON parsing errors, use empty body
-    }
-    const { projectId = 'project_tfk2w50d5ki_1757347069126', slideIndex = 0 } = body as any;
+      if (text) body = JSON.parse(text);
+    } catch { }
 
-    const response = await fetch(`${process.env.NEXTJS_URL || 'http://localhost:3000'}/api/ai/tools`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        toolName: 'read_slide',
-        parameters: { slideIndex },
-        projectId,
-      }),
-    });
+    const { projectId = 'project_5ixc4na0jc4_1757422475707', slideIndex = 0 } = body as any;
 
-    const result = await response.json();
+    const result = await executeSlideToolServer(
+      'read_slide',
+      { slideIndex },
+      projectId,
+      userId
+    );
 
     return Response.json({
       test: 'read_slide',

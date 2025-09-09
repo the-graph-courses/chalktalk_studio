@@ -1,25 +1,26 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const CreateNewUser = mutation({
     args: {
         name: v.string(),
         imageUrl: v.string(),
         email: v.string(),
+        clerkId: v.string(), // Add this
     },
     handler: async (ctx, args) => {
-        // if user already exist
+        // Check by clerkId instead of email for better reliability
         const user = await ctx.db.query('UserTable')
-            .filter((q) => q.eq(q.field('email'), args.email))
+            .filter((q) => q.eq(q.field('clerkId'), args.clerkId))
             .collect();
 
         if (user?.length == 0) {
             const userData = {
                 name: args.name,
                 email: args.email,
-                imageUrl: args.imageUrl
+                imageUrl: args.imageUrl,
+                clerkId: args.clerkId // Add this
             }
-            //If not then create new user
             const result = await ctx.db.insert('UserTable', userData)
             return {
                 _id: result,
@@ -29,3 +30,16 @@ export const CreateNewUser = mutation({
         return user[0]
     }
 })
+
+
+export const getUserByClerkId = query({
+    args: { clerkId: v.string() },
+    handler: async (ctx, args) => {
+        // You'll need to store Clerk ID in your UserTable
+        // Update your CreateNewUser mutation to also store clerkId
+        const user = await ctx.db.query('UserTable')
+            .filter((q) => q.eq(q.field('clerkId'), args.clerkId))
+            .unique();
+        return user;
+    },
+});
