@@ -16,8 +16,24 @@ export async function POST(request: Request) {
 
     const {
       projectId = 'project_5ixc4na0jc4_1757422475707',
-      name = 'Empty Slide',
-      content = '',
+      name = 'AI Created Slide',
+      content = `
+        <div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
+          <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">AI Created Slide</h1>
+          
+          <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">This slide was created with rich content directly by the AI, demonstrating the ability to generate complete slides in one step.</p>
+          
+          <div style="position: absolute; bottom: 50px; left: 50px; padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 8px; backdrop-filter: blur(10px);">
+            <span style="font-size: 16px; font-weight: 600;">✨ Created with content!</span>
+          </div>
+          
+          <div class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; opacity: 0.7;">
+            <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            </svg>
+          </div>
+        </div>
+      `,
       insertAtIndex
     } = body as any;
 

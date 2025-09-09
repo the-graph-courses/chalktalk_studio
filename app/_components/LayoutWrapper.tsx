@@ -4,7 +4,8 @@ import { useUser } from "@clerk/nextjs";
 import AppSidebar from "./Sidebar";
 import Header from "./Header";
 import TestPanel from "./TestPanel";
-import EphemeralChatPanel from "./EphemeralChatPanel";
+import EphemeralChatPanel from "@/app/_components/EphemeralChatPanel";
+import SlideThumbnailPanel from "./SlideThumbnailPanel"; // Import the new component
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
 import { useParams } from 'next/navigation';
@@ -25,6 +26,7 @@ export default function LayoutWrapper({
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+    const [isSlidePanelOpen, setIsSlidePanelOpen] = useState(true); // Add state for the new panel
 
     const toggleTestPanel = () => {
         setIsTestPanelOpen(!isTestPanelOpen);
@@ -32,6 +34,10 @@ export default function LayoutWrapper({
 
     const toggleAIChat = () => {
         setIsAIChatOpen(!isAIChatOpen);
+    };
+
+    const toggleSlidePanel = () => { // Add toggle function
+        setIsSlidePanelOpen(!isSlidePanelOpen);
     };
 
 
@@ -70,6 +76,7 @@ export default function LayoutWrapper({
                         <Header
                             onToggleTestPanel={toggleTestPanel}
                             onToggleAIChat={projectId ? toggleAIChat : undefined}
+                            onToggleSlidePanel={projectId ? toggleSlidePanel : undefined} // Pass toggle function
                         />
                         <div className={`flex-1 overflow-auto transition-all duration-300 ${
                             // Calculate margin based on number of open panels
@@ -80,12 +87,16 @@ export default function LayoutWrapper({
                                 if (openPanels === 1) return 'mr-96'; // 24rem
                                 return 'mr-0';
                             })()
-                            }`}>
+                            } ${isSlidePanelOpen ? 'mb-24' : 'mb-0'}`}>
                             {children}
                         </div>
                     </SidebarInset>
                     {projectId && (
                         <>
+                            <SlideThumbnailPanel // Add the SlideThumbnailPanel
+                                isOpen={isSlidePanelOpen}
+                                onClose={() => setIsSlidePanelOpen(false)}
+                            />
                             <EphemeralChatPanel
                                 isOpen={isAIChatOpen}
                                 onClose={() => setIsAIChatOpen(false)}
@@ -106,6 +117,7 @@ export default function LayoutWrapper({
                 <Header
                     onToggleTestPanel={toggleTestPanel}
                     onToggleAIChat={projectId ? toggleAIChat : undefined}
+                    onToggleSlidePanel={projectId ? toggleSlidePanel : undefined} // Pass toggle function
                 />
                 <div className={`flex-1 transition-all duration-300 ${
                     // Calculate margin based on number of open panels
@@ -116,11 +128,15 @@ export default function LayoutWrapper({
                         if (openPanels === 1) return 'mr-96'; // 24rem
                         return 'mr-0';
                     })()
-                    }`}>
+                    } ${isSlidePanelOpen ? 'mb-24' : 'mb-0'}`}>
                     {children}
                 </div>
                 {projectId && (
                     <>
+                        <SlideThumbnailPanel // Add the SlideThumbnailPanel
+                            isOpen={isSlidePanelOpen}
+                            onClose={() => setIsSlidePanelOpen(false)}
+                        />
                         <EphemeralChatPanel
                             isOpen={isAIChatOpen}
                             onClose={() => setIsAIChatOpen(false)}

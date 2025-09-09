@@ -48,7 +48,7 @@ const testEndpoints = [
     {
         id: 'create-slide',
         name: 'New Slide',
-        description: 'Create new empty slide at specified position (-1 for end)',
+        description: 'Create new slide with rich content at specified position (-1 for end)',
         icon: '➕',
         method: 'POST',
         path: '/api/ai/tests/create-slide',
@@ -56,6 +56,21 @@ const testEndpoints = [
         params: {
             projectId: 'project_5ixc4na0jc4_1757422475707',
             name: 'Test Panel Generated Slide',
+            content: `<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); overflow: hidden;">
+  <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Test Panel Slide</h1>
+  
+  <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">This slide was created from the Test Panel with editable rich content. You can modify this content in the parameters section.</p>
+  
+  <div style="position: absolute; bottom: 50px; left: 50px; padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 8px; backdrop-filter: blur(10px);">
+    <span style="font-size: 16px; font-weight: 600;">🧪 Test Panel</span>
+  </div>
+  
+  <div class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; opacity: 0.7;">
+    <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4m-6 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-6 0h6"></path>
+    </svg>
+  </div>
+</div>`,
             insertAtIndex: -1
         }
     },

@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { SignInButton, UserButton, useUser } from '@clerk/nextjs'
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useSidebarAvailable } from './LayoutWrapper'
-import { Settings, Bot, Zap } from 'lucide-react'
+import { Settings, Bot, Zap, FileSliders } from 'lucide-react'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const menuOptions = [
     {
@@ -24,14 +30,13 @@ const menuOptions = [
 
 ]
 
-interface HeaderProps {
+type HeaderProps = {
     onToggleTestPanel?: () => void;
-    showTestPanelToggle?: boolean;
     onToggleAIChat?: () => void;
-    showAIChatToggle?: boolean;
+    onToggleSlidePanel?: () => void; // Add prop for slide panel toggle
 }
 
-function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat, showAIChatToggle = true }: HeaderProps = {}) {
+export default function Header({ onToggleTestPanel, onToggleAIChat, onToggleSlidePanel }: HeaderProps) {
     const { isSignedIn } = useUser();
     const { hasSidebar } = useSidebarAvailable();
 
@@ -52,30 +57,60 @@ function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat,
             {/* Authentication + Panel Toggles */}
             <div className="flex items-center gap-2 flex-shrink-0">
 
-                {/* AI Chat Toggle - only show for signed in users */}
-                {isSignedIn && showAIChatToggle && onToggleAIChat && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onToggleAIChat}
-                        title="Toggle AI Chat"
-                        className="hidden md:flex"
-                    >
-                        <Zap className="size-4" />
-                    </Button>
+                {onToggleSlidePanel && ( // Add button for slide panel
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onToggleSlidePanel}
+                                className="h-8 w-8"
+                            >
+                                <FileSliders className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Toggle Slides</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+                {onToggleAIChat && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onToggleAIChat}
+                                title="Toggle AI Chat"
+                                className="hidden md:flex"
+                            >
+                                <Zap className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Toggle AI Chat</p>
+                        </TooltipContent>
+                    </Tooltip>
                 )}
 
                 {/* Test Panel Toggle - only show for signed in users */}
-                {isSignedIn && showTestPanelToggle && onToggleTestPanel && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onToggleTestPanel}
-                        title="Toggle AI Tests Panel"
-                        className="hidden md:flex"
-                    >
-                        <Settings className="size-4" />
-                    </Button>
+                {isSignedIn && onToggleTestPanel && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onToggleTestPanel}
+                                title="Toggle AI Tests Panel"
+                                className="hidden md:flex"
+                            >
+                                <Settings className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Toggle AI Tests Panel</p>
+                        </TooltipContent>
+                    </Tooltip>
                 )}
 
                 {isSignedIn ? (
@@ -90,5 +125,3 @@ function Header({ onToggleTestPanel, showTestPanelToggle = true, onToggleAIChat,
         </div>
     )
 }
-
-export default Header

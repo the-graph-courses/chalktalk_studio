@@ -8,7 +8,7 @@ This directory contains organized tests for all AI tools in the ChalkTalk Studio
 
 - **`/api/ai/tests/read-deck`** - Read entire slide deck with optional names
 - **`/api/ai/tests/read-slide`** - Read specific slide by index
-- **`/api/ai/tests/create-slide`** - Create new empty slide at specified position (-1 for end)
+- **`/api/ai/tests/create-slide`** - Create new slide with rich content at specified position (-1 for end)
 - **`/api/ai/tests/replace-slide`** - Replace existing slide content and name
 
 ## Usage
@@ -22,7 +22,7 @@ curl -X POST http://localhost:3000/api/ai/tests/read-deck
 # Test reading specific slide (reads slide 0 by default)
 curl -X POST http://localhost:3000/api/ai/tests/read-slide
 
-# Test creating new slide
+# Test creating new slide with rich content
 curl -X POST http://localhost:3000/api/ai/tests/create-slide
 
 # Test replacing existing slide (replaces slide 0 by default)
@@ -42,12 +42,22 @@ curl -X POST http://localhost:3000/api/ai/tests/read-slide \
   -H "Content-Type: application/json" \
   -d '{"projectId":"your-project-id","slideIndex":1}'
 
-# Test creating new slide with all parameters
+# Test creating new slide with custom content
 curl -X POST http://localhost:3000/api/ai/tests/create-slide \
   -H "Content-Type: application/json" \
   -d '{
     "projectId": "your-project-id",
     "name": "My Custom Slide",
+    "content": "<div style=\"padding: 40px; background: #f8f9fa; border-radius: 8px;\"><h1>Custom Content</h1><p>This slide was created with custom HTML content!</p></div>",
+    "insertAtIndex": -1
+  }'
+
+# Test creating empty slide (legacy approach)
+curl -X POST http://localhost:3000/api/ai/tests/create-slide \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "your-project-id",
+    "name": "Empty Slide",
     "content": "",
     "insertAtIndex": -1
   }'
@@ -101,11 +111,25 @@ curl -X POST http://localhost:3000/api/ai/tests/replace-slide
 echo -e "\n\n✅ All tests completed!"
 ```
 
-## Core AI Tools
+## AI Tool Capabilities
 
-The tests validate these core endpoints:
+The AI chat system can perform these operations:
 
-- **`/api/ai/tools`** - Direct tool execution
+### Content Creation Strategy
+
+**✅ Recommended Approach**: Create slides with content directly
+- More efficient (single API call)
+- Better user experience (immediate results)
+- Atomic operations (less error-prone)
+
+**⚠️ Legacy Approach**: Create empty slide → Replace content
+- Use only when incremental content building is needed
+- Two-step process with potential race conditions
+
+### Core Endpoints
+
+- **`/api/ai/tools`** - Direct tool execution for AI chat
+- **`/api/ai/tests/*`** - Individual tool testing endpoints
 
 ## Notes
 
@@ -113,3 +137,22 @@ The tests validate these core endpoints:
 - The `replace-slide` and `create-slide` tests will modify your project
 - Tests include automatic retry and error handling
 - Run individual tests as needed rather than all at once to better isolate issues
+- **New**: `create-slide` now demonstrates creating slides with rich content by default
+- The AI can create complete, styled slides in a single operation
+
+## Content Creation Best Practices
+
+### For AI Chat Integration:
+1. **Create with content**: Use the `createSlide` tool with rich HTML content
+2. **Use absolute positioning**: Ensures proper layout control in the editor
+3. **Include inline styles**: All styling should be embedded in the HTML
+4. **Provide semantic structure**: Use proper heading hierarchy and meaningful content
+
+### Example Rich Content Structure:
+```html
+<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px;">
+  <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Title</h1>
+  <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px;">Content goes here...</p>
+  <!-- Additional positioned elements -->
+</div>
+```
