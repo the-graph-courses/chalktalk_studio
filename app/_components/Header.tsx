@@ -33,95 +33,78 @@ const menuOptions = [
 type HeaderProps = {
     onToggleTestPanel?: () => void;
     onToggleAIChat?: () => void;
-    onToggleSlidePanel?: () => void; // Add prop for slide panel toggle
 }
 
-export default function Header({ onToggleTestPanel, onToggleAIChat, onToggleSlidePanel }: HeaderProps) {
+export default function Header({ onToggleTestPanel, onToggleAIChat }: HeaderProps) {
     const { isSignedIn } = useUser();
     const { hasSidebar } = useSidebarAvailable();
 
     return (
-        <div className='flex justify-between items-center p-4 bg-background border-b border-border min-w-0'>
-            {/* Mobile Trigger + Logo */}
-            <div className='flex items-center gap-3 min-w-0'>
-                {hasSidebar && <SidebarTrigger className="md:hidden" />}
-                <Image src="/logo.svg" alt="logo" width={30} height={30} className="flex-shrink-0" />
-                <h2 className='text-xl lg:text-2xl font-bold truncate'>ChalkTalk</h2>
-            </div>
-            {/* Menu Options */}
-            <div className='hidden md:flex items-center gap-4 lg:gap-8 flex-shrink-0'> {menuOptions.map((menu, index) => (
-                <Link href={menu.path} key={index}>
-                    <h2 className='text-sm lg:text-lg hover:scale-105 transition-all hover:text-primary'> {menu.label}</h2>
-                </Link>
-            ))} </div>
-            {/* Authentication + Panel Toggles */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+        <TooltipProvider>
+            <header className="flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6 flex-shrink-0 z-50">
+                <div className="flex items-center gap-2">
+                    {hasSidebar && <SidebarTrigger />}
+                    <Link
+                        href={isSignedIn ? "/decks" : "/"}
+                        className="flex items-center gap-2 font-semibold"
+                    >
+                        <span className="">Chalktalk Studio</span>
+                    </Link>
+                </div>
 
-                {onToggleSlidePanel && ( // Add button for slide panel
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={onToggleSlidePanel}
-                                className="h-8 w-8"
-                            >
-                                <FileSliders className="w-4 h-4" />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    {onToggleAIChat && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={onToggleAIChat}
+                                    title="Toggle AI Chat"
+                                    className="hidden md:flex"
+                                >
+                                    <Zap className="size-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Toggle AI Chat</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    {isSignedIn && onToggleTestPanel && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={onToggleTestPanel}
+                                    title="Toggle AI Tests Panel"
+                                    className="hidden md:flex"
+                                >
+                                    <Settings className="size-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Toggle AI Tests Panel</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+
+                    {isSignedIn ? (
+                        <UserButton afterSignOutUrl="/" />
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <Button asChild variant="outline" size="sm">
+                                <Link href="/sign-in">Login</Link>
                             </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Toggle Slides</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-                {onToggleAIChat && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={onToggleAIChat}
-                                title="Toggle AI Chat"
-                                className="hidden md:flex"
-                            >
-                                <Zap className="size-4" />
+                            <Button asChild size="sm">
+                                <Link href="/sign-up">Sign up</Link>
                             </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Toggle AI Chat</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-
-                {/* Test Panel Toggle - only show for signed in users */}
-                {isSignedIn && onToggleTestPanel && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={onToggleTestPanel}
-                                title="Toggle AI Tests Panel"
-                                className="hidden md:flex"
-                            >
-                                <Settings className="size-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Toggle AI Tests Panel</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-
-                {isSignedIn ? (
-                    <UserButton afterSignOutUrl="/" />
-                ) : (
-                    <SignInButton mode="modal">
-                        <Button className="cursor-pointer">Get Started</Button>
-                    </SignInButton>
-                )}
-            </div>
-
-        </div>
+                        </div>
+                    )}
+                </div>
+            </header>
+        </TooltipProvider>
     )
 }

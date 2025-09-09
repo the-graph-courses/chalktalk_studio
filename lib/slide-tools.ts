@@ -7,7 +7,7 @@ import { executeSlideToolServer } from './slide-tools-server';
  * These tools interact with the current slide deck in the editor
  */
 
-export function createSlideTools(projectId?: string, userId?: string) {
+export function createSlideTools(projectId?: string, userId?: string, preferences?: { preferAbsolutePositioning?: boolean }) {
     // Both projectId and userId are required for authenticated tool calls
     if (!projectId || !userId) {
         return undefined;
@@ -43,15 +43,13 @@ export function createSlideTools(projectId?: string, userId?: string) {
         }),
 
         createSlide: tool({
-            description: 'Create a new slide with specified name and content. The content should be valid HTML with inline styles for positioning.',
+            description: `Create a new slide with specified name and content.${preferences?.preferAbsolutePositioning ? ' Prefer using absolute positioning for layout control and avoid deeply nested div structures.' : ''}`,
             inputSchema: z.object({
-                name: z.string().describe('The name/title for the new slide'),
-                content: z.string().default('').describe('HTML content for the slide with inline styles. Use absolute positioning for layout control.'),
-                insertAtIndex: z.number().optional().describe('Index to insert the slide at. Use -1 or omit to add at the end.'),
+                slideData: z.any().describe('Complete slide information including name, content, and any other relevant data')
             }),
-            execute: async ({ name, content, insertAtIndex }) => {
+            execute: async ({ slideData }) => {
                 try {
-                    const result = await executeSlideToolServer('create_slide', { name, content, insertAtIndex }, projectId, userId);
+                    const result = await executeSlideToolServer('create_slide', { slideData }, projectId, userId);
 
                     // The result now contains a `command` field that the client can use.
                     // We simply pass it through.
@@ -66,15 +64,14 @@ export function createSlideTools(projectId?: string, userId?: string) {
         }),
 
         replaceSlide: tool({
-            description: 'Replace the content and optionally the name of an existing slide. Use this to modify or update slide content.',
+            description: `Replace the content and optionally the name of an existing slide.${preferences?.preferAbsolutePositioning ? ' Prefer using absolute positioning for layout control and avoid deeply nested div structures.' : ''}`,
             inputSchema: z.object({
                 slideIndex: z.number().min(0).describe('The index of the slide to replace (starting from 0)'),
-                newContent: z.string().describe('New HTML content for the slide with inline styles. Use absolute positioning for layout control.'),
-                newName: z.string().optional().describe('New name for the slide (optional)'),
+                slideData: z.any().describe('New slide data including content, name, and any other relevant information')
             }),
-            execute: async ({ slideIndex, newContent, newName }) => {
+            execute: async ({ slideIndex, slideData }) => {
                 try {
-                    const result = await executeSlideToolServer('replace_slide', { slideIndex, newContent, newName }, projectId, userId);
+                    const result = await executeSlideToolServer('replace_slide', { slideIndex, slideData }, projectId, userId);
 
                     return {
                         ...result,

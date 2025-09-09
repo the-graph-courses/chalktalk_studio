@@ -27,6 +27,11 @@ export async function POST(request: Request) {
             <span style="font-size: 16px; font-weight: 600;">✨ Created with content!</span>
           </div>
           
+          <!-- Page Number -->
+          <div style="position: absolute; bottom: 15px; left: 15px; padding: 8px 12px; background: rgba(0,0,0,0.6); color: white; border-radius: 6px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(5px);">
+            <span>1</span>
+          </div>
+          
           <div class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; opacity: 0.7;">
             <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>

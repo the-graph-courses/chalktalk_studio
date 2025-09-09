@@ -14,7 +14,11 @@ import {
     Trash2,
     FileText,
     Calendar,
-    Search
+    Search,
+    Check,
+    Square,
+    CheckSquare,
+    X
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { Id } from '@/convex/_generated/dataModel'
@@ -47,9 +51,12 @@ interface DeckCardProps {
     }
     onDelete: (deckId: Id<'SlideDeckTable'>) => void
     onRename: (deckId: Id<'SlideDeckTable'>, newTitle: string) => void
+    isSelectionMode?: boolean
+    isSelected?: boolean
+    onToggleSelect?: (deckId: Id<'SlideDeckTable'>) => void
 }
 
-function DeckCard({ deck, onDelete, onRename }: DeckCardProps) {
+function DeckCard({ deck, onDelete, onRename, isSelectionMode = false, isSelected = false, onToggleSelect }: DeckCardProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [editTitle, setEditTitle] = useState(deck.title || 'Untitled deck')
     const [showMenu, setShowMenu] = useState(false)
@@ -85,10 +92,40 @@ function DeckCard({ deck, onDelete, onRename }: DeckCardProps) {
     }
 
     return (
-        <div className="group relative bg-card border rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/20">
-            <Link href={`/editor/${deck.projectId}`} className="block">
+        <div className={`group relative bg-card border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${isSelectionMode
+            ? isSelected
+                ? 'border-primary bg-primary/5'
+                : 'hover:border-primary/40'
+            : 'hover:border-primary/20'
+            }`}>
+            {/* Selection checkbox */}
+            {isSelectionMode && (
+                <div className="absolute top-3 left-3 z-10">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            onToggleSelect?.(deck._id)
+                        }}
+                    >
+                        {isSelected ? (
+                            <CheckSquare className="w-5 h-5 text-primary" />
+                        ) : (
+                            <Square className="w-5 h-5 text-muted-foreground hover:text-primary" />
+                        )}
+                    </Button>
+                </div>
+            )}
+
+            <Link href={isSelectionMode ? '#' : `/editor/${deck.projectId}`} className="block" onClick={isSelectionMode ? (e) => {
+                e.preventDefault()
+                onToggleSelect?.(deck._id)
+            } : undefined}>
                 <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
+                    <div className={`flex items-center space-x-3 ${isSelectionMode ? 'ml-8' : ''}`}>
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <FileText className="w-6 h-6 text-white" />
                         </div>
@@ -123,47 +160,49 @@ function DeckCard({ deck, onDelete, onRename }: DeckCardProps) {
                 </div>
             </Link>
 
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="relative" ref={menuRef}>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                            e.preventDefault()
-                            setShowMenu(!showMenu)
-                        }}
-                        className="h-8 w-8"
-                    >
-                        <MoreVertical className="w-4 h-4" />
-                    </Button>
+            {!isSelectionMode && (
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="relative" ref={menuRef}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                                e.preventDefault()
+                                setShowMenu(!showMenu)
+                            }}
+                            className="h-8 w-8"
+                        >
+                            <MoreVertical className="w-4 h-4" />
+                        </Button>
 
-                    {showMenu && (
-                        <div className="absolute right-0 top-full mt-1 bg-popover border rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    setIsEditing(true)
-                                    setShowMenu(false)
-                                }}
-                                className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-accent"
-                            >
-                                <Edit2 className="w-4 h-4" />
-                                <span>Rename</span>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    handleDelete()
-                                }}
-                                className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-accent text-destructive"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Delete</span>
-                            </button>
-                        </div>
-                    )}
+                        {showMenu && (
+                            <div className="absolute right-0 top-full mt-1 bg-popover border rounded-lg shadow-lg py-1 z-10 min-w-[140px]">
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        setIsEditing(true)
+                                        setShowMenu(false)
+                                    }}
+                                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-accent"
+                                >
+                                    <Edit2 className="w-4 h-4" />
+                                    <span>Rename</span>
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        handleDelete()
+                                    }}
+                                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-accent text-destructive"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     )
 }
@@ -172,8 +211,12 @@ export default function DecksPage() {
     const { userDetail } = useUserDetail()
     const router = useRouter()
     const [searchQuery, setSearchQuery] = useState('')
+    const [isSelectionMode, setIsSelectionMode] = useState(false)
+    const [selectedDecks, setSelectedDecks] = useState<Set<Id<'SlideDeckTable'>>>(new Set())
+    const [isDeleting, setIsDeleting] = useState(false)
     const decks = useQuery(api.slideDeck.ListDecksByUser, userDetail ? { uid: userDetail._id } : 'skip')
     const deleteDeck = useMutation(api.slideDeck.DeleteDeck)
+    const bulkDeleteDecks = useMutation(api.slideDeck.BulkDeleteDecks)
     const renameDeck = useMutation(api.slideDeck.RenameDeck)
 
     const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`
@@ -201,6 +244,75 @@ export default function DecksPage() {
         }
     }
 
+    const handleToggleSelect = (deckId: Id<'SlideDeckTable'>) => {
+        setSelectedDecks(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(deckId)) {
+                newSet.delete(deckId)
+            } else {
+                newSet.add(deckId)
+            }
+            return newSet
+        })
+    }
+
+    const handleSelectAll = () => {
+        if (!filteredDecks.length) return
+
+        const allCurrentIds = new Set(filteredDecks.map(deck => deck._id))
+        const allSelected = filteredDecks.every(deck => selectedDecks.has(deck._id))
+
+        if (allSelected) {
+            // Deselect all current filtered decks
+            setSelectedDecks(prev => {
+                const newSet = new Set(prev)
+                allCurrentIds.forEach(id => newSet.delete(id))
+                return newSet
+            })
+        } else {
+            // Select all current filtered decks
+            setSelectedDecks(prev => new Set([...prev, ...allCurrentIds]))
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (!userDetail || selectedDecks.size === 0) return
+
+        const selectedCount = selectedDecks.size
+        if (!window.confirm(`Are you sure you want to delete ${selectedCount} presentation${selectedCount === 1 ? '' : 's'}? This action cannot be undone.`)) {
+            return
+        }
+
+        setIsDeleting(true)
+        try {
+            const result = await bulkDeleteDecks({
+                deckIds: Array.from(selectedDecks),
+                uid: userDetail._id
+            })
+
+            if (result.errors.length > 0) {
+                console.error('Some deletions failed:', result.errors)
+                alert(`Deleted ${result.deletedCount} out of ${result.totalRequested} presentations. Some deletions failed.`)
+            }
+
+            // Clear selection and exit selection mode
+            setSelectedDecks(new Set())
+            setIsSelectionMode(false)
+        } catch (error) {
+            console.error('Failed to delete presentations:', error)
+            alert('Failed to delete presentations. Please try again.')
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handleToggleSelectionMode = () => {
+        setIsSelectionMode(!isSelectionMode)
+        if (isSelectionMode) {
+            setSelectedDecks(new Set())
+        }
+    }
+
     if (!userDetail) return null
 
     const filteredDecks = decks?.filter(deck =>
@@ -215,25 +327,91 @@ export default function DecksPage() {
                     <div>
                         <h1 className="text-3xl font-bold text-foreground">My Presentations</h1>
                         <p className="text-muted-foreground mt-1">
-                            {decks?.length ? `${decks.length} presentation${decks.length === 1 ? '' : 's'}` : 'No presentations yet'}
+                            {isSelectionMode && selectedDecks.size > 0
+                                ? `${selectedDecks.size} presentation${selectedDecks.size === 1 ? '' : 's'} selected`
+                                : decks?.length
+                                    ? `${decks.length} presentation${decks.length === 1 ? '' : 's'}`
+                                    : 'No presentations yet'
+                            }
                         </p>
                     </div>
-                    <Button onClick={handleNewPresentation} className="flex items-center space-x-2">
-                        <Plus className="w-4 h-4" />
-                        <span>New Presentation</span>
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                        {isSelectionMode ? (
+                            <>
+                                {selectedDecks.size > 0 && (
+                                    <Button
+                                        onClick={handleBulkDelete}
+                                        variant="destructive"
+                                        disabled={isDeleting}
+                                        className="flex items-center space-x-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        <span>{isDeleting ? 'Deleting...' : `Delete ${selectedDecks.size}`}</span>
+                                    </Button>
+                                )}
+                                <Button
+                                    onClick={handleToggleSelectionMode}
+                                    variant="outline"
+                                    className="flex items-center space-x-2"
+                                >
+                                    <X className="w-4 h-4" />
+                                    <span>Cancel</span>
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                {decks && decks.length > 0 && (
+                                    <Button
+                                        onClick={handleToggleSelectionMode}
+                                        variant="outline"
+                                        className="flex items-center space-x-2"
+                                    >
+                                        <CheckSquare className="w-4 h-4" />
+                                        <span>Select</span>
+                                    </Button>
+                                )}
+                                <Button onClick={handleNewPresentation} className="flex items-center space-x-2">
+                                    <Plus className="w-4 h-4" />
+                                    <span>New Presentation</span>
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-                {/* Search Bar */}
+                {/* Search Bar and Selection Controls */}
                 {decks && decks.length > 0 && (
-                    <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                            placeholder="Search presentations..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                        />
+                    <div className="mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                <Input
+                                    placeholder="Search presentations..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10"
+                                />
+                            </div>
+                            {isSelectionMode && filteredDecks.length > 0 && (
+                                <Button
+                                    onClick={handleSelectAll}
+                                    variant="outline"
+                                    className="flex items-center space-x-2 whitespace-nowrap"
+                                >
+                                    {filteredDecks.every(deck => selectedDecks.has(deck._id)) ? (
+                                        <>
+                                            <Check className="w-4 h-4" />
+                                            <span>Deselect All</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckSquare className="w-4 h-4" />
+                                            <span>Select All</span>
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -263,6 +441,9 @@ export default function DecksPage() {
                                 deck={deck}
                                 onDelete={handleDelete}
                                 onRename={handleRename}
+                                isSelectionMode={isSelectionMode}
+                                isSelected={selectedDecks.has(deck._id)}
+                                onToggleSelect={handleToggleSelect}
                             />
                         ))}
                     </div>

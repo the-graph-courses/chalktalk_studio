@@ -5,12 +5,11 @@ import AppSidebar from "./Sidebar";
 import Header from "./Header";
 import TestPanel from "./TestPanel";
 import EphemeralChatPanel from "@/app/_components/EphemeralChatPanel";
-import SlideThumbnailPanel from "./SlideThumbnailPanel"; // Import the new component
+import SlideThumbnailPanel from "./SlideThumbnailPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
 import { useParams } from 'next/navigation';
 
-// Create a context to track if sidebar is available
 const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSidebar: false });
 
 export const useSidebarAvailable = () => useContext(SidebarAvailableContext);
@@ -26,7 +25,6 @@ export default function LayoutWrapper({
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-    const [isSlidePanelOpen, setIsSlidePanelOpen] = useState(true); // Add state for the new panel
 
     const toggleTestPanel = () => {
         setIsTestPanelOpen(!isTestPanelOpen);
@@ -36,12 +34,7 @@ export default function LayoutWrapper({
         setIsAIChatOpen(!isAIChatOpen);
     };
 
-    const toggleSlidePanel = () => { // Add toggle function
-        setIsSlidePanelOpen(!isSlidePanelOpen);
-    };
 
-
-    // Show loading state while Clerk is loading
     if (!isLoaded) {
         return (
             <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
@@ -66,77 +59,76 @@ export default function LayoutWrapper({
         );
     }
 
-    // If user is signed in, show layout with sidebar
     if (isSignedIn) {
         return (
             <SidebarAvailableContext.Provider value={{ hasSidebar: true }}>
                 <SidebarProvider>
                     <AppSidebar />
-                    <SidebarInset className="overflow-hidden">
+                    <SidebarInset className="overflow-hidden flex flex-col">
                         <Header
                             onToggleTestPanel={toggleTestPanel}
                             onToggleAIChat={projectId ? toggleAIChat : undefined}
-                            onToggleSlidePanel={projectId ? toggleSlidePanel : undefined} // Pass toggle function
                         />
-                        <div className={`flex-1 overflow-auto transition-all duration-300 ${
-                            // Calculate margin based on number of open panels
-                            (() => {
+                        <div className="flex-1 relative overflow-auto">
+                            <div className={`h-full transition-all duration-300 ${(() => {
                                 const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
-                                if (openPanels >= 3) return 'mr-[72rem]'; // 3 * 24rem
-                                if (openPanels === 2) return 'mr-[48rem]'; // 2 * 24rem  
-                                if (openPanels === 1) return 'mr-96'; // 24rem
+                                if (openPanels >= 2) return 'mr-[48rem]';
+                                if (openPanels === 1) return 'mr-96';
                                 return 'mr-0';
                             })()
-                            } ${isSlidePanelOpen ? 'mb-24' : 'mb-0'}`}>
-                            {children}
+                                }`}>
+                                {children}
+                            </div>
                         </div>
+
+                        <div className="flex-shrink-0">
+                            {projectId && (
+                                <SlideThumbnailPanel />
+                            )}
+                        </div>
+                        {projectId && (
+                            <>
+                                <EphemeralChatPanel
+                                    isOpen={isAIChatOpen}
+                                    onClose={() => setIsAIChatOpen(false)}
+                                    isTestPanelOpen={isTestPanelOpen}
+                                />
+                                <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
+                            </>
+                        )}
                     </SidebarInset>
-                    {projectId && (
-                        <>
-                            <SlideThumbnailPanel // Add the SlideThumbnailPanel
-                                isOpen={isSlidePanelOpen}
-                                onClose={() => setIsSlidePanelOpen(false)}
-                            />
-                            <EphemeralChatPanel
-                                isOpen={isAIChatOpen}
-                                onClose={() => setIsAIChatOpen(false)}
-                                isTestPanelOpen={isTestPanelOpen}
-                            />
-                            <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
-                        </>
-                    )}
                 </SidebarProvider>
             </SidebarAvailableContext.Provider>
         );
     }
 
-    // If user is not signed in, show layout without sidebar
     return (
         <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
-            <div className="min-h-screen">
+            <div className="min-h-screen flex flex-col">
                 <Header
                     onToggleTestPanel={toggleTestPanel}
                     onToggleAIChat={projectId ? toggleAIChat : undefined}
-                    onToggleSlidePanel={projectId ? toggleSlidePanel : undefined} // Pass toggle function
                 />
-                <div className={`flex-1 transition-all duration-300 ${
-                    // Calculate margin based on number of open panels
-                    (() => {
+                <div className="flex-1 relative overflow-auto">
+                    <div className={`h-full transition-all duration-300 ${(() => {
                         const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
-                        if (openPanels >= 3) return 'mr-[72rem]'; // 3 * 24rem
-                        if (openPanels === 2) return 'mr-[48rem]'; // 2 * 24rem  
-                        if (openPanels === 1) return 'mr-96'; // 24rem
+                        if (openPanels >= 2) return 'mr-[48rem]';
+                        if (openPanels === 1) return 'mr-96';
                         return 'mr-0';
                     })()
-                    } ${isSlidePanelOpen ? 'mb-24' : 'mb-0'}`}>
-                    {children}
+                        }`}>
+                        {children}
+                    </div>
                 </div>
+
+                <div className="flex-shrink-0">
+                    {projectId && (
+                        <SlideThumbnailPanel />
+                    )}
+                </div>
+
                 {projectId && (
                     <>
-                        <SlideThumbnailPanel // Add the SlideThumbnailPanel
-                            isOpen={isSlidePanelOpen}
-                            onClose={() => setIsSlidePanelOpen(false)}
-                        />
                         <EphemeralChatPanel
                             isOpen={isAIChatOpen}
                             onClose={() => setIsAIChatOpen(false)}

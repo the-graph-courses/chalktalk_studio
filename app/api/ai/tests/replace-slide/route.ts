@@ -24,6 +24,11 @@ export async function POST(request: Request) {
                 
                 <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">The content of this slide has been replaced using absolute positioning for optimal layout control.</p>
                 
+                <!-- Page Number -->
+                <div style="position: absolute; bottom: 15px; left: 15px; padding: 8px 12px; background: rgba(0,0,0,0.6); color: white; border-radius: 6px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(5px);">
+                  <span>1</span>
+                </div>
+                
                 <div class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; transform: rotate(15deg);">
                   <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>

@@ -2,20 +2,18 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import * as htmlToImage from 'html-to-image'
-import { Button } from '@/components/ui/button'
-import { Plus, X, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, Loader2, AlertCircle, MoreHorizontal } from 'lucide-react'
 import { useDebouncedCallback } from 'use-debounce';
+import SlideContextMenu from './SlideContextMenu';
 
 interface SlideThumbnailPanelProps {
-    isOpen: boolean
-    onClose: () => void
+    // No props needed
 }
 
 type Page = {
     id: string
     name: string
     component: any
-    // Add other GrapesJS Page properties as needed
     getId: () => string;
     getMainComponent: () => any;
     get: (key: string) => any;
@@ -26,6 +24,8 @@ type Editor = {
         getAll: () => Page[];
         select: (page: Page | string) => void;
         getSelected: () => Page | undefined;
+        add: (page: { name?: string; component?: any; styles?: any }, options?: { at?: number; select?: boolean }) => Page;
+        remove: (page: Page) => void;
     };
     getHtml: (options?: { component?: any }) => string;
     getCss: (options?: { component?: any }) => string;
@@ -34,12 +34,13 @@ type Editor = {
 };
 
 
-export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailPanelProps) {
+export default function SlideThumbnailPanel({ }: SlideThumbnailPanelProps) {
     const [slides, setSlides] = useState<Page[]>([])
     const [activeSlideId, setActiveSlideId] = useState<string | null>(null)
     const [thumbnails, setThumbnails] = useState<Map<string, string>>(new Map())
     const [loadingThumbnails, setLoadingThumbnails] = useState<Set<string>>(new Set())
     const [failedThumbnails, setFailedThumbnails] = useState<Set<string>>(new Set())
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; slideId: string } | null>(null);
     const sandboxRef = useRef<HTMLIFrameElement | null>(null)
     const editorRef = useRef<Editor | null>(null);
 
@@ -58,8 +59,8 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
             position: 'fixed',
             left: '-10000px',
             top: '0',
-            width: '1024px',
-            height: '576px',
+            width: '800px',
+            height: '450px',
         });
         document.body.appendChild(sandbox);
         sandboxRef.current = sandbox;
@@ -75,11 +76,17 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
 
     const renderThumb = useCallback(async (page: Page) => {
         const editor = getEditor();
-        if (!editor || !sandboxRef.current) return;
+        if (!editor || !sandboxRef.current) {
+            console.warn('Editor or sandbox not available for thumbnail generation');
+            return;
+        }
 
         const id = page.getId();
+        if (!id) {
+            console.warn('Page ID not available');
+            return;
+        }
 
-        // Set loading state
         setLoadingThumbnails(prev => new Set(prev).add(id));
         setFailedThumbnails(prev => {
             const newSet = new Set(prev);
@@ -89,26 +96,37 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
 
         try {
             const cmp = page.getMainComponent();
+            if (!cmp) throw new Error('No main component found');
+
             const html = editor.getHtml({ component: cmp });
             const css = editor.getCss({ component: cmp });
+
+            if (!html) throw new Error('No HTML content generated');
 
             const doc = sandboxRef.current.contentDocument;
             if (!doc) throw new Error('No document available');
 
-            // Write content to iframe
             doc.open();
-            doc.write(`<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${html}</body></html>`);
+            doc.write(`<!doctype html><html><head><meta charset="utf-8"><style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #f0f2f5;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                }
+                ${css}
+            </style></head><body>${html}</body></html>`);
             doc.close();
 
-            // Wait for iframe to be ready and content to load
             await new Promise<void>((resolve, reject) => {
                 let attempts = 0;
-                const maxAttempts = 50; // 5 seconds max wait
+                const maxAttempts = 50;
 
                 const checkReady = () => {
                     attempts++;
                     if (doc.readyState === 'complete' && doc.body) {
-                        // Additional wait for any images or fonts to load
                         setTimeout(resolve, 200);
                     } else if (attempts >= maxAttempts) {
                         reject(new Error('Timeout waiting for iframe to load'));
@@ -123,9 +141,9 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
             if (!node) throw new Error('No body element found');
 
             const dataUrl = await htmlToImage.toPng(node, {
-                canvasWidth: 480,
-                canvasHeight: 270,
-                pixelRatio: 0.5,
+                canvasWidth: 800,
+                canvasHeight: 450,
+                pixelRatio: 0.3,
                 skipFonts: false,
                 cacheBust: true,
                 style: {
@@ -139,7 +157,6 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
             console.error(`Thumbnail generation failed for page ${id}:`, error);
             setFailedThumbnails(prev => new Set(prev).add(id));
         } finally {
-            // Clear loading state
             setLoadingThumbnails(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(id);
@@ -174,33 +191,46 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
 
     // Effect to setup editor listeners
     useEffect(() => {
-        if (!isOpen) return;
-
         const editor = getEditor();
         if (!editor) {
-            // Retry getting editor if not available immediately
+            let attempts = 0;
+            const maxAttempts = 100; // Wait up to 10 seconds
             const interval = setInterval(() => {
+                attempts++;
                 const editorInstance = getEditor();
                 if (editorInstance) {
+                    console.log('Editor found after', attempts, 'attempts');
                     editorRef.current = editorInstance;
                     clearInterval(interval);
-                    // Initial setup once editor is found
                     syncSlidesFromEditor();
-                    refreshAllThumbs();
+                    // Add a delay before generating thumbnails to ensure editor is fully ready
+                    setTimeout(() => {
+                        refreshAllThumbs();
+                    }, 500);
+                } else if (attempts >= maxAttempts) {
+                    console.error('Editor not found after maximum attempts');
+                    clearInterval(interval);
                 }
             }, 100);
             return () => clearInterval(interval);
         }
 
+        console.log('Editor available immediately');
         editorRef.current = editor;
 
         const handlePageUpdate = () => {
+            console.log('Page update event triggered');
             syncSlidesFromEditor();
-            refreshAllThumbs();
+            // Add delay to ensure the editor state is updated
+            setTimeout(() => {
+                refreshAllThumbs();
+            }, 100);
         };
 
-        const handleSelection = () => {
-            syncSlidesFromEditor();
+        const handleSelection = (page: Page, previousPage?: Page) => {
+            if (page?.getId) {
+                setActiveSlideId(page.getId());
+            }
         };
 
         const handleContentChange = () => {
@@ -210,11 +240,12 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
             }
         };
 
-        // Initial sync
         syncSlidesFromEditor();
-        refreshAllThumbs();
+        // Add delay before initial thumbnail generation
+        setTimeout(() => {
+            refreshAllThumbs();
+        }, 500);
 
-        // More specific event listeners to reduce unnecessary updates
         editor.on('page:add page:remove', handlePageUpdate);
         editor.on('page:select', handleSelection);
         editor.on('component:add component:remove component:update', handleContentChange);
@@ -227,7 +258,7 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
             editor.off('style:update', handleContentChange);
         };
 
-    }, [isOpen, getEditor, syncSlidesFromEditor, refreshAllThumbs, debouncedRenderThumb]);
+    }, [getEditor, syncSlidesFromEditor, refreshAllThumbs, debouncedRenderThumb]);
 
 
     const handleSlideClick = (page: Page) => {
@@ -240,24 +271,149 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
     const handleAddSlide = () => {
         if (typeof window !== 'undefined' && window.grapesjsAITools) {
             window.grapesjsAITools.addSlide(`Slide ${slides.length + 1}`, '')
+            // Immediately sync slides and generate thumbnails
+            setTimeout(() => {
+                syncSlidesFromEditor();
+                refreshAllThumbs();
+            }, 200);
         }
     }
 
-    if (!isOpen) return null
+    // Debug function to manually refresh thumbnails
+    const debugRefreshThumbnails = useCallback(() => {
+        console.log('Debug: Manually refreshing thumbnails');
+        console.log('Editor available:', !!getEditor());
+        console.log('Sandbox available:', !!sandboxRef.current);
+        console.log('Current slides:', slides.length);
+        refreshAllThumbs();
+    }, [getEditor, slides.length, refreshAllThumbs]);
+
+    // Add to window for debugging
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            (window as any).debugThumbnails = debugRefreshThumbnails;
+        }
+        return () => {
+            if (typeof window !== 'undefined') {
+                delete (window as any).debugThumbnails;
+            }
+        };
+    }, [debugRefreshThumbnails]);
+
+    const handleContextMenu = (event: React.MouseEvent, slideId: string) => {
+        event.preventDefault();
+        setContextMenu({ x: event.clientX, y: event.clientY, slideId });
+    };
+
+    const closeContextMenu = () => {
+        setContextMenu(null);
+    };
+
+    const handleDuplicate = () => {
+        if (!contextMenu) return;
+        const editor = getEditor();
+        if (!editor) return;
+
+        const pageToDuplicate = editor.Pages.getAll().find(p => p.getId() === contextMenu.slideId);
+        if (!pageToDuplicate) return;
+
+        try {
+            const newName = `${pageToDuplicate.get('name')} (Copy)`;
+            // Clone the main component to preserve all structure
+            const mainComponent = pageToDuplicate.getMainComponent();
+            const clonedComponent = mainComponent.clone();
+
+            // Find index of page to duplicate
+            const pages = editor.Pages.getAll();
+            const index = pages.findIndex(p => p.getId() === contextMenu.slideId);
+
+            // Add new page after the original
+            const newPage = editor.Pages.add({
+                name: newName,
+                component: clonedComponent
+            }, { at: index + 1 });
+
+            // Select the new page
+            if (newPage) {
+                editor.Pages.select(newPage);
+                // Immediately update local state
+                syncSlidesFromEditor();
+                // Generate thumbnail for the new page
+                setTimeout(() => {
+                    renderThumb(newPage);
+                }, 200);
+            }
+        } catch (error) {
+            console.error('Error duplicating page:', error);
+        }
+
+        closeContextMenu();
+    };
+
+    const handleDelete = () => {
+        if (!contextMenu) return;
+        const editor = getEditor();
+        if (!editor) return;
+
+        const pages = editor.Pages.getAll();
+        // Don't delete if it's the last page
+        if (pages.length <= 1) {
+            alert('Cannot delete the last page.');
+            closeContextMenu();
+            return;
+        }
+
+        const pageToDelete = pages.find(p => p.getId() === contextMenu.slideId);
+        if (!pageToDelete) {
+            closeContextMenu();
+            return;
+        }
+
+        try {
+            // If we're deleting the currently selected page, select another one first
+            const selectedPage = editor.Pages.getSelected();
+            if (selectedPage && selectedPage.getId() === contextMenu.slideId) {
+                const remainingPages = pages.filter(p => p.getId() !== contextMenu.slideId);
+                if (remainingPages.length > 0) {
+                    editor.Pages.select(remainingPages[0]);
+                }
+            }
+
+            // Remove the page
+            editor.Pages.remove(pageToDelete);
+
+            // Immediately update local state to reflect the deletion
+            setSlides(prev => prev.filter(slide => slide.getId() !== contextMenu.slideId));
+            setThumbnails(prev => {
+                const newThumbnails = new Map(prev);
+                newThumbnails.delete(contextMenu.slideId);
+                return newThumbnails;
+            });
+            setLoadingThumbnails(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(contextMenu.slideId);
+                return newSet;
+            });
+            setFailedThumbnails(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(contextMenu.slideId);
+                return newSet;
+            });
+        } catch (error) {
+            console.error('Error deleting page:', error);
+        }
+
+        closeContextMenu();
+    };
 
     return (
-        <div className="fixed bottom-0 left-20 right-0 h-24 bg-background border-t border-border z-40 shadow-lg">
+        <div className="h-32 bg-background border-t border-border z-40 shadow-lg">
             <div className="flex h-full px-4 py-2 overflow-x-auto overflow-y-hidden">
                 <div className="flex gap-3 items-center min-w-0">
-                    {/* Slides label and close button */}
-                    <div className="flex-shrink-0 flex items-center gap-2 pr-4 border-r border-border">
+                    <div className="flex-shrink-0 flex items-center pr-4 border-r border-border">
                         <h3 className="font-semibold text-foreground text-sm">Slides</h3>
-                        <Button variant="ghost" size="icon" onClick={onClose} className="h-5 w-5">
-                            <X className="w-3 h-3" />
-                        </Button>
                     </div>
 
-                    {/* Thumbnails container */}
                     <div className="flex gap-2 items-center">
                         {slides.map((slide, index) => {
                             const id = slide.getId();
@@ -269,13 +425,29 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
                             return (
                                 <div
                                     key={id}
-                                    className={`flex-shrink-0 p-1 border rounded-lg cursor-pointer transition-colors ${activeSlideId === id ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent'
+                                    className={`group flex-shrink-0 p-1 border rounded-lg cursor-pointer transition-colors relative ${activeSlideId === id ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent'
                                         }`}
                                     onClick={() => handleSlideClick(slide)}
+                                    onContextMenu={(e) => handleContextMenu(e, id)}
                                 >
-                                    <div className="w-16 aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative mb-1">
+                                    <button
+                                        className="absolute top-1 right-1 z-10 p-0.5 bg-background rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setContextMenu({ x: rect.left, y: rect.top, slideId: id });
+                                        }}
+                                    >
+                                        <MoreHorizontal className="w-3 h-3" />
+                                    </button>
+                                    <div className="w-28 aspect-video bg-muted rounded-md flex items-center justify-center overflow-hidden relative">
                                         {thumbnailUrl ? (
-                                            <img src={thumbnailUrl} alt={name} className="w-full h-full object-cover" />
+                                            <>
+                                                <img src={thumbnailUrl} alt={name} className="w-full h-full object-cover" />
+                                                <span className="absolute bottom-1 left-2 text-white text-xs font-bold" style={{ textShadow: '0 0 5px rgba(0,0,0,0.9)' }}>
+                                                    {index + 1}
+                                                </span>
+                                            </>
                                         ) : isLoading ? (
                                             <div className="w-full h-full bg-muted flex items-center justify-center">
                                                 <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
@@ -291,24 +463,30 @@ export default function SlideThumbnailPanel({ isOpen, onClose }: SlideThumbnailP
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-xs text-foreground truncate text-center w-16">{name}</p>
                                 </div>
                             )
                         })}
 
-                        {/* Add slide button */}
                         <div className="flex-shrink-0 p-1">
                             <div
-                                className="w-16 aspect-video bg-muted border-2 border-dashed border-border rounded-md flex items-center justify-center cursor-pointer hover:bg-accent transition-colors mb-1"
+                                className="w-28 aspect-video bg-muted border-2 border-dashed border-border rounded-md flex items-center justify-center cursor-pointer hover:bg-accent transition-colors"
                                 onClick={handleAddSlide}
                             >
-                                <Plus className="w-5 h-5 text-muted-foreground" />
+                                <Plus className="w-6 h-6 text-muted-foreground" />
                             </div>
-                            <p className="text-xs text-muted-foreground text-center w-16">Add Slide</p>
                         </div>
                     </div>
                 </div>
             </div>
+            {contextMenu && (
+                <SlideContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={closeContextMenu}
+                    onDuplicate={handleDuplicate}
+                    onDelete={handleDelete}
+                />
+            )}
         </div>
     )
 }

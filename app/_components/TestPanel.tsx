@@ -65,6 +65,11 @@ const testEndpoints = [
     <span style="font-size: 16px; font-weight: 600;">🧪 Test Panel</span>
   </div>
   
+  <!-- Page Number -->
+  <div style="position: absolute; bottom: 15px; left: 15px; padding: 8px 12px; background: rgba(0,0,0,0.6); color: white; border-radius: 6px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(5px);">
+    <span>1</span>
+  </div>
+  
   <div class="gjs-icon" style="position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; opacity: 0.7;">
     <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4m-6 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-6 0h6"></path>
@@ -89,6 +94,12 @@ const testEndpoints = [
             newContent: `<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); overflow: hidden;">
   <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Custom Test Content</h1>
   <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">This is customizable content from the Test Panel. You can edit this text to test different slide content.</p>
+  
+  <!-- Page Number -->
+  <div style="position: absolute; bottom: 15px; left: 15px; padding: 8px 12px; background: rgba(0,0,0,0.6); color: white; border-radius: 6px; font-size: 14px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(5px);">
+    <span>1</span>
+  </div>
+  
   <div style="position: absolute; bottom: 50px; right: 50px; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
     <span style="font-size: 24px;">✨</span>
   </div>

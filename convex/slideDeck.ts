@@ -155,6 +155,7 @@ export const CreateTestProject = mutation({
             name: 'Test User',
             email: 'test@example.com',
             imageUrl: '',
+            clerkId: 'test_user_clerk_id',
         });
 
         const result = await ctx.db.insert('SlideDeckTable', {
@@ -201,6 +202,77 @@ export const RenameDeck = mutation({
             lastModified: Date.now(),
         });
         return { success: true };
+    }
+})
+
+export const DuplicateDeck = mutation({
+    args: {
+        deckId: v.id('SlideDeckTable'),
+        uid: v.id('UserTable'),
+        newTitle: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        // Get the original deck
+        const originalDeck = await ctx.db.get(args.deckId);
+        if (!originalDeck || originalDeck.uid !== args.uid) {
+            throw new Error('Deck not found or unauthorized');
+        }
+
+        // Generate a new project ID for the duplicate
+        const newProjectId = `project_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+
+        // Create the duplicate
+        const duplicateId = await ctx.db.insert('SlideDeckTable', {
+            projectId: newProjectId,
+            title: args.newTitle || `${originalDeck.title || 'Untitled'} (Copy)`,
+            project: originalDeck.project,
+            uid: args.uid,
+            lastModified: Date.now(),
+        });
+
+        return {
+            success: true,
+            newDeckId: duplicateId,
+            newProjectId,
+            title: args.newTitle || `${originalDeck.title || 'Untitled'} (Copy)`
+        };
+    }
+})
+
+export const BulkDeleteDecks = mutation({
+    args: {
+        deckIds: v.array(v.id('SlideDeckTable')),
+        uid: v.id('UserTable'),
+    },
+    handler: async (ctx, args) => {
+        let deletedCount = 0;
+        const errors: string[] = [];
+
+        for (const deckId of args.deckIds) {
+            try {
+                // Verify the deck belongs to the user before deleting
+                const deck = await ctx.db.get(deckId);
+                if (!deck) {
+                    errors.push(`Deck ${deckId} not found`);
+                    continue;
+                }
+                if (deck.uid !== args.uid) {
+                    errors.push(`Unauthorized to delete deck ${deckId}`);
+                    continue;
+                }
+                await ctx.db.delete(deckId);
+                deletedCount++;
+            } catch (error) {
+                errors.push(`Failed to delete deck ${deckId}: ${error}`);
+            }
+        }
+
+        return {
+            success: true,
+            deletedCount,
+            totalRequested: args.deckIds.length,
+            errors
+        };
     }
 })
 

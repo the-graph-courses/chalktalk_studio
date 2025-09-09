@@ -63,11 +63,9 @@ export async function executeSlideToolServer(
 
             return {
                 success: true,
-                data: {
-                    index: slideIndex,
-                    name: slide.name,
-                    content: content,
-                },
+                slideIndex,
+                slideName: slide.name,
+                slideContent: content,
             };
         }
 
@@ -102,15 +100,31 @@ export async function executeSlideToolServer(
 
             return {
                 success: true,
-                data: {
-                    totalSlides: slides.length,
-                    slides,
-                },
+                totalSlides: slides.length,
+                slides,
             };
         }
 
         case 'create_slide': {
-            const { name, content = '', insertAtIndex } = parameters;
+            const { slideData } = parameters;
+
+            // Extract data from whatever format the AI provided
+            let name, content, insertAtIndex;
+
+            if (typeof slideData === 'string') {
+                // AI provided just content as a string
+                content = slideData;
+                name = 'New Slide';
+            } else if (slideData && typeof slideData === 'object') {
+                // AI provided structured data
+                name = slideData.name || slideData.title || 'New Slide';
+                content = slideData.content || slideData.html || slideData.body || '';
+                insertAtIndex = slideData.insertAtIndex || slideData.position || slideData.index;
+            } else {
+                // Fallback
+                content = '';
+                name = 'New Slide';
+            }
 
             return {
                 success: true,
@@ -124,11 +138,26 @@ export async function executeSlideToolServer(
         }
 
         case 'replace_slide': {
-            const { slideIndex, newContent, newName } = parameters;
+            const { slideIndex, slideData } = parameters;
 
             // Check if slide exists
             if (!projectData.pages?.[slideIndex]) {
                 throw new Error(`Slide ${slideIndex} not found`);
+            }
+
+            // Extract data from whatever format the AI provided
+            let newContent, newName;
+
+            if (typeof slideData === 'string') {
+                // AI provided just content as a string
+                newContent = slideData;
+            } else if (slideData && typeof slideData === 'object') {
+                // AI provided structured data
+                newContent = slideData.content || slideData.html || slideData.body || '';
+                newName = slideData.name || slideData.title;
+            } else {
+                // Fallback
+                newContent = '';
             }
 
             return {

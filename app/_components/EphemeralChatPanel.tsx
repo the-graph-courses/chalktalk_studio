@@ -5,7 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
 
@@ -130,6 +130,35 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                             <div className="text-green-700 dark:text-green-400">
                                 {part.output.message || 'Command executed successfully'}
                             </div>
+                        ) : part.output.slideContent ? (
+                            // Show clean HTML content for slide reads
+                            <div className="text-green-700 dark:text-green-400">
+                                <div className="text-xs text-muted-foreground mb-1">
+                                    Slide: {part.output.slideName} (Index: {part.output.slideIndex})
+                                </div>
+                                <pre className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border mt-1">
+                                    {part.output.slideContent}
+                                </pre>
+                            </div>
+                        ) : part.output.slides ? (
+                            // Show clean content for deck reads
+                            <div className="text-green-700 dark:text-green-400">
+                                <div className="text-xs text-muted-foreground mb-1">
+                                    Total Slides: {part.output.totalSlides}
+                                </div>
+                                <div className="space-y-2 mt-1">
+                                    {part.output.slides.map((slide: any, idx: number) => (
+                                        <div key={idx} className="bg-background/50 p-2 rounded border">
+                                            <div className="text-xs font-medium mb-1">
+                                                Slide {slide.index}: {slide.name}
+                                            </div>
+                                            <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                                                {slide.content}
+                                            </pre>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         ) : typeof part.output === 'string' ? (
                             <span className="text-green-700 dark:text-green-400">{part.output}</span>
                         ) : (
@@ -160,6 +189,9 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [executedCommandIds, setExecutedCommandIds] = useState<Set<string>>(new Set());
+    const [showSettings, setShowSettings] = useState(false);
+    const [preferAbsolutePositioning, setPreferAbsolutePositioning] = useState(false);
+    const settingsRef = useRef<HTMLDivElement>(null);
 
     const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
@@ -170,6 +202,9 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                     body: {
                         messages,
                         projectId,
+                        preferences: {
+                            preferAbsolutePositioning,
+                        },
                     },
                 };
             },
@@ -185,6 +220,20 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     React.useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Close settings dropdown when clicking outside
+    React.useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+                setShowSettings(false);
+            }
+        }
+
+        if (showSettings) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showSettings]);
 
     // Execute tool commands once when output becomes available
     React.useEffect(() => {
@@ -247,9 +296,47 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                     <Zap className="size-5 text-primary" />
                     <h2 className="text-lg font-semibold">AI Chat</h2>
                 </div>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                    <X className="size-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                    {/* Settings Dropdown */}
+                    <div className="relative" ref={settingsRef}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowSettings(!showSettings)}
+                            className={`relative ${preferAbsolutePositioning ? 'text-primary' : ''}`}
+                            title="AI Generation Settings"
+                        >
+                            <Settings className="size-4" />
+                            {preferAbsolutePositioning && (
+                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                            )}
+                        </Button>
+                        {showSettings && (
+                            <div className="absolute right-0 top-full mt-1 w-64 bg-background border border-border rounded-md shadow-lg z-10">
+                                <div className="p-3">
+                                    <div className="text-sm font-medium mb-2">AI Generation Settings</div>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={preferAbsolutePositioning}
+                                            onChange={(e) => setPreferAbsolutePositioning(e.target.checked)}
+                                            className="rounded border-border"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="text-sm">Prefer Absolute Positioning</div>
+                                            <div className="text-xs text-muted-foreground">
+                                                Guide AI to use absolute positioning and avoid nested divs
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                        <X className="size-4" />
+                    </Button>
+                </div>
             </div>
 
             {/* Messages */}
