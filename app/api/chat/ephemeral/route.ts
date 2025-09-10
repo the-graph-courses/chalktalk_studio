@@ -42,11 +42,62 @@ You have access to tools to interact with slide presentations:
 - replaceSlide: Replace content of an existing slide (provide clean HTML as plain text)
 
 When reading slides, you'll receive clean HTML content as plain text without JSON escaping.
-When creating or replacing slides, provide clean HTML content as plain text - use HTML with inline styles and absolute positioning for layout control. Make the content visually appealing and professional.
 
-Focus on working with actual HTML structure rather than JSON formatting. The content you receive and generate should be readable, well-formatted HTML.
+When creating or replacing slides, generate COMPLETE slide containers using this format:
 
-Be helpful, concise, and focused on presentation and design-related tasks. When users upload images or PDFs, analyze them thoroughly and provide relevant insights.`,
+<div class="slide-container my-unique-theme">
+    <h1 class="slide-title">Your Title Here</h1>
+    <p class="slide-subtitle">Your subtitle or content here</p>
+    <!-- Add more content elements as needed -->
+</div>
+<style>
+    .my-unique-theme {
+        position: absolute;
+        width: 1280px;
+        height: 720px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px;
+        background-color: #ffffff; /* Choose appropriate background */
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        overflow: visible;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .slide-title {
+        position: absolute;
+        top: 260px;
+        left: 100px;
+        font-size: 72px;
+        margin: 0;
+        font-weight: 700;
+        color: #2c3e50; /* Choose appropriate color */
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .slide-subtitle {
+        position: absolute;
+        top: 360px;
+        left: 100px;
+        font-size: 32px;
+        max-width: 1080px;
+        line-height: 1.5;
+        color: #555;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 300;
+        margin: 0;
+    }
+</style>
+
+IMPORTANT RULES:
+- Always use embedded <style> tags, never inline styles
+- Use unique CSS class names for each slide (e.g., .marketing-slide, .tech-slide, etc.)
+- The system will automatically enforce width: 1280px and height: 720px
+- Make slides visually appealing with appropriate colors, fonts, and layouts
+- Use absolute positioning for precise element placement
+- Choose appropriate background colors and typography for the content theme
+
+Focus on creating beautiful, professional slide designs. Be helpful, concise, and focused on presentation and design-related tasks.`,
 
         // Stop after a maximum of 5 steps if tools were called
         stopWhen: stepCountIs(5),

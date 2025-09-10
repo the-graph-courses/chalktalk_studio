@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import Provider from "./provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import LayoutWrapper from "./_components/LayoutWrapper";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Chalktalk Studio",
@@ -24,7 +18,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={inter.className} suppressHydrationWarning>
+        <body className="font-sans" suppressHydrationWarning>
           <ConvexClientProvider>
             <Provider>
               <LayoutWrapper>{children}</LayoutWrapper>

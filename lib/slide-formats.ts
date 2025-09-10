@@ -2,14 +2,14 @@ export const SLIDE_FORMATS = {
     PRESENTATION_16_9: {
         id: '16:9',
         name: 'Presentation (16:9)',
-        width: 800,
-        height: 450,
+        width: 1920,
+        height: 1080,
     },
     PRESENTATION_4_3: {
         id: '4:3',
         name: 'Presentation (4:3)',
-        width: 600,
-        height: 450,
+        width: 1440,
+        height: 1080,
     },
     // Add other formats here in the future
     // e.g., A4_DOCUMENT, etc.

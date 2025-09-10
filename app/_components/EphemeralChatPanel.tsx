@@ -5,7 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
 
@@ -36,6 +36,53 @@ async function convertFilesToDataURLs(files: FileList) {
                     reader.readAsDataURL(file);
                 }),
         ),
+    );
+}
+
+// Helper component for collapsible content
+function CollapsibleContent({
+    content,
+    maxLines = 5,
+    className = ""
+}: {
+    content: string;
+    maxLines?: number;
+    className?: string;
+}) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Count lines in content
+    const lines = content.split('\n');
+    const shouldCollapse = lines.length > maxLines;
+
+    const displayContent = shouldCollapse && !isExpanded
+        ? lines.slice(0, maxLines).join('\n') + '\n...'
+        : content;
+
+    if (!shouldCollapse) {
+        return <pre className={className}>{content}</pre>;
+    }
+
+    return (
+        <div>
+            <pre className={className}>{displayContent}</pre>
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            >
+                {isExpanded ? (
+                    <>
+                        <ChevronUp className="size-3" />
+                        Show less
+                    </>
+                ) : (
+                    <>
+                        <ChevronDown className="size-3" />
+                        Show {lines.length - maxLines} more lines
+                    </>
+                )}
+            </button>
+        </div>
     );
 }
 
@@ -90,7 +137,16 @@ function executeEditorCommand(output: any): boolean {
 
 // Helper function to render tool calls
 function renderToolCall(part: any, messageId: string, index: number, executedCommandIds: Set<string>) {
-    const toolName = part.toolName || 'unknown';
+    // Extract tool name from part.type or part.toolName
+    let toolName = 'unknown';
+    if (part.toolName) {
+        toolName = part.toolName;
+    } else if (part.type && part.type.startsWith('tool-')) {
+        toolName = part.type.replace('tool-', '');
+    } else if (part.type === 'dynamic-tool' && part.toolCall?.toolName) {
+        toolName = part.toolCall.toolName;
+    }
+
     const toolIcon = getToolIcon(toolName);
 
     const toolCallId = `${messageId}-tool-${index}`;
@@ -115,9 +171,11 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
             {(part.state === 'input-available' || part.state === 'input-streaming') && part.input && (
                 <div className="mb-2">
                     <div className="text-xs text-muted-foreground mb-1">Input:</div>
-                    <pre className="text-xs bg-background/50 p-2 rounded border overflow-x-auto">
-                        {JSON.stringify(part.input, null, 2)}
-                    </pre>
+                    <CollapsibleContent
+                        content={JSON.stringify(part.input, null, 2)}
+                        className="text-xs bg-background/50 p-2 rounded border overflow-x-auto"
+                        maxLines={6}
+                    />
                 </div>
             )}
 
@@ -136,9 +194,11 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                                 <div className="text-xs text-muted-foreground mb-1">
                                     Slide: {part.output.slideName} (Index: {part.output.slideIndex})
                                 </div>
-                                <pre className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border mt-1">
-                                    {part.output.slideContent}
-                                </pre>
+                                <CollapsibleContent
+                                    content={part.output.slideContent}
+                                    className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border mt-1"
+                                    maxLines={10}
+                                />
                             </div>
                         ) : part.output.slides ? (
                             // Show clean content for deck reads
@@ -152,9 +212,11 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                                             <div className="text-xs font-medium mb-1">
                                                 Slide {slide.index}: {slide.name}
                                             </div>
-                                            <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-                                                {slide.content}
-                                            </pre>
+                                            <CollapsibleContent
+                                                content={slide.content}
+                                                className="text-xs overflow-x-auto whitespace-pre-wrap"
+                                                maxLines={8}
+                                            />
                                         </div>
                                     ))}
                                 </div>
@@ -162,9 +224,11 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                         ) : typeof part.output === 'string' ? (
                             <span className="text-green-700 dark:text-green-400">{part.output}</span>
                         ) : (
-                            <pre className="text-green-700 dark:text-green-400 overflow-x-auto">
-                                {JSON.stringify(part.output, null, 2)}
-                            </pre>
+                            <CollapsibleContent
+                                content={JSON.stringify(part.output, null, 2)}
+                                className="text-green-700 dark:text-green-400 overflow-x-auto"
+                                maxLines={10}
+                            />
                         )}
                     </div>
                 </div>
@@ -191,6 +255,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const [executedCommandIds, setExecutedCommandIds] = useState<Set<string>>(new Set());
     const [showSettings, setShowSettings] = useState(false);
     const [preferAbsolutePositioning, setPreferAbsolutePositioning] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
 
     const { messages, sendMessage, status, setMessages } = useChat({
@@ -285,226 +350,290 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
         fileInputRef.current?.click();
     };
 
+    // Drag and drop handlers
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Only set drag over to false if we're leaving the entire chat panel
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragOver(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+
+        const droppedFiles = e.dataTransfer.files;
+        if (droppedFiles && droppedFiles.length > 0) {
+            // Filter for supported file types
+            const supportedFiles = Array.from(droppedFiles).filter(file =>
+                file.type.startsWith('image/') || file.type === 'application/pdf'
+            );
+
+            if (supportedFiles.length > 0) {
+                // Create a new FileList-like object
+                const fileList = supportedFiles.reduce((acc, file, index) => {
+                    acc[index] = file;
+                    return acc;
+                }, {} as any);
+                fileList.length = supportedFiles.length;
+
+                setFiles(fileList as FileList);
+            }
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
-        <div className={`fixed top-0 h-full w-96 bg-background border-l border-border shadow-lg z-50 flex flex-col transition-all duration-300 ${isTestPanelOpen ? 'right-96' : 'right-0'
-            }`}>
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                    <Zap className="size-5 text-primary" />
-                    <h2 className="text-lg font-semibold">AI Chat</h2>
-                </div>
-                <div className="flex items-center gap-1">
-                    {/* Settings Dropdown */}
-                    <div className="relative" ref={settingsRef}>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setShowSettings(!showSettings)}
-                            className={`relative ${preferAbsolutePositioning ? 'text-primary' : ''}`}
-                            title="AI Generation Settings"
-                        >
-                            <Settings className="size-4" />
-                            {preferAbsolutePositioning && (
-                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-                            )}
-                        </Button>
-                        {showSettings && (
-                            <div className="absolute right-0 top-full mt-1 w-64 bg-background border border-border rounded-md shadow-lg z-10">
-                                <div className="p-3">
-                                    <div className="text-sm font-medium mb-2">AI Generation Settings</div>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={preferAbsolutePositioning}
-                                            onChange={(e) => setPreferAbsolutePositioning(e.target.checked)}
-                                            className="rounded border-border"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="text-sm">Prefer Absolute Positioning</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Guide AI to use absolute positioning and avoid nested divs
-                                            </div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        )}
+        <div
+            className={`fixed top-0 h-full w-96 bg-background border-l border-border shadow-lg z-50 transition-all duration-300 ${isTestPanelOpen ? 'right-96' : 'right-0'
+                } ${isDragOver ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-300 dark:border-blue-700' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            <div className="relative h-full flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-border">
+                    <div className="flex items-center gap-2">
+                        <Zap className="size-5 text-primary" />
+                        <h2 className="text-lg font-semibold">AI Chat</h2>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
-                        <X className="size-4" />
-                    </Button>
-                </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.length === 0 && (
-                    <div className="text-center text-muted-foreground py-8">
-                        <Zap className="size-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-sm">Hi! I'm your ephemeral AI assistant for ChalkTalk Studio.</p>
-                        <p className="text-xs mt-2">I can help with presentations, analyze images/PDFs, and answer questions.</p>
-                        <p className="text-xs mt-1 text-orange-500">⚡ Note: This chat is not saved and will be lost when you close it.</p>
-                    </div>
-                )}
-
-                {messages.map((message, index) => (
-                    <div
-                        key={message.id || `message-${index}`}
-                        className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                            }`}
-                    >
-                        {message.role === 'assistant' && (
-                            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <Bot className="size-4 text-primary" />
-                            </div>
-                        )}
-
-                        <div
-                            className={`max-w-[80%] rounded-lg p-3 ${message.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                                }`}
-                        >
-                            {message.parts.map((part, index) => {
-                                if (part.type === 'text') {
-                                    return (
-                                        <div key={`${message.id}-text-${index}`} className="whitespace-pre-wrap text-sm">
-                                            {part.text}
-                                        </div>
-                                    );
-                                }
-                                if (part.type === 'file' && part.mediaType?.startsWith('image/')) {
-                                    return (
-                                        <div key={`${message.id}-image-${index}`} className="mt-2">
-                                            <Image
-                                                src={part.url}
-                                                width={200}
-                                                height={200}
-                                                alt={`attachment-${index}`}
-                                                className="rounded-lg max-w-full h-auto"
+                    <div className="flex items-center gap-1">
+                        {/* Settings Dropdown */}
+                        <div className="relative" ref={settingsRef}>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowSettings(!showSettings)}
+                                className={`relative ${preferAbsolutePositioning ? 'text-primary' : ''}`}
+                                title="AI Generation Settings"
+                            >
+                                <Settings className="size-4" />
+                                {preferAbsolutePositioning && (
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                                )}
+                            </Button>
+                            {showSettings && (
+                                <div className="absolute right-0 top-full mt-1 w-64 bg-background border border-border rounded-md shadow-lg z-10">
+                                    <div className="p-3">
+                                        <div className="text-sm font-medium mb-2">AI Generation Settings</div>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={preferAbsolutePositioning}
+                                                onChange={(e) => setPreferAbsolutePositioning(e.target.checked)}
+                                                className="rounded border-border"
                                             />
-                                        </div>
-                                    );
-                                }
-                                if (part.type === 'file' && part.mediaType === 'application/pdf') {
-                                    return (
-                                        <div key={`${message.id}-pdf-${index}`} className="mt-2">
-                                            <div className="bg-background border rounded-lg p-3">
-                                                <p className="text-xs text-muted-foreground mb-2">PDF Document</p>
-                                                <iframe
-                                                    src={part.url}
-                                                    width="100%"
-                                                    height="200"
-                                                    title={`pdf-${index}`}
-                                                    className="rounded border"
-                                                />
+                                            <div className="flex-1">
+                                                <div className="text-sm">Prefer Absolute Positioning</div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    Guide AI to use absolute positioning and avoid nested divs
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                }
-                                // Handle tool calls
-                                if (part.type === 'tool-readDeck' || part.type === 'tool-readSlide' ||
-                                    part.type === 'tool-createSlide' || part.type === 'tool-replaceSlide') {
-                                    return renderToolCall(part, message.id, index, executedCommandIds);
-                                }
-                                // Handle dynamic tools
-                                if (part.type === 'dynamic-tool') {
-                                    return renderToolCall(part, message.id, index, executedCommandIds);
-                                }
-                                return null;
-                            })}
-                        </div>
-
-                        {message.role === 'user' && (
-                            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <User className="size-4 text-primary" />
-                            </div>
-                        )}
-                    </div>
-                ))}
-
-                {isLoading && (
-                    <div className="flex gap-3 justify-start">
-                        <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Bot className="size-4 text-primary" />
-                        </div>
-                        <div className="bg-muted rounded-lg p-3">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="size-4 animate-spin" />
-                                AI is thinking...
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Form */}
-            <div className="border-t border-border p-4">
-                <form onSubmit={handleSubmit} className="space-y-3">
-                    {/* File Preview */}
-                    {files && files.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {Array.from(files).map((file, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-muted rounded-lg p-2 text-xs flex items-center gap-2"
-                                >
-                                    <Paperclip className="size-3" />
-                                    <span className="truncate max-w-[150px]">{file.name}</span>
+                                        </label>
+                                    </div>
                                 </div>
-                            ))}
+                            )}
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={onClose}>
+                            <X className="size-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {messages.length === 0 && (
+                        <div className="text-center text-muted-foreground py-8">
+                            <Zap className="size-12 mx-auto mb-4 opacity-50" />
+                            <p className="text-sm">Hi! I'm your ephemeral AI assistant for ChalkTalk Studio.</p>
+                            <p className="text-xs mt-2">I can help with presentations, analyze images/PDFs, and answer questions.</p>
+                            <p className="text-xs mt-1 text-orange-500">⚡ Note: This chat is not saved and will be lost when you close it.</p>
                         </div>
                     )}
 
-                    {/* Input Row */}
-                    <div className="flex gap-2">
-                        <div className="flex-1 relative">
-                            <Input
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask me anything about your presentation..."
-                                className="pr-10"
-                                disabled={isLoading}
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 size-8"
-                                onClick={handleFileSelect}
-                                disabled={isLoading}
+                    {messages.map((message, index) => (
+                        <div
+                            key={message.id || `message-${index}`}
+                            className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                                }`}
+                        >
+                            {message.role === 'assistant' && (
+                                <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <Bot className="size-4 text-primary" />
+                                </div>
+                            )}
+
+                            <div
+                                className={`max-w-[80%] rounded-lg p-3 ${message.role === 'user'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted'
+                                    }`}
                             >
-                                <Paperclip className="size-4" />
+                                {message.parts.map((part, index) => {
+                                    if (part.type === 'text') {
+                                        return (
+                                            <div key={`${message.id}-text-${index}`} className="whitespace-pre-wrap text-sm">
+                                                {part.text}
+                                            </div>
+                                        );
+                                    }
+                                    if (part.type === 'file' && part.mediaType?.startsWith('image/')) {
+                                        return (
+                                            <div key={`${message.id}-image-${index}`} className="mt-2">
+                                                <Image
+                                                    src={part.url}
+                                                    width={200}
+                                                    height={200}
+                                                    alt={`attachment-${index}`}
+                                                    className="rounded-lg max-w-full h-auto"
+                                                />
+                                            </div>
+                                        );
+                                    }
+                                    if (part.type === 'file' && part.mediaType === 'application/pdf') {
+                                        return (
+                                            <div key={`${message.id}-pdf-${index}`} className="mt-2">
+                                                <div className="bg-background border rounded-lg p-3">
+                                                    <p className="text-xs text-muted-foreground mb-2">PDF Document</p>
+                                                    <iframe
+                                                        src={part.url}
+                                                        width="100%"
+                                                        height="200"
+                                                        title={`pdf-${index}`}
+                                                        className="rounded border"
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    // Handle tool calls
+                                    if (part.type === 'tool-readDeck' || part.type === 'tool-readSlide' ||
+                                        part.type === 'tool-createSlide' || part.type === 'tool-replaceSlide') {
+                                        return renderToolCall(part, message.id, index, executedCommandIds);
+                                    }
+                                    // Handle dynamic tools
+                                    if (part.type === 'dynamic-tool') {
+                                        return renderToolCall(part, message.id, index, executedCommandIds);
+                                    }
+                                    return null;
+                                })}
+                            </div>
+
+                            {message.role === 'user' && (
+                                <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <User className="size-4 text-primary" />
+                                </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {isLoading && (
+                        <div className="flex gap-3 justify-start">
+                            <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Bot className="size-4 text-primary" />
+                            </div>
+                            <div className="bg-muted rounded-lg p-3">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="size-4 animate-spin" />
+                                    AI is thinking...
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Form */}
+                <div className="border-t border-border p-4">
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        {/* File Preview */}
+                        {files && files.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {Array.from(files).map((file, index) => (
+                                    <div
+                                        key={index}
+                                        className="bg-muted rounded-lg p-2 text-xs flex items-center gap-2"
+                                    >
+                                        <Paperclip className="size-3" />
+                                        <span className="truncate max-w-[150px]">{file.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Input Row */}
+                        <div className="flex gap-2">
+                            <div className="flex-1 relative">
+                                <Input
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    placeholder="Ask me anything about your presentation..."
+                                    className="pr-12"
+                                    disabled={isLoading}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 size-7"
+                                    onClick={handleFileSelect}
+                                    disabled={isLoading}
+                                    title="Upload image or PDF"
+                                >
+                                    <Paperclip className="size-4" />
+                                </Button>
+                            </div>
+                            <Button type="submit" size="icon" disabled={isLoading || (!input.trim() && (!files || files.length === 0))}>
+                                {isLoading ? (
+                                    <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                    <Send className="size-4" />
+                                )}
                             </Button>
                         </div>
-                        <Button type="submit" size="icon" disabled={isLoading || (!input.trim() && (!files || files.length === 0))}>
-                            {isLoading ? (
-                                <Loader2 className="size-4 animate-spin" />
-                            ) : (
-                                <Send className="size-4" />
-                            )}
-                        </Button>
-                    </div>
-                </form>
+                    </form>
 
-                {/* Hidden File Input */}
-                <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    ref={fileInputRef}
-                    onChange={(event) => {
-                        if (event.target.files) {
-                            setFiles(event.target.files);
-                        }
-                    }}
-                    multiple
-                    className="hidden"
-                />
+                    {/* Hidden File Input */}
+                    <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        ref={fileInputRef}
+                        onChange={(event) => {
+                            if (event.target.files) {
+                                setFiles(event.target.files);
+                            }
+                        }}
+                        multiple
+                        className="hidden"
+                    />
+                </div>
+
+                {/* Drag and Drop Overlay */}
+                {isDragOver && (
+                    <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg border-2 border-dashed border-blue-500 text-center">
+                            <Upload className="size-12 mx-auto mb-4 text-blue-500" />
+                            <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-2">
+                                Drop files here
+                            </h3>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">
+                                Upload images (PNG, JPG, GIF) or PDF files
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,0 +1,59 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - link "Chalktalk Studio" [ref=e5]:
+        - /url: /
+        - generic [ref=e6]: Chalktalk Studio
+      - generic [ref=e8]:
+        - link "Login" [ref=e9]:
+          - /url: /sign-in
+        - link "Sign up" [ref=e10]:
+          - /url: /sign-up
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e18]:
+          - heading "Sign in to chalktalk_studio" [level=1] [ref=e19]
+          - paragraph [ref=e20]: Welcome back! Please sign in to continue
+        - generic [ref=e21]:
+          - button "Sign in with Google Continue with Google" [ref=e24] [cursor=pointer]:
+            - generic [ref=e25] [cursor=pointer]:
+              - img "Sign in with Google" [ref=e27] [cursor=pointer]
+              - generic [ref=e28] [cursor=pointer]: Continue with Google
+          - paragraph [ref=e31]: or
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - generic [ref=e37]:
+                - generic [ref=e39]: Email address
+                - textbox "Email address" [ref=e40]
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: Password
+                    - generic:
+                      - textbox "Password"
+                      - button "Show password":
+                        - img
+            - button "Continue" [ref=e42] [cursor=pointer]:
+              - generic [ref=e43] [cursor=pointer]:
+                - text: Continue
+                - img [ref=e44] [cursor=pointer]
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: Don’t have an account?
+          - link "Sign up" [ref=e49] [cursor=pointer]:
+            - /url: http://localhost:3001/sign-up#/?redirect_url=http%3A%2F%2Flocalhost%3A3001%2Feditor%2Ftest-project
+        - generic [ref=e51]:
+          - generic [ref=e53]:
+            - paragraph [ref=e54]: Secured by
+            - link "Clerk logo" [ref=e55] [cursor=pointer]:
+              - /url: https://go.clerk.com/components
+              - img [ref=e56] [cursor=pointer]
+          - paragraph [ref=e61]: Development mode
+  - button "Open Next.js Dev Tools" [ref=e67] [cursor=pointer]:
+    - img [ref=e68] [cursor=pointer]
+  - alert [ref=e73]
+```

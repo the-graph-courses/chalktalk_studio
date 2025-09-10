@@ -69,8 +69,8 @@ export default function LayoutWrapper({
                             onToggleTestPanel={toggleTestPanel}
                             onToggleAIChat={projectId ? toggleAIChat : undefined}
                         />
-                        <div className="flex-1 relative overflow-auto">
-                            <div className={`h-full transition-all duration-300 ${(() => {
+                        <div className="flex-1 relative">
+                            <div className={`min-h-full transition-all duration-300 ${(() => {
                                 const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
                                 if (openPanels >= 2) return 'mr-[48rem]';
                                 if (openPanels === 1) return 'mr-96';
@@ -109,8 +109,8 @@ export default function LayoutWrapper({
                     onToggleTestPanel={toggleTestPanel}
                     onToggleAIChat={projectId ? toggleAIChat : undefined}
                 />
-                <div className="flex-1 relative overflow-auto">
-                    <div className={`h-full transition-all duration-300 ${(() => {
+                <div className="flex-1 relative">
+                    <div className={`min-h-full transition-all duration-300 ${(() => {
                         const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
                         if (openPanels >= 2) return 'mr-[48rem]';
                         if (openPanels === 1) return 'mr-96';

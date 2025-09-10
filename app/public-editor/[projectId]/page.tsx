@@ -2,16 +2,13 @@
 
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
-import { canvasAbsoluteMode, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
-import marqueeSelect from '@/lib/marquee-select'
+import { canvasAbsoluteMode } from '@grapesjs/studio-sdk-plugins'
 import { useMemo, use, useRef, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { useUserDetail } from '@/app/provider'
 import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats'
-import { TEMPLATES } from '@/lib/slide-templates';
-import EditorHeader from '@/app/_components/EditorHeader'
+import { TEMPLATES } from '@/lib/slide-templates'
+import { useSearchParams } from 'next/navigation'
 
 type PageProps = { params: Promise<{ projectId: string }> }
 
@@ -27,42 +24,24 @@ declare global {
     }
 }
 
-export default function EditorPage({ params }: PageProps) {
+export default function PublicEditorPage({ params }: PageProps) {
     const { projectId } = use(params)
-    const { user } = useUser()
-    const identityId = useMemo(() => user?.id || 'anonymous', [user?.id])
+    const searchParams = useSearchParams()
+
+    // Use anonymous identity for public access
+    const identityId = useMemo(() => 'anonymous-public-editor', [])
     const licenseKey = process.env.NEXT_PUBLIC_GRAPES_SDK_LICENSE_KEY || ''
 
     const saveDeck = useMutation(api.slideDeck.SaveDeck)
-    const { userDetail } = useUserDetail()
+
+    // For public access, we'll either load a demo project or create a temporary one
     const deck = useQuery(
         api.slideDeck.GetDeck,
-        userDetail ? { projectId, uid: userDetail._id } : 'skip'
+        // For public access, we'll use a demo project ID or create one on the fly
+        { projectId: 'demo-project', uid: 'public-user' }
     )
 
     const editorRef = useRef<any>(null)
-
-    // Helper function to detect if content is a complete slide container
-    const isCompleteSlideContainer = (content: string): boolean => {
-        return content.includes('slide-container') || content.includes('<style>');
-    }
-
-    // Helper function to enforce project dimensions on AI-generated content
-    const enforceProjectDimensions = (content: string): string => {
-        if (!isCompleteSlideContainer(content)) {
-            return content; // Not a complete container, return as-is
-        }
-
-        const projectWidth = DEFAULT_SLIDE_FORMAT.width;
-        const projectHeight = DEFAULT_SLIDE_FORMAT.height;
-
-        // Replace any existing width/height in CSS with project dimensions
-        let updatedContent = content
-            .replace(/width:\s*\d+px/g, `width: ${projectWidth}px`)
-            .replace(/height:\s*\d+px/g, `height: ${projectHeight}px`);
-
-        return updatedContent;
-    }
 
     // Create global functions for AI tools to interact with the editor
     useEffect(() => {
@@ -72,20 +51,9 @@ export default function EditorPage({ params }: PageProps) {
                 addSlide: (name: string, content: string, insertAtIndex?: number) => {
                     if (!editorRef.current) return false
                     const editor = editorRef.current
-
-                    // Check if AI provided a complete slide container
-                    let finalContent: string;
-                    if (isCompleteSlideContainer(content)) {
-                        // Use AI content directly but enforce project dimensions
-                        finalContent = enforceProjectDimensions(content);
-                    } else {
-                        // Wrap simple content in our container
-                        finalContent = getSlideContainer(content);
-                    }
-
                     const page = editor.Pages.add({
                         name,
-                        component: finalContent
+                        component: getSlideContainer(content)
                     }, {
                         select: true,
                         at: insertAtIndex
@@ -104,18 +72,9 @@ export default function EditorPage({ params }: PageProps) {
                         page.set('name', newName)
                     }
 
-                    // Check if AI provided a complete slide container
-                    let finalContent: string;
-                    if (isCompleteSlideContainer(newContent)) {
-                        // Use AI content directly but enforce project dimensions
-                        finalContent = enforceProjectDimensions(newContent);
-                    } else {
-                        // Wrap simple content in our container
-                        finalContent = getSlideContainer(newContent);
-                    }
-
+                    // Always use container wrapper for consistency
                     editor.Pages.select(page);
-                    editor.setComponents(finalContent);
+                    editor.setComponents(getSlideContainer(newContent));
                     return true
                 },
                 replaceSlide: (slideIndex: number, newContent: string, newName?: string) => {
@@ -130,18 +89,9 @@ export default function EditorPage({ params }: PageProps) {
                         page.set('name', newName)
                     }
 
-                    // Check if AI provided a complete slide container
-                    let finalContent: string;
-                    if (isCompleteSlideContainer(newContent)) {
-                        // Use AI content directly but enforce project dimensions
-                        finalContent = enforceProjectDimensions(newContent);
-                    } else {
-                        // Wrap simple content in our container
-                        finalContent = getSlideContainer(newContent);
-                    }
-
+                    // Always use container wrapper for consistency
                     editor.Pages.select(page);
-                    editor.setComponents(finalContent);
+                    editor.setComponents(getSlideContainer(newContent));
                     return true
                 },
                 getEditor: () => editorRef.current
@@ -156,22 +106,22 @@ export default function EditorPage({ params }: PageProps) {
         }
     }, [])
 
-    if (!userDetail) return <div>Loading user...</div>
-    if (deck === undefined) return <div>Loading deck...</div>
-
-    console.log('Deck loaded:', {
-        projectId,
-        deckExists: !!deck,
-        projectType: typeof deck?.project,
-        hasPages: !!(deck?.project?.pages || (typeof deck?.project === 'string' && deck.project.includes('pages')))
-    })
-
-    // Handle case where project might still be a string
+    // Handle demo project loading
     let initialProject = deck?.project || {
         pages: [
             {
-                name: 'Presentation',
-                component: getSlideContainer(``)
+                name: 'Demo Presentation',
+                component: getSlideContainer(`
+                    <h1 style="position: absolute; top: 200px; left: 100px; font-size: 60px; margin: 0; font-weight: 700; color: #2c3e50;">
+                        Demo Presentation
+                    </h1>
+                    <p style="position: absolute; top: 320px; left: 100px; font-size: 24px; max-width: 600px; line-height: 1.5; color: #555;">
+                        This is a public demo of the slide editor. You can create and edit slides without authentication.
+                    </p>
+                    <div style="position: absolute; bottom: 50px; left: 100px; padding: 15px 25px; background: rgba(52, 152, 219, 0.1); border-radius: 8px; border: 2px solid #3498db;">
+                        <span style="font-size: 16px; font-weight: 600; color: #3498db;">Public Demo Mode</span>
+                    </div>
+                `)
             },
         ],
     }
@@ -183,20 +133,28 @@ export default function EditorPage({ params }: PageProps) {
             initialProject = JSON.parse(initialProject)
             console.log('Parsed project successfully, pages:', initialProject.pages?.length)
         } catch (error) {
-            console.error('Failed to parse project in editor:', error)
+            console.error('Failed to parse project in public editor:', error)
             return <div>Error: Invalid project format</div>
         }
     }
 
-
     return (
         <div className="h-full flex flex-col">
-            <EditorHeader
-                projectId={projectId}
-                deckId={deck?._id}
-                initialTitle={deck?.title}
-                userDetailId={userDetail._id}
-            />
+            {/* Public Editor Header */}
+            <div className="bg-white border-b border-gray-200 px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <h1 className="text-xl font-semibold text-gray-900">Slide Editor - Public Demo</h1>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Demo Mode
+                        </span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        Project ID: {projectId}
+                    </div>
+                </div>
+            </div>
+
             <div className="flex-1">
                 <StudioEditor
                     onReady={(editor) => {
@@ -216,25 +174,6 @@ export default function EditorPage({ params }: PageProps) {
                                 wrapper.components(getSlideContainer(currentContent));
                             }
                         });
-
-                        // If this is a new project (deck is null), open the template browser.
-                        if (!deck) {
-                            editor.runCommand('studio:layoutToggle', {
-                                id: 'template-browser',
-                                header: false,
-                                placer: { type: 'dialog', title: 'Choose a template for your project', size: 'l' },
-                                layout: {
-                                    type: 'panelTemplates',
-                                    content: { itemsPerRow: 4 },
-                                    onSelect: ({ loadTemplate, template }: any) => {
-                                        // Load the selected template to the current project
-                                        loadTemplate(template);
-                                        // Close the dialog layout
-                                        editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
-                                    }
-                                }
-                            });
-                        }
 
                         // Add basic canvas styles
                         const cssComposer = editor.CssComposer;
@@ -313,77 +252,7 @@ export default function EditorPage({ params }: PageProps) {
                     options={{
                         licenseKey,
                         theme: 'light',
-                        plugins: [
-                            canvasAbsoluteMode,
-                            marqueeSelect,
-                            iconifyComponent.init({
-                                block: {
-                                    category: 'Media',
-                                    label: 'Icon'
-                                },
-                                collections: [
-                                    'mdi',        // Material Design Icons
-                                    'fa-solid',   // Font Awesome Solid
-                                    'heroicons',  // Heroicons
-                                    'lucide',     // Lucide Icons
-                                    'tabler'      // Tabler Icons
-                                ],
-                                extendIconComponent: true
-                            }),
-                            rteProseMirror.init({
-                                // Don't disable RTE on Escape key to prevent accidental exits
-                                disableOnEsc: false,
-                                // Customize toolbar with additional formatting options
-                                toolbar({ items, layouts, proseMirror, commands }) {
-                                    const { view } = proseMirror;
-                                    return [
-                                        // Default toolbar items (bold, italic, etc.)
-                                        ...items,
-                                        // Add separator
-                                        layouts.separator,
-                                        // Custom button for slide-specific functionality
-                                        {
-                                            id: 'slideFormatting',
-                                            type: 'button',
-                                            icon: 'paint-brush',
-                                            tooltip: 'Apply slide formatting',
-                                            onClick: () => {
-                                                // Get current selected text
-                                                const selectedText = commands.text.selected();
-                                                if (selectedText) {
-                                                    // Apply slide-specific formatting
-                                                    const { state, dispatch } = view;
-                                                    const formattedText = `✨ ${selectedText} ✨`;
-                                                    dispatch(state.tr.replaceSelectionWith(state.schema.text(formattedText)));
-                                                }
-                                            }
-                                        },
-                                        // Dropdown for common slide variables/placeholders
-                                        {
-                                            id: 'slideVariables',
-                                            type: 'selectField',
-                                            emptyState: 'Insert Variables',
-                                            options: [
-                                                { id: '{{ title }}', label: 'Slide Title' },
-                                                { id: '{{ subtitle }}', label: 'Subtitle' },
-                                                { id: '{{ author }}', label: 'Author Name' },
-                                                { id: '{{ date }}', label: 'Current Date' },
-                                                { id: '{{ company }}', label: 'Company Name' }
-                                            ],
-                                            onChange: ({ value }: { value: string }) => {
-                                                commands.text.replace(value, { select: true });
-                                            }
-                                        }
-                                    ];
-                                },
-                                // Handle Enter key for better slide formatting
-                                onEnter({ commands }) {
-                                    // Create a line break for better slide formatting
-                                    commands.text.createBreak();
-                                    return true;
-                                }
-                            })
-                        ],
+                        plugins: [canvasAbsoluteMode],
                         templates: {
                             onLoad: async () => TEMPLATES,
                         },
@@ -400,18 +269,29 @@ export default function EditorPage({ params }: PageProps) {
                         storage: {
                             type: 'self',
                             onSave: async ({ project }) => {
-                                try {
-                                    await saveDeck({
-                                        projectId,
-                                        uid: userDetail._id,
-                                        project: JSON.stringify(project),
-                                    })
-                                } catch (error) {
-                                    console.error('Failed to save project:', error)
-                                    throw error
+                                // For public demo, we'll save to localStorage instead of the database
+                                if (typeof window !== 'undefined') {
+                                    try {
+                                        const projectData = JSON.stringify(project);
+                                        localStorage.setItem(`public-editor-${projectId}`, projectData);
+                                        console.log('Project saved to localStorage');
+                                    } catch (error) {
+                                        console.error('Failed to save project to localStorage:', error);
+                                    }
                                 }
                             },
                             onLoad: async () => {
+                                // Try to load from localStorage first, then fall back to initial project
+                                if (typeof window !== 'undefined') {
+                                    try {
+                                        const savedProject = localStorage.getItem(`public-editor-${projectId}`);
+                                        if (savedProject) {
+                                            return { project: JSON.parse(savedProject) };
+                                        }
+                                    } catch (error) {
+                                        console.error('Failed to load project from localStorage:', error);
+                                    }
+                                }
                                 return { project: initialProject };
                             },
                             autosaveChanges: 100,
@@ -578,5 +458,3 @@ export default function EditorPage({ params }: PageProps) {
         </div>
     )
 }
-
-
