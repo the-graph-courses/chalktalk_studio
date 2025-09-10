@@ -2,7 +2,7 @@
 
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
-import { canvasAbsoluteMode, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
+import { canvasAbsoluteMode, canvasFullSize, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
 import marqueeSelect from '@/lib/marquee-select'
 import { useMemo, use, useRef, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
@@ -236,43 +236,6 @@ export default function EditorPage({ params }: PageProps) {
                             });
                         }
 
-                        // Add basic canvas styles
-                        const cssComposer = editor.CssComposer;
-                        cssComposer.addRules(`
-                      body {
-                        background-color: #f0f2f5;
-                        margin: 0;
-                        height: 10000px;
-                        width: 10000px;
-                      }
-                    `);
-
-                        // Set default zoom to fit slide with 15% padding on each side
-                        setTimeout(() => {
-                            const canvasEl = editor.Canvas.getFrameEl();
-                            if (canvasEl) {
-                                // Get the slide dimensions from the default format
-                                const slideWidth = DEFAULT_SLIDE_FORMAT.width;
-                                const slideHeight = DEFAULT_SLIDE_FORMAT.height;
-
-                                // Get the canvas viewport dimensions
-                                const canvasRect = canvasEl.getBoundingClientRect();
-
-                                // Calculate available space with 15% padding on each side
-                                // This means 70% of the width should be used for the slide (100% - 15% - 15%)
-                                const availableWidth = canvasRect.width * 0.7; // 70% of viewport width
-                                const availableHeight = canvasRect.height * 0.7; // 70% of viewport height
-
-                                // Calculate zoom to fit the slide with padding
-                                const zoomX = (availableWidth / slideWidth) * 100;
-                                const zoomY = (availableHeight / slideHeight) * 100;
-                                const optimalZoom = Math.min(zoomX, zoomY); // Take the smaller zoom to ensure both dimensions fit
-
-                                // Set the zoom level with reasonable bounds
-                                editor.Canvas.setZoom(Math.max(Math.min(optimalZoom, 100), 10)); // Between 10% and 100%
-                            }
-                        }, 300); // Wait for canvas to initialize
-
                         // Add scroll wheel zoom functionality
                         const canvas = editor.Canvas.getElement()
                         if (canvas) {
@@ -314,6 +277,7 @@ export default function EditorPage({ params }: PageProps) {
                         licenseKey,
                         theme: 'light',
                         plugins: [
+                            canvasFullSize,
                             canvasAbsoluteMode,
                             marqueeSelect,
                             iconifyComponent.init({
