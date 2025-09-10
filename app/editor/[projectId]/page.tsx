@@ -277,7 +277,12 @@ export default function EditorPage({ params }: PageProps) {
                         licenseKey,
                         theme: 'light',
                         plugins: [
-                            canvasFullSize,
+                            canvasFullSize.init({
+                                deviceMaxWidth: 2000, // Ensure body is wide enough
+                                deviceMinHeigth: 1200, // Ensure body is tall enough for slide + margins
+                                canvasOffsetY: 50,
+                                canvasOffsetX: 50,
+                            }),
                             canvasAbsoluteMode,
                             marqueeSelect,
                             iconifyComponent.init({

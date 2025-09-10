@@ -24,12 +24,10 @@ export const getSlideContainer = (
     customStyles: Record<string, string> = {}
 ) => {
     const defaultStyles = {
-        position: 'absolute',
+        position: 'relative',
         width: `${format.width}px`,
         height: `${format.height}px`,
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
+        margin: '50px auto',
         padding: '10px',
         backgroundColor: 'white',
         borderRadius: '8px',
