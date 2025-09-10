@@ -26,7 +26,7 @@ export default function FullSizeAbsoluteDemoPage() {
     // ACTIVE SLIDE FORMAT - Change this line to test different formats
     const activeSlide = slide_16_9_hd;
     // const activeSlide = slide_16_9_4k;
-    // const activeSlide = slide_4_3_standard;
+    //const activeSlide = slide_4_3_standard;
     // const activeSlide = slide_4_3_high;
     // const activeSlide = slide_1_1_medium;
     // const activeSlide = slide_1_1_large;
@@ -41,7 +41,9 @@ export default function FullSizeAbsoluteDemoPage() {
                     licenseKey: process.env.NEXT_PUBLIC_GRAPES_SDK_LICENSE_KEY || '',
                     plugins: [
                         canvasFullSize.init({
-                            deviceMaxWidth: activeSlide.width,  // Body width = slide width
+                            deviceMaxWidth: activeSlide.width,  // Set body max width to slide width
+                            canvasOffsetX: 50,  // Add horizontal padding for centering
+                            canvasOffsetY: 50,   // Add vertical padding
                         }),
                         canvasAbsoluteMode
                     ],
@@ -51,17 +53,23 @@ export default function FullSizeAbsoluteDemoPage() {
                                 {
                                     name: activeSlide.name,
                                     component: `
-                                    <!-- Direct content on body as slide -->
-                                    <p style="position: absolute; left: 100px; top: 100px; color: white; font-size: 24px;">${activeSlide.name}</p>
-                                    <!-- Corners -->
-                                    <span style="position:absolute;top:10px;left:10px">•</span>
-                                    <span style="position:absolute;bottom:10px;right:10px">•</span>
+                                    <!-- Slide container that exactly matches body dimensions -->
+                                    <div id="slide-container" style="position: absolute; top: 0; left: 0; width: ${activeSlide.width}px; height: ${activeSlide.height}px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); overflow: visible;">
+                                    
+                                        <!-- Corner markers to visualize bounds -->
+                                        <div style="position: absolute; top: 10px; left: 10px; width: 30px; height: 30px; background: rgba(255,255,255,0.3); border-radius: 4px;"></div>
+                                        <div style="position: absolute; bottom: 10px; right: 10px; width: 30px; height: 30px; background: rgba(255,255,255,0.3); border-radius: 4px;"></div>
+                                    </div>
                                     
                                     <style>
                                         body {
+                                            margin: 0;
+                                            padding: 0;
+                                            position: relative;
                                             width: ${activeSlide.width}px;
-                                            height: ${activeSlide.height}px;
-                                            background: linear-gradient(135deg, #3b82f6 0%, #3453ba 100%);
+                                            min-height: ${activeSlide.height}px;
+                                            background: #f3f4f6;
+                                            overflow: hidden;
                                         }
                                     </style>
                                     `,

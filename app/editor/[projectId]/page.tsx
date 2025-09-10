@@ -190,360 +190,151 @@ export default function EditorPage({ params }: PageProps) {
 
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-screen w-full flex flex-col">
             <EditorHeader
                 projectId={projectId}
                 deckId={deck?._id}
                 initialTitle={deck?.title}
                 userDetailId={userDetail._id}
             />
-            <div className="flex-1">
-                <StudioEditor
-                    onReady={(editor) => {
-                        editorRef.current = editor
+            <StudioEditor
+                onReady={(editor) => {
+                    editorRef.current = editor
 
-                        // This is the fix for your point about "opening a new page in an existing presentation"
-                        // When a new page is added via the UI, we ensure it gets our slide container.
-                        editor.on('page:add', (page) => {
-                            // Select the page first to access its components
-                            editor.Pages.select(page);
-                            const wrapper = editor.DomComponents.getWrapper();
+                    // This is the fix for your point about "opening a new page in an existing presentation"
+                    // When a new page is added via the UI, we ensure it gets our slide container.
+                    editor.on('page:add', (page) => {
+                        // Select the page first to access its components
+                        editor.Pages.select(page);
+                        const wrapper = editor.DomComponents.getWrapper();
 
-                            // Check if it already has a container (e.g., from AI tools)
-                            if (wrapper && !wrapper.find('[data-slide-container]').length) {
-                                // Get the inner HTML, wrap it, and set it back.
-                                const currentContent = wrapper.getInnerHTML();
-                                wrapper.components(getSlideContainer(currentContent));
+                        // Check if it already has a container (e.g., from AI tools)
+                        if (wrapper && !wrapper.find('[data-slide-container]').length) {
+                            // Get the inner HTML, wrap it, and set it back.
+                            const currentContent = wrapper.getInnerHTML();
+                            wrapper.components(getSlideContainer(currentContent));
+                        }
+                    });
+
+                    // If this is a new project (deck is null), open the template browser.
+                    if (!deck) {
+                        editor.runCommand('studio:layoutToggle', {
+                            id: 'template-browser',
+                            header: false,
+                            placer: { type: 'dialog', title: 'Choose a template for your project', size: 'l' },
+                            layout: {
+                                type: 'panelTemplates',
+                                content: { itemsPerRow: 4 },
+                                onSelect: ({ loadTemplate, template }: any) => {
+                                    // Load the selected template to the current project
+                                    loadTemplate(template);
+                                    // Close the dialog layout
+                                    editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
+                                }
                             }
                         });
+                    }
 
-                        // If this is a new project (deck is null), open the template browser.
-                        if (!deck) {
-                            editor.runCommand('studio:layoutToggle', {
-                                id: 'template-browser',
-                                header: false,
-                                placer: { type: 'dialog', title: 'Choose a template for your project', size: 'l' },
-                                layout: {
-                                    type: 'panelTemplates',
-                                    content: { itemsPerRow: 4 },
-                                    onSelect: ({ loadTemplate, template }: any) => {
-                                        // Load the selected template to the current project
-                                        loadTemplate(template);
-                                        // Close the dialog layout
-                                        editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
-                                    }
+                    // Add scroll wheel zoom functionality
+                    const canvas = editor.Canvas.getElement()
+                    if (canvas) {
+                        const handleWheelZoom = (event: WheelEvent) => {
+                            // Only zoom if Ctrl/Cmd key is pressed
+                            if (event.ctrlKey || event.metaKey) {
+                                event.preventDefault() // Prevent default scroll behavior
+
+                                // Determine scroll direction
+                                const delta = event.deltaY
+
+                                // Get current zoom level
+                                let zoom = editor.Canvas.getZoom()
+
+                                // Adjust zoom level
+                                if (delta < 0) {
+                                    // Scroll up, zoom in
+                                    zoom += 5
+                                } else {
+                                    // Scroll down, zoom out
+                                    zoom -= 5
                                 }
-                            });
-                        }
 
-                        // Add scroll wheel zoom functionality
-                        const canvas = editor.Canvas.getElement()
-                        if (canvas) {
-                            const handleWheelZoom = (event: WheelEvent) => {
-                                // Only zoom if Ctrl/Cmd key is pressed
-                                if (event.ctrlKey || event.metaKey) {
-                                    event.preventDefault() // Prevent default scroll behavior
-
-                                    // Determine scroll direction
-                                    const delta = event.deltaY
-
-                                    // Get current zoom level
-                                    let zoom = editor.Canvas.getZoom()
-
-                                    // Adjust zoom level
-                                    if (delta < 0) {
-                                        // Scroll up, zoom in
-                                        zoom += 5
-                                    } else {
-                                        // Scroll down, zoom out
-                                        zoom -= 5
-                                    }
-
-                                    // Set new zoom level with reasonable limits
-                                    zoom = Math.max(10, Math.min(zoom, 300)) // Limit zoom between 10% and 300%
-                                    editor.Canvas.setZoom(zoom)
-                                }
-                            }
-
-                            canvas.addEventListener('wheel', handleWheelZoom, { passive: false })
-
-                            // Store cleanup function for potential future use
-                            const cleanup = () => canvas.removeEventListener('wheel', handleWheelZoom)
-                            // Note: In a real-world app, you might want to store this cleanup function
-                            // and call it when the component unmounts
-                        }
-                    }}
-                    options={{
-                        licenseKey,
-                        theme: 'light',
-                        plugins: [
-                            canvasFullSize.init({
-                                deviceMaxWidth: 2000, // Ensure body is wide enough
-                                deviceMinHeigth: 1200, // Ensure body is tall enough for slide + margins
-                                canvasOffsetY: 50,
-                                canvasOffsetX: 50,
-                            }),
-                            canvasAbsoluteMode,
-                            marqueeSelect,
-                            iconifyComponent.init({
-                                block: {
-                                    category: 'Media',
-                                    label: 'Icon'
-                                },
-                                collections: [
-                                    'mdi',        // Material Design Icons
-                                    'fa-solid',   // Font Awesome Solid
-                                    'heroicons',  // Heroicons
-                                    'lucide',     // Lucide Icons
-                                    'tabler'      // Tabler Icons
-                                ],
-                                extendIconComponent: true
-                            }),
-                            rteProseMirror.init({
-                                // Don't disable RTE on Escape key to prevent accidental exits
-                                disableOnEsc: false,
-                                // Customize toolbar with additional formatting options
-                                toolbar({ items, layouts, proseMirror, commands }) {
-                                    const { view } = proseMirror;
-                                    return [
-                                        // Default toolbar items (bold, italic, etc.)
-                                        ...items,
-                                        // Add separator
-                                        layouts.separator,
-                                        // Custom button for slide-specific functionality
-                                        {
-                                            id: 'slideFormatting',
-                                            type: 'button',
-                                            icon: 'paint-brush',
-                                            tooltip: 'Apply slide formatting',
-                                            onClick: () => {
-                                                // Get current selected text
-                                                const selectedText = commands.text.selected();
-                                                if (selectedText) {
-                                                    // Apply slide-specific formatting
-                                                    const { state, dispatch } = view;
-                                                    const formattedText = `✨ ${selectedText} ✨`;
-                                                    dispatch(state.tr.replaceSelectionWith(state.schema.text(formattedText)));
-                                                }
-                                            }
-                                        },
-                                        // Dropdown for common slide variables/placeholders
-                                        {
-                                            id: 'slideVariables',
-                                            type: 'selectField',
-                                            emptyState: 'Insert Variables',
-                                            options: [
-                                                { id: '{{ title }}', label: 'Slide Title' },
-                                                { id: '{{ subtitle }}', label: 'Subtitle' },
-                                                { id: '{{ author }}', label: 'Author Name' },
-                                                { id: '{{ date }}', label: 'Current Date' },
-                                                { id: '{{ company }}', label: 'Company Name' }
-                                            ],
-                                            onChange: ({ value }: { value: string }) => {
-                                                commands.text.replace(value, { select: true });
-                                            }
-                                        }
-                                    ];
-                                },
-                                // Handle Enter key for better slide formatting
-                                onEnter({ commands }) {
-                                    // Create a line break for better slide formatting
-                                    commands.text.createBreak();
-                                    return true;
-                                }
-                            })
-                        ],
-                        templates: {
-                            onLoad: async () => TEMPLATES,
-                        },
-                        project: {
-                            type: 'web',
-                            id: projectId
-                        },
-                        identity: {
-                            id: identityId,
-                        },
-                        assets: {
-                            storageType: 'cloud'
-                        },
-                        storage: {
-                            type: 'self',
-                            onSave: async ({ project }) => {
-                                try {
-                                    await saveDeck({
-                                        projectId,
-                                        uid: userDetail._id,
-                                        project: JSON.stringify(project),
-                                    })
-                                } catch (error) {
-                                    console.error('Failed to save project:', error)
-                                    throw error
-                                }
-                            },
-                            onLoad: async () => {
-                                return { project: initialProject };
-                            },
-                            autosaveChanges: 100,
-                            autosaveIntervalMs: 10000
-                        },
-                        // Custom layout optimized for slide presentations
-                        layout: {
-                            default: {
-                                type: 'row',
-                                style: { height: '100%' },
-                                children: [
-                                    // Left sidebar with blocks panel always visible
-                                    {
-                                        type: 'column',
-                                        style: {
-                                            width: 280,
-                                            minWidth: 280,
-                                            maxWidth: 280,
-                                            borderRightWidth: 1,
-                                            borderRightColor: '#e5e7eb',
-                                            backgroundColor: '#f9fafb',
-                                            overflow: 'hidden'
-                                        },
-                                        children: [
-                                            // Blocks panel - always visible
-                                            {
-                                                type: 'panelBlocks',
-                                                style: {
-                                                    flex: 1,
-                                                    padding: 8,
-                                                    overflow: 'auto'
-                                                },
-                                                symbols: false, // Hide symbols section for cleaner UI
-                                                search: true,   // Keep search functionality
-                                                hideCategories: false // Keep categories for organization
-                                            }
-                                        ]
-                                    },
-                                    // Main canvas area
-                                    {
-                                        type: 'canvasSidebarTop',
-                                        style: {
-                                            flex: 1,
-                                        }
-                                    },
-                                    // Right sidebar with properties and layers
-                                    {
-                                        type: 'column',
-                                        style: {
-                                            width: 300,
-                                            minWidth: 300,
-                                            maxWidth: 300,
-                                            borderLeftWidth: 1,
-                                            borderLeftColor: '#e5e7eb',
-                                            backgroundColor: '#f9fafb'
-                                        },
-                                        children: [
-                                            // Properties and Styles panels
-                                            {
-                                                type: 'tabs',
-                                                style: {
-                                                    flex: 1,
-                                                },
-                                                tabs: [
-                                                    {
-                                                        id: 'properties',
-                                                        label: 'Properties',
-                                                        children: [
-                                                            {
-                                                                type: 'panelProperties',
-                                                                style: {
-                                                                    padding: 8,
-                                                                    overflow: 'auto'
-                                                                }
-                                                            }
-                                                        ]
-                                                    },
-                                                    {
-                                                        id: 'styles',
-                                                        label: 'Styles',
-                                                        children: [
-                                                            {
-                                                                type: 'panelStyles',
-                                                                style: {
-                                                                    padding: 8,
-                                                                    overflow: 'auto'
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            // Layers panel at bottom
-                                            {
-                                                type: 'panelLayers',
-                                                header: {
-                                                    label: 'Layers',
-
-                                                },
-                                                style: {
-                                                    height: 250,
-                                                    borderTopWidth: 1,
-                                                    borderTopColor: '#e5e7eb',
-                                                    overflow: 'auto'
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            // Responsive layout for smaller screens
-                            responsive: {
-                                // Switch to simpler layout below 1200px (remove right sidebar)
-                                1200: {
-                                    type: 'row',
-                                    style: { height: '100%' },
-                                    children: [
-                                        {
-                                            type: 'column',
-                                            style: {
-                                                width: 250,
-                                                borderRightWidth: 1,
-                                                borderRightColor: '#e5e7eb',
-                                                backgroundColor: '#f9fafb'
-                                            },
-                                            children: [
-                                                {
-                                                    type: 'panelBlocks',
-                                                    style: { flex: 1, padding: 6 },
-                                                    symbols: false,
-                                                    search: true,
-                                                    hideCategories: true
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            type: 'column',
-                                            style: { flex: 1 },
-                                            children: [
-                                                {
-                                                    type: 'row',
-                                                    style: {
-                                                        height: 45,
-                                                        borderBottomWidth: 1,
-                                                        borderBottomColor: '#e5e7eb',
-                                                        backgroundColor: '#ffffff',
-                                                        alignItems: 'center',
-                                                        padding: '0 12px'
-                                                    },
-                                                    children: [
-                                                        { type: 'panelPages', style: { flex: 1 } }
-                                                    ]
-                                                },
-                                                { type: 'canvas', style: { flex: 1 } }
-                                            ]
-                                        }
-                                    ]
-                                }
+                                // Set new zoom level with reasonable limits
+                                zoom = Math.max(10, Math.min(zoom, 300)) // Limit zoom between 10% and 300%
+                                editor.Canvas.setZoom(zoom)
                             }
                         }
-                    }}
-                />
-            </div>
+
+                        canvas.addEventListener('wheel', handleWheelZoom, { passive: false })
+
+                        // Store cleanup function for potential future use
+                        const cleanup = () => canvas.removeEventListener('wheel', handleWheelZoom)
+                        // Note: In a real-world app, you might want to store this cleanup function
+                        // and call it when the component unmounts
+                    }
+                }}
+                options={{
+                    licenseKey,
+                    theme: 'light',
+                    plugins: [
+                        canvasFullSize.init({
+                            deviceMaxWidth: 2000, // Ensure body is wide enough
+                            deviceMinHeigth: 1200, // Ensure body is tall enough for slide + margins
+                            canvasOffsetY: 50,
+                            canvasOffsetX: 50,
+                        }),
+                        canvasAbsoluteMode,
+                        marqueeSelect,
+                        iconifyComponent.init({
+                            block: {
+                                category: 'Media',
+                                label: 'Icon'
+                            },
+                            collections: [
+                                'mdi',        // Material Design Icons
+                                'fa-solid',   // Font Awesome Solid
+                                'heroicons',  // Heroicons
+                                'lucide',     // Lucide Icons
+                                'tabler'      // Tabler Icons
+                            ],
+                            extendIconComponent: true
+                        }),
+                        rteProseMirror
+                    ],
+                    templates: {
+                        onLoad: async () => TEMPLATES,
+                    },
+                    project: {
+                        type: 'web',
+                        id: projectId
+                    },
+                    identity: {
+                        id: identityId,
+                    },
+                    assets: {
+                        storageType: 'cloud'
+                    },
+                    storage: {
+                        type: 'self',
+                        onSave: async ({ project }) => {
+                            try {
+                                await saveDeck({
+                                    projectId,
+                                    uid: userDetail._id,
+                                    project: JSON.stringify(project),
+                                })
+                            } catch (error) {
+                                console.error('Failed to save project:', error)
+                                throw error
+                            }
+                        },
+                        onLoad: async () => {
+                            return { project: initialProject };
+                        },
+                        autosaveChanges: 100,
+                        autosaveIntervalMs: 10000
+                    }
+                }}
+            />
         </div>
     )
 }
