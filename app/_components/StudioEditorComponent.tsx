@@ -2,9 +2,9 @@
 
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
-import { canvasAbsoluteMode } from '@grapesjs/studio-sdk-plugins'
+import { canvasAbsoluteMode, canvasFullSize } from '@grapesjs/studio-sdk-plugins'
 import { useRef, useEffect } from 'react'
-import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats'
+import { getSlideContainer, DEFAULT_SLIDE_FORMAT, enforceBodyDimensions } from '@/lib/slide-formats'
 import { TEMPLATES } from '@/lib/slide-templates'
 
 interface StudioEditorComponentProps {
@@ -26,6 +26,17 @@ export default function StudioEditorComponent({
 }: StudioEditorComponentProps) {
     const editorRef = useRef<any>(null)
 
+    const isCompleteSlideContainer = (content: string): boolean => {
+        return content.includes('<style>')
+    }
+
+    const enforceProjectDimensions = (content: string): string => {
+        if (!isCompleteSlideContainer(content)) {
+            return content
+        }
+        return enforceBodyDimensions(content, DEFAULT_SLIDE_FORMAT)
+    }
+
     // Create global functions for AI tools to interact with the editor
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -34,9 +45,12 @@ export default function StudioEditorComponent({
                 addSlide: (name: string, content: string, insertAtIndex?: number) => {
                     if (!editorRef.current) return false
                     const editor = editorRef.current
+                    const finalContent = isCompleteSlideContainer(content)
+                        ? enforceProjectDimensions(content)
+                        : getSlideContainer(content)
                     const page = editor.Pages.add({
                         name,
-                        component: getSlideContainer(content)
+                        component: finalContent
                     }, {
                         select: true,
                         at: insertAtIndex
@@ -50,14 +64,16 @@ export default function StudioEditorComponent({
                     const page = pages[slideIndex]
                     if (!page) return false
 
-                    // Update page name if provided
                     if (newName) {
                         page.set('name', newName)
                     }
 
-                    // Always use container wrapper for consistency
+                    const finalContent = isCompleteSlideContainer(newContent)
+                        ? enforceProjectDimensions(newContent)
+                        : getSlideContainer(newContent)
+
                     editor.Pages.select(page);
-                    editor.setComponents(getSlideContainer(newContent));
+                    editor.setComponents(finalContent);
                     return true
                 },
                 replaceSlide: (slideIndex: number, newContent: string, newName?: string) => {
@@ -67,14 +83,16 @@ export default function StudioEditorComponent({
                     const page = pages[slideIndex]
                     if (!page) return false
 
-                    // Update page name if provided
                     if (newName) {
                         page.set('name', newName)
                     }
 
-                    // Always use container wrapper for consistency
+                    const finalContent = isCompleteSlideContainer(newContent)
+                        ? enforceProjectDimensions(newContent)
+                        : getSlideContainer(newContent)
+
                     editor.Pages.select(page);
-                    editor.setComponents(getSlideContainer(newContent));
+                    editor.setComponents(finalContent);
                     return true
                 },
                 getEditor: () => editorRef.current
@@ -115,7 +133,7 @@ export default function StudioEditorComponent({
                     editor.Pages.select(page);
                     const wrapper = editor.DomComponents.getWrapper();
 
-                    if (wrapper && !wrapper.find('[data-slide-container]').length) {
+                    if (wrapper && !wrapper.find('style').length) {
                         const currentContent = wrapper.getInnerHTML();
                         wrapper.components(getSlideContainer(currentContent));
                     }
@@ -191,7 +209,12 @@ export default function StudioEditorComponent({
             options={{
                 licenseKey,
                 theme: 'light',
-                plugins: [canvasAbsoluteMode],
+                plugins: [
+                    canvasFullSize.init({
+                        deviceMaxWidth: DEFAULT_SLIDE_FORMAT.width,
+                    }),
+                    canvasAbsoluteMode
+                ],
                 templates: {
                     onLoad: async () => TEMPLATES,
                 },

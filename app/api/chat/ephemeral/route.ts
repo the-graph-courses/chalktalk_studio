@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:
 
 1. Creating and editing slide presentations
-2. Understanding design principles for presentations  
+2. Understanding design principles for presentations
 3. Analyzing images and PDFs they upload
 4. Providing feedback on presentation content
 5. Suggesting improvements for slides
@@ -43,27 +43,15 @@ You have access to tools to interact with slide presentations:
 
 When reading slides, you'll receive clean HTML content as plain text without JSON escaping.
 
-When creating or replacing slides, generate COMPLETE slide containers using this format:
+When creating or replacing slides, generate COMPLETE slide documents using this format:
 
-<div class="slide-container my-unique-theme">
-    <h1 class="slide-title">Your Title Here</h1>
-    <p class="slide-subtitle">Your subtitle or content here</p>
-    <!-- Add more content elements as needed -->
-</div>
+<h1 class="slide-title">Your Title Here</h1>
+<p class="slide-subtitle">Your subtitle or content here</p>
 <style>
-    .my-unique-theme {
-        position: absolute;
+    body {
         width: 1280px;
         height: 720px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        padding: 20px;
         background-color: #ffffff; /* Choose appropriate background */
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        overflow: visible;
-        border: 1px solid rgba(0, 0, 0, 0.1);
     }
     .slide-title {
         position: absolute;
@@ -90,7 +78,7 @@ When creating or replacing slides, generate COMPLETE slide containers using this
 </style>
 
 IMPORTANT RULES:
-- Always use embedded <style> tags, never inline styles
+- Always include a <style> tag with body dimensions
 - Use unique CSS class names for each slide (e.g., .marketing-slide, .tech-slide, etc.)
 - The system will automatically enforce width: 1280px and height: 720px
 - Make slides visually appealing with appropriate colors, fonts, and layouts
@@ -105,3 +93,4 @@ Focus on creating beautiful, professional slide designs. Be helpful, concise, an
 
     return result.toUIMessageStreamResponse();
 }
+

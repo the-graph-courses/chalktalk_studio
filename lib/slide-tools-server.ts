@@ -1,5 +1,6 @@
-import { fetchMutation, fetchQuery } from 'convex/nextjs';
+import { fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
+import { getSlideContainer, enforceBodyDimensions, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats';
 
 export async function executeSlideToolServer(
     toolName: string,
@@ -112,26 +113,27 @@ export async function executeSlideToolServer(
             let name, content, insertAtIndex;
 
             if (typeof slideData === 'string') {
-                // AI provided just content as a string
                 content = slideData;
                 name = 'New Slide';
             } else if (slideData && typeof slideData === 'object') {
-                // AI provided structured data
                 name = slideData.name || slideData.title || 'New Slide';
                 content = slideData.content || slideData.html || slideData.body || '';
                 insertAtIndex = slideData.insertAtIndex || slideData.position || slideData.index;
             } else {
-                // Fallback
                 content = '';
                 name = 'New Slide';
             }
+
+            const finalContent = content && content.includes('<style>')
+                ? enforceBodyDimensions(content, DEFAULT_SLIDE_FORMAT)
+                : getSlideContainer(content);
 
             return {
                 success: true,
                 command: 'addSlide',
                 data: {
                     name,
-                    content,
+                    content: finalContent,
                     insertAtIndex,
                 },
             };
@@ -140,32 +142,31 @@ export async function executeSlideToolServer(
         case 'replace_slide': {
             const { slideIndex, slideData } = parameters;
 
-            // Check if slide exists
             if (!projectData.pages?.[slideIndex]) {
                 throw new Error(`Slide ${slideIndex} not found`);
             }
 
-            // Extract data from whatever format the AI provided
             let newContent, newName;
 
             if (typeof slideData === 'string') {
-                // AI provided just content as a string
                 newContent = slideData;
             } else if (slideData && typeof slideData === 'object') {
-                // AI provided structured data
                 newContent = slideData.content || slideData.html || slideData.body || '';
                 newName = slideData.name || slideData.title;
             } else {
-                // Fallback
                 newContent = '';
             }
+
+            const finalContent = newContent && newContent.includes('<style>')
+                ? enforceBodyDimensions(newContent, DEFAULT_SLIDE_FORMAT)
+                : getSlideContainer(newContent);
 
             return {
                 success: true,
                 command: 'replaceSlide',
                 data: {
                     slideIndex,
-                    newContent,
+                    newContent: finalContent,
                     newName,
                 },
             };
