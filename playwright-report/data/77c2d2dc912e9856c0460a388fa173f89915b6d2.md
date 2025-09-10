@@ -1,0 +1,160 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - link "Chalktalk Studio" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6] [cursor=pointer]: Chalktalk Studio
+      - generic [ref=e8]:
+        - link "Login" [ref=e9] [cursor=pointer]:
+          - /url: /sign-in
+        - link "Sign up" [ref=e10] [cursor=pointer]:
+          - /url: /sign-up
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: "Format:"
+          - combobox [ref=e19]:
+            - option "Presentation (16:9)" [selected]
+            - option "Presentation (4:3)"
+            - option "Square"
+            - option "Portrait"
+        - generic [ref=e20]:
+          - generic [ref=e21]: "Zoom Mode:"
+          - combobox [ref=e22]:
+            - option "Fit Slide" [selected]
+            - option "Actual Size"
+            - option "Custom"
+        - generic [ref=e24]:
+          - checkbox "Infinite Canvas" [checked] [ref=e25]
+          - text: Infinite Canvas
+        - button "Reset Zoom" [ref=e26]
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e33]:
+            - generic [ref=e35]:
+              - button "Pages" [expanded] [ref=e36] [cursor=pointer]:
+                - generic [ref=e44] [cursor=pointer]: Pages
+              - generic [ref=e56]:
+                - generic [ref=e57]: Web
+                - generic [ref=e58]:
+                  - button [ref=e62] [cursor=pointer]
+                  - button [ref=e65] [cursor=pointer]
+            - generic [ref=e70]:
+              - generic [ref=e75]: Layers
+              - generic [ref=e80]:
+                - img [ref=e85]
+                - generic [ref=e87]: Body
+          - generic [ref=e93]:
+            - generic [ref=e95]:
+              - button [ref=e101] [cursor=pointer]
+              - button "Desktop" [ref=e107] [cursor=pointer]:
+                - generic [ref=e110] [cursor=pointer]: Desktop
+              - generic [ref=e114]:
+                - button [ref=e118] [cursor=pointer]
+                - button [ref=e125] [cursor=pointer]
+                - button [ref=e132] [cursor=pointer]
+                - button [ref=e139] [cursor=pointer]
+                - button [ref=e146] [cursor=pointer]
+                - button [ref=e153] [cursor=pointer]
+                - button [ref=e160] [cursor=pointer]
+                - button [disabled] [ref=e166]
+                - button [disabled] [ref=e173]
+                - button [ref=e179] [cursor=pointer]
+            - button [ref=e183] [cursor=pointer]
+            - iframe [ref=e191]:
+              - generic [ref=f1e2]:
+                - banner [ref=f1e3]:
+                  - img "GrapesJS Logo" [ref=f1e4]
+                - generic [ref=f1e5]:
+                  - heading "Welcome to GrapesJS Studio SDK!" [level=1] [ref=f1e6]
+                  - paragraph [ref=f1e7]: You're currently viewing the default fallback project for web.
+                  - paragraph [ref=f1e8]:
+                    - text: "This appears because no storage has been configured yet. To set up your own storage, follow the guide here:"
+                    - text: 👉
+                    - link "https://app.grapesjs.com/docs-sdk/configuration/projects#self-hosted-storage" [ref=f1e9] [cursor=pointer]:
+                      - /url: https://app.grapesjs.com/docs-sdk/configuration/projects#self-hosted-storage
+                  - paragraph [ref=f1e10]:
+                    - text: "Want to customize the fallback project? You can do so by setting options.project.default. Learn more here:"
+                    - text: 👉
+                    - link "https://app.grapesjs.com/docs-sdk/configuration/projects#setup" [ref=f1e11] [cursor=pointer]:
+                      - /url: https://app.grapesjs.com/docs-sdk/configuration/projects#setup
+                  - contentinfo [ref=f1e12]: Happy building! 🚀
+          - generic [ref=e194]:
+            - tablist [ref=e195]:
+              - tab "Styles" [selected] [ref=e196] [cursor=pointer]
+              - tab "Properties" [ref=e197] [cursor=pointer]
+            - tabpanel "Styles" [ref=e199]:
+              - generic [ref=e202]:
+                - generic [ref=e205]: Selection
+                - generic [ref=e211]:
+                  - generic [ref=e212]: You don't have any selected element.
+                  - list [ref=e213]:
+                    - listitem [ref=e214]: Select an element from the canvas.
+                    - listitem [ref=e215]: Pick any style from the Style Catalog.
+        - generic [ref=e217]:
+          - generic [ref=e219]:
+            - generic [ref=e220]: Blocks
+            - button [ref=e225] [cursor=pointer]
+          - generic [ref=e230]:
+            - generic [ref=e231]:
+              - tablist [ref=e232]:
+                - tab "Regular" [selected] [ref=e233] [cursor=pointer]
+                - tab "Symbols" [ref=e234] [cursor=pointer]
+              - searchbox "Search..." [ref=e238]
+            - generic [ref=e239]:
+              - generic [ref=e240]:
+                - button "Basic" [expanded] [ref=e241] [cursor=pointer]:
+                  - generic [ref=e245] [cursor=pointer]: Basic
+                - generic [ref=e249]:
+                  - img [ref=e252] [cursor=pointer]
+                  - img [ref=e257] [cursor=pointer]
+                  - img [ref=e262] [cursor=pointer]
+                  - img [ref=e267] [cursor=pointer]
+                  - img [ref=e272] [cursor=pointer]
+                  - img [ref=e277] [cursor=pointer]
+                  - img [ref=e282] [cursor=pointer]
+                  - img [ref=e287] [cursor=pointer]
+                  - img [ref=e292] [cursor=pointer]
+                  - img [ref=e297] [cursor=pointer]
+                  - img [ref=e302] [cursor=pointer]
+                  - img [ref=e307] [cursor=pointer]
+                  - img [ref=e312] [cursor=pointer]
+                  - img [ref=e317] [cursor=pointer]
+                  - img [ref=e322] [cursor=pointer]
+              - generic [ref=e325]:
+                - button "Forms" [expanded] [ref=e326] [cursor=pointer]:
+                  - generic [ref=e330] [cursor=pointer]: Forms
+                - generic [ref=e334]:
+                  - img [ref=e337] [cursor=pointer]
+                  - img [ref=e343] [cursor=pointer]
+                  - img [ref=e349] [cursor=pointer]
+                  - img [ref=e355] [cursor=pointer]
+                  - img [ref=e361] [cursor=pointer]
+                  - img [ref=e367] [cursor=pointer]
+                  - img [ref=e374] [cursor=pointer]
+                  - img [ref=e379] [cursor=pointer]
+              - generic [ref=e382]:
+                - button "Extra" [expanded] [ref=e383] [cursor=pointer]:
+                  - generic [ref=e387] [cursor=pointer]: Extra
+                - img [ref=e394] [cursor=pointer]
+        - generic [ref=e400]:
+          - generic [ref=e401]: Page settings
+          - button [ref=e406] [cursor=pointer]
+  - generic [ref=e415] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e416] [cursor=pointer]:
+      - img [ref=e417] [cursor=pointer]
+    - generic [ref=e420] [cursor=pointer]:
+      - button "Open issues overlay" [ref=e421] [cursor=pointer]:
+        - generic [ref=e422] [cursor=pointer]:
+          - generic [ref=e423] [cursor=pointer]: "1"
+          - generic [ref=e424] [cursor=pointer]: "2"
+        - generic [ref=e425] [cursor=pointer]:
+          - text: Issue
+          - generic [ref=e426] [cursor=pointer]: s
+      - button "Collapse issues badge" [ref=e427] [cursor=pointer]:
+        - img [ref=e428] [cursor=pointer]
+  - alert [ref=e430]
+```
