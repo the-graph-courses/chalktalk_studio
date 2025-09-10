@@ -9,7 +9,7 @@ import { useUser } from '@clerk/nextjs'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useUserDetail } from '@/app/provider'
-import { getSlideContainer, DEFAULT_SLIDE_FORMAT, enforceBodyDimensions } from '@/lib/slide-formats'
+import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats'
 import { TEMPLATES } from '@/lib/slide-templates';
 import EditorHeader from '@/app/_components/EditorHeader'
 
@@ -42,17 +42,26 @@ export default function EditorPage({ params }: PageProps) {
 
     const editorRef = useRef<any>(null)
 
-    // Helper to detect if content already includes <style> for body dimensions
+    // Helper function to detect if content is a complete slide container
     const isCompleteSlideContainer = (content: string): boolean => {
-        return content.includes('<style>');
+        return content.includes('slide-container') || content.includes('<style>');
     }
 
-    // Ensure slide body matches project dimensions
+    // Helper function to enforce project dimensions on AI-generated content
     const enforceProjectDimensions = (content: string): string => {
         if (!isCompleteSlideContainer(content)) {
-            return content;
+            return content; // Not a complete container, return as-is
         }
-        return enforceBodyDimensions(content, DEFAULT_SLIDE_FORMAT);
+
+        const projectWidth = DEFAULT_SLIDE_FORMAT.width;
+        const projectHeight = DEFAULT_SLIDE_FORMAT.height;
+
+        // Replace any existing width/height in CSS with project dimensions
+        let updatedContent = content
+            .replace(/width:\s*\d+px/g, `width: ${projectWidth}px`)
+            .replace(/height:\s*\d+px/g, `height: ${projectHeight}px`);
+
+        return updatedContent;
     }
 
     // Create global functions for AI tools to interact with the editor
@@ -196,11 +205,13 @@ export default function EditorPage({ params }: PageProps) {
                         // This is the fix for your point about "opening a new page in an existing presentation"
                         // When a new page is added via the UI, we ensure it gets our slide container.
                         editor.on('page:add', (page) => {
+                            // Select the page first to access its components
                             editor.Pages.select(page);
                             const wrapper = editor.DomComponents.getWrapper();
 
-                            // Ensure the page has body styling
-                            if (wrapper && !wrapper.find('style').length) {
+                            // Check if it already has a container (e.g., from AI tools)
+                            if (wrapper && !wrapper.find('[data-slide-container]').length) {
+                                // Get the inner HTML, wrap it, and set it back.
                                 const currentContent = wrapper.getInnerHTML();
                                 wrapper.components(getSlideContainer(currentContent));
                             }
@@ -267,7 +278,10 @@ export default function EditorPage({ params }: PageProps) {
                         theme: 'light',
                         plugins: [
                             canvasFullSize.init({
-                                deviceMaxWidth: DEFAULT_SLIDE_FORMAT.width,
+                                deviceMaxWidth: 2000, // Ensure body is wide enough
+                                deviceMinHeigth: 1200, // Ensure body is tall enough for slide + margins
+                                canvasOffsetY: 50,
+                                canvasOffsetX: 50,
                             }),
                             canvasAbsoluteMode,
                             marqueeSelect,
