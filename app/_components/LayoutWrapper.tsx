@@ -14,6 +14,24 @@ const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSide
 
 export const useSidebarAvailable = () => useContext(SidebarAvailableContext);
 
+type PanelControls = {
+    isSignedIn: boolean;
+    isAIChatOpen: boolean;
+    isTestPanelOpen: boolean;
+    toggleAIChat: () => void;
+    toggleTestPanel: () => void;
+};
+
+const PanelControlsContext = createContext<PanelControls>({
+    isSignedIn: false,
+    isAIChatOpen: false,
+    isTestPanelOpen: false,
+    toggleAIChat: () => { },
+    toggleTestPanel: () => { },
+});
+
+export const usePanelControls = () => useContext(PanelControlsContext);
+
 export default function LayoutWrapper({
     children,
 }: {
@@ -38,53 +56,19 @@ export default function LayoutWrapper({
     if (!isLoaded) {
         return (
             <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
-                <div className="min-h-screen">
-                    <Header
-                        onToggleAIChat={toggleAIChat}
-                    />
-                    <div className="flex-1">
-                        {children}
-                    </div>
-                    {projectId && (
-                        <>
-                            <EphemeralChatPanel
-                                isOpen={isAIChatOpen}
-                                onClose={() => setIsAIChatOpen(false)}
-                                isTestPanelOpen={isTestPanelOpen}
-                            />
-                        </>
-                    )}
-                </div>
-            </SidebarAvailableContext.Provider>
-        );
-    }
-
-    if (isSignedIn) {
-        return (
-            <SidebarAvailableContext.Provider value={{ hasSidebar: true }}>
-                <SidebarProvider>
-                    <AppSidebar />
-                    <SidebarInset className="overflow-hidden flex flex-col">
+                <PanelControlsContext.Provider value={{
+                    isSignedIn: false,
+                    isAIChatOpen,
+                    isTestPanelOpen,
+                    toggleAIChat,
+                    toggleTestPanel,
+                }}>
+                    <div className="min-h-screen">
                         <Header
-                            onToggleTestPanel={toggleTestPanel}
-                            onToggleAIChat={projectId ? toggleAIChat : undefined}
+                            onToggleAIChat={toggleAIChat}
                         />
-                        <div className="flex-1 relative">
-                            <div className={`h-full transition-all duration-300 ${(() => {
-                                const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
-                                if (openPanels >= 2) return 'mr-[48rem]';
-                                if (openPanels === 1) return 'mr-96';
-                                return 'mr-0';
-                            })()
-                                }`}>
-                                {children}
-                            </div>
-                        </div>
-
-                        <div className="flex-shrink-0">
-                            {projectId && (
-                                <SlideThumbnailPanel />
-                            )}
+                        <div className="flex-1">
+                            {children}
                         </div>
                         {projectId && (
                             <>
@@ -93,51 +77,105 @@ export default function LayoutWrapper({
                                     onClose={() => setIsAIChatOpen(false)}
                                     isTestPanelOpen={isTestPanelOpen}
                                 />
-                                <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
                             </>
                         )}
-                    </SidebarInset>
-                </SidebarProvider>
+                    </div>
+                </PanelControlsContext.Provider>
+            </SidebarAvailableContext.Provider>
+        );
+    }
+
+    if (isSignedIn) {
+        return (
+            <SidebarAvailableContext.Provider value={{ hasSidebar: true }}>
+                <PanelControlsContext.Provider value={{
+                    isSignedIn,
+                    isAIChatOpen,
+                    isTestPanelOpen,
+                    toggleAIChat,
+                    toggleTestPanel,
+                }}>
+                    <SidebarProvider>
+                        <AppSidebar />
+                        <SidebarInset className="overflow-hidden flex flex-col">
+                            <div className="flex-1 relative">
+                                <div className={`h-full transition-all duration-300 ${(() => {
+                                    const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
+                                    if (openPanels >= 2) return 'mr-[48rem]';
+                                    if (openPanels === 1) return 'mr-96';
+                                    return 'mr-0';
+                                })()
+                                    }`}>
+                                    {children}
+                                </div>
+                            </div>
+
+                            <div className="flex-shrink-0">
+                                {projectId && (
+                                    <SlideThumbnailPanel />
+                                )}
+                            </div>
+                            {projectId && (
+                                <>
+                                    <EphemeralChatPanel
+                                        isOpen={isAIChatOpen}
+                                        onClose={() => setIsAIChatOpen(false)}
+                                        isTestPanelOpen={isTestPanelOpen}
+                                    />
+                                    <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
+                                </>
+                            )}
+                        </SidebarInset>
+                    </SidebarProvider>
+                </PanelControlsContext.Provider>
             </SidebarAvailableContext.Provider>
         );
     }
 
     return (
         <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
-            <div className="min-h-screen flex flex-col">
-                <Header
-                    onToggleTestPanel={toggleTestPanel}
-                    onToggleAIChat={projectId ? toggleAIChat : undefined}
-                />
-                <div className="flex-1 relative">
-                    <div className={`h-full transition-all duration-300 ${(() => {
-                        const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
-                        if (openPanels >= 2) return 'mr-[48rem]';
-                        if (openPanels === 1) return 'mr-96';
-                        return 'mr-0';
-                    })()
-                        }`}>
-                        {children}
+            <PanelControlsContext.Provider value={{
+                isSignedIn: false,
+                isAIChatOpen,
+                isTestPanelOpen,
+                toggleAIChat,
+                toggleTestPanel,
+            }}>
+                <div className="min-h-screen flex flex-col">
+                    <Header
+                        onToggleTestPanel={toggleTestPanel}
+                        onToggleAIChat={projectId ? toggleAIChat : undefined}
+                    />
+                    <div className="flex-1 relative">
+                        <div className={`h-full transition-all duration-300 ${(() => {
+                            const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;
+                            if (openPanels >= 2) return 'mr-[48rem]';
+                            if (openPanels === 1) return 'mr-96';
+                            return 'mr-0';
+                        })()
+                            }`}>
+                            {children}
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex-shrink-0">
+                    <div className="flex-shrink-0">
+                        {projectId && (
+                            <SlideThumbnailPanel />
+                        )}
+                    </div>
+
                     {projectId && (
-                        <SlideThumbnailPanel />
+                        <>
+                            <EphemeralChatPanel
+                                isOpen={isAIChatOpen}
+                                onClose={() => setIsAIChatOpen(false)}
+                                isTestPanelOpen={isTestPanelOpen}
+                            />
+                            <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
+                        </>
                     )}
                 </div>
-
-                {projectId && (
-                    <>
-                        <EphemeralChatPanel
-                            isOpen={isAIChatOpen}
-                            onClose={() => setIsAIChatOpen(false)}
-                            isTestPanelOpen={isTestPanelOpen}
-                        />
-                        <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
-                    </>
-                )}
-            </div>
+            </PanelControlsContext.Provider>
         </SidebarAvailableContext.Provider>
     );
 }

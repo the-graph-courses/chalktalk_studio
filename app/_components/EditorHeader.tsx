@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { UserButton } from '@clerk/nextjs'
+import { usePanelControls } from './LayoutWrapper'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +15,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
     ChevronDown,
     Save,
@@ -24,7 +32,8 @@ import {
     Share2,
     Undo2,
     Redo2,
-    MousePointer2
+    MousePointer2,
+    Zap
 } from 'lucide-react'
 
 interface EditorHeaderProps {
@@ -35,6 +44,7 @@ interface EditorHeaderProps {
 }
 
 export default function EditorHeader({ projectId, deckId, initialTitle, userDetailId }: EditorHeaderProps) {
+    const { toggleAIChat, toggleTestPanel, isAIChatOpen, isTestPanelOpen } = usePanelControls()
     const [title, setTitle] = useState(initialTitle || 'Untitled Presentation')
     const [isEditing, setIsEditing] = useState(false)
     const [tempTitle, setTempTitle] = useState(title)
@@ -300,9 +310,7 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
         <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shadow-sm">
             {/* Left side - Logo and title */}
             <div className="flex items-center space-x-4">
-                <div className="text-xl font-bold text-blue-600">
-                    ChalkTalk
-                </div>
+                <div className="text-xl font-bold text-blue-600">ChalkTalk</div>
 
                 <div className="flex items-center space-x-2">
                     {isEditing ? (
@@ -411,29 +419,63 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
 
             </div>
 
-            {/* Right side - Quick actions */}
-            <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" onClick={handleUndo}>
-                    <Undo2 className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleRedo}>
-                    <Redo2 className="h-4 w-4" />
-                </Button>
-                <Button
-                    variant={marqueeActive ? "default" : "ghost"}
-                    size="sm"
-                    onClick={handleToggleMarquee}
-                    title={marqueeActive ? "Disable marquee selection (Shift+drag)" : "Enable marquee selection (Shift+drag)"}
-                >
-                    <MousePointer2 className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleSave}>
-                    <Save className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4" />
-                </Button>
-            </div>
+            {/* Right side - Quick actions and AI/User controls */}
+            <TooltipProvider>
+                <div className="flex items-center space-x-2">
+                    {projectId && (
+                        <>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant={isAIChatOpen ? "default" : "ghost"}
+                                        size="sm"
+                                        onClick={toggleAIChat}
+                                        title="Toggle AI Chat"
+                                    >
+                                        <Zap className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Toggle AI Chat</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant={isTestPanelOpen ? "default" : "ghost"}
+                                        size="sm"
+                                        onClick={toggleTestPanel}
+                                        title="Toggle AI Tests Panel"
+                                    >
+                                        <Settings className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Toggle AI Tests Panel</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={handleUndo}>
+                        <Undo2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleRedo}>
+                        <Redo2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant={marqueeActive ? "default" : "ghost"}
+                        size="sm"
+                        onClick={handleToggleMarquee}
+                        title={marqueeActive ? "Disable marquee selection (Shift+drag)" : "Enable marquee selection (Shift+drag)"}
+                    >
+                        <MousePointer2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleSave}>
+                        <Save className="h-4 w-4" />
+                    </Button>
+                    <UserButton afterSignOutUrl="/" />
+                </div>
+            </TooltipProvider>
         </div>
     )
 }
