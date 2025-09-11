@@ -41,6 +41,8 @@ export default function EditorPage({ params }: PageProps) {
     )
 
     const editorRef = useRef<any>(null)
+    // Controls when we apply template-mapped styles on page add
+    const shouldApplyTemplateStylesRef = useRef<boolean>(true)
 
     // Helper function to detect if content is a complete slide container
     const isCompleteSlideContainer = (content: string): boolean => {
@@ -188,6 +190,8 @@ export default function EditorPage({ params }: PageProps) {
                         // This is the fix for your point about "opening a new page in an existing presentation"
                         // When a new page is added via the UI, we ensure it gets our slide container.
                         editor.on('page:add', (page) => {
+                            // Avoid applying stale template styles before user selects a template in a new project
+                            if (!shouldApplyTemplateStylesRef.current) return;
                             // Select the page first to access its components
                             editor.Pages.select(page);
                             const wrapper = editor.DomComponents.getWrapper();
@@ -221,6 +225,9 @@ export default function EditorPage({ params }: PageProps) {
 
                         // If this is a new project (deck is null), open the template browser.
                         if (!deck) {
+                            // New project: clear any previous template id and hold off applying styles
+                            try { localStorage.removeItem('selectedTemplateId') } catch {}
+                            shouldApplyTemplateStylesRef.current = false
                             editor.runCommand('studio:layoutToggle', {
                                 id: 'template-browser',
                                 header: false,
@@ -229,14 +236,16 @@ export default function EditorPage({ params }: PageProps) {
                                     type: 'panelTemplates',
                                     content: { itemsPerRow: 4 },
                                     onSelect: ({ loadTemplate, template }: any) => {
+                                        // Store selected template id BEFORE loading, so any page:add from the loader sees the correct id
+                                        try { localStorage.setItem('selectedTemplateId', template?.id || '') } catch {}
+                                        shouldApplyTemplateStylesRef.current = true
                                         // Load the selected template to the current project
                                         loadTemplate(template);
                                         // Close the dialog layout
                                         editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
-                                        // Store selected template id for later new pages (simple strategy)
-                                        try {
-                                            localStorage.setItem('selectedTemplateId', template?.id || '')
-                                        } catch {}
+                                        // Ensure first template page is selected
+                                        const pages = editor.Pages.getAll()
+                                        if (pages && pages[0]) editor.Pages.select(pages[0])
                                     }
                                 }
                             });
