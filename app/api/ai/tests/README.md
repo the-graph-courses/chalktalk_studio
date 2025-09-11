@@ -150,9 +150,20 @@ The AI chat system can perform these operations:
 
 ### Example Rich Content Structure:
 ```html
-<div style="position: relative; width: 800px; height: 500px; margin: 70px auto 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px;">
+<div data-slide-container="true" style="position: absolute; top: 0; left: 0; width: 1280px; height: 720px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; overflow: visible;">
   <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Title</h1>
   <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px;">Content goes here...</p>
   <!-- Additional positioned elements -->
 </div>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    position: relative;
+    width: 1280px;
+    min-height: 720px;
+    background: #f3f4f6;
+    overflow: hidden;
+  }
+</style>
 ```
