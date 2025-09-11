@@ -45,27 +45,38 @@ When reading slides, you'll receive clean HTML content as plain text without JSO
 
 When creating or replacing slides, generate COMPLETE slide containers using this format:
 
-<!-- Slide container that exactly matches body dimensions -->
-<div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #ffffff; overflow: visible;">
+<div class="my-unique-theme" data-slide-container="true">
     <h1 class="slide-title">Your Title Here</h1>
     <p class="slide-subtitle">Your subtitle or content here</p>
     <!-- Add more content elements as needed -->
 </div>
-
 <style>
     body {
         margin: 0;
         padding: 0;
         position: relative;
-        width: 1920px;
-        min-height: 1080px;
+        width: 1280px;
+        min-height: 720px;
         background: #f3f4f6;
         overflow: hidden;
     }
+    .my-unique-theme {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1280px;
+        height: 720px;
+        padding: 20px;
+        background-color: #ffffff; /* Choose appropriate background */
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        overflow: visible;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
     .slide-title {
         position: absolute;
-        top: 400px;
-        left: 150px;
+        top: 260px;
+        left: 100px;
         font-size: 72px;
         margin: 0;
         font-weight: 700;
@@ -74,10 +85,10 @@ When creating or replacing slides, generate COMPLETE slide containers using this
     }
     .slide-subtitle {
         position: absolute;
-        top: 520px;
-        left: 150px;
-        font-size: 36px;
-        max-width: 1620px;
+        top: 360px;
+        left: 100px;
+        font-size: 32px;
+        max-width: 1080px;
         line-height: 1.5;
         color: #555;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -87,13 +98,12 @@ When creating or replacing slides, generate COMPLETE slide containers using this
 </style>
 
 IMPORTANT RULES:
-- Always use the exact slide container format with absolute positioning from top: 0, left: 0
-- Include the body styles in your <style> tag to set the proper canvas dimensions
-- Use dimensions: width: 1920px, height: 1080px for all slides
-- Position elements absolutely within the slide container for precise layout control
-- Choose appropriate background colors by changing the background property of the slide container
-- Use absolute positioning for all slide content elements
+- Always use embedded <style> tags, never inline styles
+- Use unique CSS class names for each slide (e.g., .marketing-slide, .tech-slide, etc.)
+- The system will automatically enforce width: 1280px and height: 720px
 - Make slides visually appealing with appropriate colors, fonts, and layouts
+- Use absolute positioning for precise element placement
+- Choose appropriate background colors and typography for the content theme
 
 Focus on creating beautiful, professional slide designs. Be helpful, concise, and focused on presentation and design-related tasks.`,
 

@@ -190,152 +190,150 @@ export default function EditorPage({ params }: PageProps) {
 
 
     return (
-        <div className="h-full w-full flex flex-col min-h-0">
+        <div className="h-screen w-full flex flex-col">
             <EditorHeader
                 projectId={projectId}
                 deckId={deck?._id}
                 initialTitle={deck?.title}
                 userDetailId={userDetail._id}
             />
-            <div className="flex-1 min-h-0">
-                <StudioEditor
-                    onReady={(editor) => {
-                        editorRef.current = editor
+            <StudioEditor
+                onReady={(editor) => {
+                    editorRef.current = editor
 
-                        // This is the fix for your point about "opening a new page in an existing presentation"
-                        // When a new page is added via the UI, we ensure it gets our slide container.
-                        editor.on('page:add', (page) => {
-                            // Select the page first to access its components
-                            editor.Pages.select(page);
-                            const wrapper = editor.DomComponents.getWrapper();
+                    // This is the fix for your point about "opening a new page in an existing presentation"
+                    // When a new page is added via the UI, we ensure it gets our slide container.
+                    editor.on('page:add', (page) => {
+                        // Select the page first to access its components
+                        editor.Pages.select(page);
+                        const wrapper = editor.DomComponents.getWrapper();
 
-                            // Check if it already has a container (e.g., from AI tools)
-                            if (wrapper && !wrapper.find('[data-slide-container]').length) {
-                                // Get the inner HTML, wrap it, and set it back.
-                                const currentContent = wrapper.getInnerHTML();
-                                wrapper.components(getSlideContainer(currentContent));
+                        // Check if it already has a container (e.g., from AI tools)
+                        if (wrapper && !wrapper.find('[data-slide-container]').length) {
+                            // Get the inner HTML, wrap it, and set it back.
+                            const currentContent = wrapper.getInnerHTML();
+                            wrapper.components(getSlideContainer(currentContent));
+                        }
+                    });
+
+                    // If this is a new project (deck is null), open the template browser.
+                    if (!deck) {
+                        editor.runCommand('studio:layoutToggle', {
+                            id: 'template-browser',
+                            header: false,
+                            placer: { type: 'dialog', title: 'Choose a template for your project', size: 'l' },
+                            layout: {
+                                type: 'panelTemplates',
+                                content: { itemsPerRow: 4 },
+                                onSelect: ({ loadTemplate, template }: any) => {
+                                    // Load the selected template to the current project
+                                    loadTemplate(template);
+                                    // Close the dialog layout
+                                    editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
+                                }
                             }
                         });
+                    }
 
-                        // If this is a new project (deck is null), open the template browser.
-                        if (!deck) {
-                            editor.runCommand('studio:layoutToggle', {
-                                id: 'template-browser',
-                                header: false,
-                                placer: { type: 'dialog', title: 'Choose a template for your project', size: 'l' },
-                                layout: {
-                                    type: 'panelTemplates',
-                                    content: { itemsPerRow: 4 },
-                                    onSelect: ({ loadTemplate, template }: any) => {
-                                        // Load the selected template to the current project
-                                        loadTemplate(template);
-                                        // Close the dialog layout
-                                        editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
-                                    }
+                    // Add scroll wheel zoom functionality
+                    const canvas = editor.Canvas.getElement()
+                    if (canvas) {
+                        const handleWheelZoom = (event: WheelEvent) => {
+                            // Only zoom if Ctrl/Cmd key is pressed
+                            if (event.ctrlKey || event.metaKey) {
+                                event.preventDefault() // Prevent default scroll behavior
+
+                                // Determine scroll direction
+                                const delta = event.deltaY
+
+                                // Get current zoom level
+                                let zoom = editor.Canvas.getZoom()
+
+                                // Adjust zoom level
+                                if (delta < 0) {
+                                    // Scroll up, zoom in
+                                    zoom += 5
+                                } else {
+                                    // Scroll down, zoom out
+                                    zoom -= 5
                                 }
-                            });
-                        }
 
-                        // Add scroll wheel zoom functionality
-                        const canvas = editor.Canvas.getElement()
-                        if (canvas) {
-                            const handleWheelZoom = (event: WheelEvent) => {
-                                // Only zoom if Ctrl/Cmd key is pressed
-                                if (event.ctrlKey || event.metaKey) {
-                                    event.preventDefault() // Prevent default scroll behavior
-
-                                    // Determine scroll direction
-                                    const delta = event.deltaY
-
-                                    // Get current zoom level
-                                    let zoom = editor.Canvas.getZoom()
-
-                                    // Adjust zoom level
-                                    if (delta < 0) {
-                                        // Scroll up, zoom in
-                                        zoom += 5
-                                    } else {
-                                        // Scroll down, zoom out
-                                        zoom -= 5
-                                    }
-
-                                    // Set new zoom level with reasonable limits
-                                    zoom = Math.max(10, Math.min(zoom, 300)) // Limit zoom between 10% and 300%
-                                    editor.Canvas.setZoom(zoom)
-                                }
+                                // Set new zoom level with reasonable limits
+                                zoom = Math.max(10, Math.min(zoom, 300)) // Limit zoom between 10% and 300%
+                                editor.Canvas.setZoom(zoom)
                             }
-
-                            canvas.addEventListener('wheel', handleWheelZoom, { passive: false })
-
-                            // Store cleanup function for potential future use
-                            const cleanup = () => canvas.removeEventListener('wheel', handleWheelZoom)
-                            // Note: In a real-world app, you might want to store this cleanup function
-                            // and call it when the component unmounts
                         }
-                    }}
-                    options={{
-                        licenseKey,
-                        theme: 'light',
-                        plugins: [
-                            canvasFullSize.init({
-                                deviceMaxWidth: DEFAULT_SLIDE_FORMAT.width, // Set body max width to slide width
-                                canvasOffsetX: 50, // Add horizontal padding for centering
-                                canvasOffsetY: 50, // Add vertical padding
-                            }),
-                            canvasAbsoluteMode,
-                            marqueeSelect,
-                            iconifyComponent.init({
-                                block: {
-                                    category: 'Media',
-                                    label: 'Icon'
-                                },
-                                collections: [
-                                    'mdi',        // Material Design Icons
-                                    'fa-solid',   // Font Awesome Solid
-                                    'heroicons',  // Heroicons
-                                    'lucide',     // Lucide Icons
-                                    'tabler'      // Tabler Icons
-                                ],
-                                extendIconComponent: true
-                            }),
-                            rteProseMirror
-                        ],
-                        templates: {
-                            onLoad: async () => TEMPLATES,
-                        },
-                        project: {
-                            type: 'web',
-                            id: projectId
-                        },
-                        identity: {
-                            id: identityId,
-                        },
-                        assets: {
-                            storageType: 'cloud'
-                        },
-                        storage: {
-                            type: 'self',
-                            onSave: async ({ project }) => {
-                                try {
-                                    await saveDeck({
-                                        projectId,
-                                        uid: userDetail._id,
-                                        project: JSON.stringify(project),
-                                    })
-                                } catch (error) {
-                                    console.error('Failed to save project:', error)
-                                    throw error
-                                }
+
+                        canvas.addEventListener('wheel', handleWheelZoom, { passive: false })
+
+                        // Store cleanup function for potential future use
+                        const cleanup = () => canvas.removeEventListener('wheel', handleWheelZoom)
+                        // Note: In a real-world app, you might want to store this cleanup function
+                        // and call it when the component unmounts
+                    }
+                }}
+                options={{
+                    licenseKey,
+                    theme: 'light',
+                    plugins: [
+                        canvasFullSize.init({
+                            deviceMaxWidth: DEFAULT_SLIDE_FORMAT.width,
+                            canvasOffsetX: 50,
+                            canvasOffsetY: 50,
+                        }),
+                        canvasAbsoluteMode,
+                        marqueeSelect,
+                        iconifyComponent.init({
+                            block: {
+                                category: 'Media',
+                                label: 'Icon'
                             },
-                            onLoad: async () => {
-                                return { project: initialProject };
-                            },
-                            autosaveChanges: 100,
-                            autosaveIntervalMs: 10000
-                        }
-                    }}
-                />
-            </div>
+                            collections: [
+                                'mdi',        // Material Design Icons
+                                'fa-solid',   // Font Awesome Solid
+                                'heroicons',  // Heroicons
+                                'lucide',     // Lucide Icons
+                                'tabler'      // Tabler Icons
+                            ],
+                            extendIconComponent: true
+                        }),
+                        rteProseMirror
+                    ],
+                    templates: {
+                        onLoad: async () => TEMPLATES,
+                    },
+                    project: {
+                        type: 'web',
+                        id: projectId
+                    },
+                    identity: {
+                        id: identityId,
+                    },
+                    assets: {
+                        storageType: 'cloud'
+                    },
+                    storage: {
+                        type: 'self',
+                        onSave: async ({ project }) => {
+                            try {
+                                await saveDeck({
+                                    projectId,
+                                    uid: userDetail._id,
+                                    project: JSON.stringify(project),
+                                })
+                            } catch (error) {
+                                console.error('Failed to save project:', error)
+                                throw error
+                            }
+                        },
+                        onLoad: async () => {
+                            return { project: initialProject };
+                        },
+                        autosaveChanges: 100,
+                        autosaveIntervalMs: 10000
+                    }
+                }}
+            />
         </div>
     )
 }

@@ -1,11 +1,6 @@
-// Templates following the Studio SDK format with embedded CSS styles
-// Based on the documentation examples that use <style> tags within component HTML
+import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from './slide-formats';
 
-/**
- * Elegant single-color templates with unique fonts.
- * Each template uses embedded CSS styles and distinct typography to create variety.
- * Updated for larger slide dimensions (1280x720) for better zoom behavior.
- */
+// Templates following the Studio SDK format with embedded CSS styles
 export const TEMPLATES = [
     {
         id: 'title-clean-white',
@@ -14,27 +9,28 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <!-- Slide container that exactly matches body dimensions -->
-                        <div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #ffffff; overflow: visible;">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                position: relative;
-                                width: 1920px;
-                                min-height: 1080px;
-                                background: #f3f4f6;
-                                overflow: hidden;
-                            }
                             .slide-title {
                                 position: absolute;
-                                top: 400px;
-                                left: 150px;
-                                font-size: 72px;
+                                top: 260px;
+                                left: 100px;
+                                font-size: 48px;
                                 margin: 0;
                                 font-weight: 700;
                                 color: #2c3e50;
@@ -42,10 +38,10 @@ export const TEMPLATES = [
                             }
                             .slide-subtitle {
                                 position: absolute;
-                                top: 520px;
-                                left: 150px;
-                                font-size: 36px;
-                                max-width: 1620px;
+                                top: 340px;
+                                left: 100px;
+                                font-size: 24px;
+                                max-width: 1080px;
                                 line-height: 1.5;
                                 color: #555;
                                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -53,10 +49,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-slate-blue',
@@ -65,27 +61,28 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <!-- Slide container that exactly matches body dimensions -->
-                        <div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #e8f4f8; overflow: visible;">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#e8f4f8',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                position: relative;
-                                width: 1920px;
-                                min-height: 1080px;
-                                background: #f3f4f6;
-                                overflow: hidden;
-                            }
                             .slide-title {
                                 position: absolute;
-                                top: 400px;
-                                left: 150px;
-                                font-size: 78px;
+                                top: 260px;
+                                left: 100px;
+                                font-size: 52px;
                                 margin: 0;
                                 font-weight: 700;
                                 color: #1a1a1a;
@@ -93,10 +90,10 @@ export const TEMPLATES = [
                             }
                             .slide-subtitle {
                                 position: absolute;
-                                top: 520px;
-                                left: 150px;
-                                font-size: 38px;
-                                max-width: 1620px;
+                                top: 340px;
+                                left: 100px;
+                                font-size: 25px;
+                                max-width: 1080px;
                                 line-height: 1.5;
                                 color: #444;
                                 font-family: 'Georgia', 'Times New Roman', serif;
@@ -104,10 +101,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-charcoal',
@@ -116,27 +113,28 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <!-- Slide container that exactly matches body dimensions -->
-                        <div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #2c3e50; overflow: visible;">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#2c3e50',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                position: relative;
-                                width: 1920px;
-                                min-height: 1080px;
-                                background: #f3f4f6;
-                                overflow: hidden;
-                            }
                             .slide-title {
                                 position: absolute;
-                                top: 400px;
-                                left: 150px;
-                                font-size: 70px;
+                                top: 260px;
+                                left: 100px;
+                                font-size: 47px;
                                 margin: 0;
                                 font-weight: 300;
                                 color: #ffffff;
@@ -145,10 +143,10 @@ export const TEMPLATES = [
                             }
                             .slide-subtitle {
                                 position: absolute;
-                                top: 500px;
-                                left: 150px;
-                                font-size: 36px;
-                                max-width: 1620px;
+                                top: 330px;
+                                left: 100px;
+                                font-size: 24px;
+                                max-width: 1080px;
                                 line-height: 1.5;
                                 color: #f0f0f0;
                                 font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -156,10 +154,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-sage-green',
@@ -168,27 +166,28 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <!-- Slide container that exactly matches body dimensions -->
-                        <div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #f0f4f0; overflow: visible;">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#f0f4f0',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                position: relative;
-                                width: 1920px;
-                                min-height: 1080px;
-                                background: #f3f4f6;
-                                overflow: hidden;
-                            }
                             .slide-title {
                                 position: absolute;
-                                top: 400px;
-                                left: 150px;
-                                font-size: 75px;
+                                top: 260px;
+                                left: 100px;
+                                font-size: 50px;
                                 margin: 0;
                                 font-weight: 600;
                                 color: #2c3e50;
@@ -196,10 +195,10 @@ export const TEMPLATES = [
                             }
                             .slide-subtitle {
                                 position: absolute;
-                                top: 510px;
-                                left: 150px;
-                                font-size: 36px;
-                                max-width: 1620px;
+                                top: 335px;
+                                left: 100px;
+                                font-size: 24px;
+                                max-width: 1080px;
                                 line-height: 1.5;
                                 color: #555;
                                 font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -207,10 +206,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-warm-cream',
@@ -219,27 +218,28 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <!-- Slide container that exactly matches body dimensions -->
-                        <div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: #faf7f2; overflow: visible;">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#faf7f2',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            body {
-                                margin: 0;
-                                padding: 0;
-                                position: relative;
-                                width: 1920px;
-                                min-height: 1080px;
-                                background: #f3f4f6;
-                                overflow: hidden;
-                            }
                             .slide-title {
                                 position: absolute;
-                                top: 400px;
-                                left: 150px;
-                                font-size: 80px;
+                                top: 260px;
+                                left: 100px;
+                                font-size: 53px;
                                 margin: 0;
                                 font-weight: 700;
                                 color: #8b4513;
@@ -247,10 +247,10 @@ export const TEMPLATES = [
                             }
                             .slide-subtitle {
                                 position: absolute;
-                                top: 520px;
-                                left: 150px;
-                                font-size: 38px;
-                                max-width: 1620px;
+                                top: 340px;
+                                left: 100px;
+                                font-size: 25px;
+                                max-width: 1080px;
                                 line-height: 1.5;
                                 color: #654321;
                                 font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -258,9 +258,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
-    }
+                    `,
+                },
+            ],
+        },
+    },
 ];
+

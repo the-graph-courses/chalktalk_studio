@@ -1,5 +1,6 @@
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
+import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from './slide-formats';
 
 export async function executeSlideToolServer(
     toolName: string,
@@ -31,6 +32,16 @@ export async function executeSlideToolServer(
             throw new Error('Invalid project data format');
         }
     }
+
+    const isCompleteSlideContainer = (content: string): boolean =>
+        content.includes('data-slide-container') || content.includes('<style>');
+
+    const enforceProjectDimensions = (content: string): string => {
+        if (!isCompleteSlideContainer(content)) return content;
+        return content
+            .replace(/width:\s*\d+px/g, `width: ${DEFAULT_SLIDE_FORMAT.width}px`)
+            .replace(/height:\s*\d+px/g, `height: ${DEFAULT_SLIDE_FORMAT.height}px`);
+    };
 
     // Execute the tool logic directly
     switch (toolName) {
@@ -126,6 +137,12 @@ export async function executeSlideToolServer(
                 name = 'New Slide';
             }
 
+            if (!isCompleteSlideContainer(content)) {
+                content = getSlideContainer(content);
+            } else {
+                content = enforceProjectDimensions(content);
+            }
+
             return {
                 success: true,
                 command: 'addSlide',
@@ -158,6 +175,12 @@ export async function executeSlideToolServer(
             } else {
                 // Fallback
                 newContent = '';
+            }
+
+            if (!isCompleteSlideContainer(newContent)) {
+                newContent = getSlideContainer(newContent);
+            } else {
+                newContent = enforceProjectDimensions(newContent);
             }
 
             return {

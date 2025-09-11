@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { executeSlideToolServer } from '@/lib/slide-tools-server';
+import { getSlideContainer } from '@/lib/slide-formats';
 
 export async function POST(request: Request) {
     try {
@@ -18,43 +19,20 @@ export async function POST(request: Request) {
             projectId = 'project_5ixc4na0jc4_1757422475707',
             slideIndex = 0,
             newName = 'AI Replaced Slide',
-            newContent = `
-              <!-- Slide container that exactly matches body dimensions -->
-              <div id="slide-container" style="position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); color: #333; overflow: visible;">
-                <h1 style="position: absolute; top: 300px; left: 150px; font-size: 72px; font-weight: 700;">AI Replaced Slide</h1>
-                
-                <p style="position: absolute; top: 420px; left: 150px; font-size: 33px; max-width: 1400px; line-height: 1.5;">The content of this slide has been replaced using absolute positioning for optimal layout control.</p>
-                
-                <!-- Page Number -->
-                <div style="position: absolute; bottom: 50px; left: 50px; padding: 12px 18px; background: rgba(0,0,0,0.6); color: white; border-radius: 8px; font-size: 20px; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(5px);">
-                  <span>1</span>
-                </div>
-                
-                <div class="gjs-icon" style="position: absolute; bottom: 200px; right: 150px; width: 120px; height: 120px; transform: rotate(15deg);">
-                  <svg style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </div>
-              </div>
-              
-              <style>
-                body {
-                  margin: 0;
-                  padding: 0;
-                  position: relative;
-                  width: 1920px;
-                  min-height: 1080px;
-                  background: #f3f4f6;
-                  overflow: hidden;
-                }
-              </style>
-            `
+            newContent = getSlideContainer(`
+                <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">AI Replaced Slide</h1>
+                <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">The content of this slide has been replaced using absolute positioning for optimal layout control.</p>
+            `, undefined, {
+                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                color: '#333',
+                borderRadius: '12px',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+            })
         } = body as any;
 
         const result = await executeSlideToolServer(
             'replace_slide',
-            { slideIndex, slideData: { content: newContent, name: newName } },
+            { slideIndex, newContent, newName },
             projectId,
             userId
         );
