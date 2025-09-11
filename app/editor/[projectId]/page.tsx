@@ -196,7 +196,26 @@ export default function EditorPage({ params }: PageProps) {
                             if (wrapper && !wrapper.find('[data-slide-container]').length) {
                                 // Get the inner HTML, wrap it, and set it back.
                                 const currentContent = wrapper.getInnerHTML();
-                                wrapper.components(getSlideContainer(currentContent));
+                                // Pull a default style based on stored template id
+                                let custom: Record<string, string> = {}
+                                try {
+                                    const tid = localStorage.getItem('selectedTemplateId') || ''
+                                    // Simple mapping for a few known templates; extend as needed
+                                    const styleById: Record<string, Record<string, string>> = {
+                                        'title-slate-blue': { backgroundColor: '#e8f4f8', padding: '20px', borderRadius: '12px' },
+                                        'title-sage-green': { backgroundColor: '#f0f4f0', padding: '20px', borderRadius: '12px' },
+                                        'title-warm-cream': { backgroundColor: '#faf7f2', padding: '20px', borderRadius: '12px' },
+                                        'title-clean-white': { backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px' },
+                                    }
+                                    custom = styleById[tid] || {}
+                                } catch {}
+                                wrapper.components(
+                                    getSlideContainer(
+                                        currentContent,
+                                        DEFAULT_SLIDE_FORMAT,
+                                        custom,
+                                    )
+                                );
                             }
                         });
 
@@ -214,6 +233,10 @@ export default function EditorPage({ params }: PageProps) {
                                         loadTemplate(template);
                                         // Close the dialog layout
                                         editor.runCommand('studio:layoutRemove', { id: 'template-browser' })
+                                        // Store selected template id for later new pages (simple strategy)
+                                        try {
+                                            localStorage.setItem('selectedTemplateId', template?.id || '')
+                                        } catch {}
                                     }
                                 }
                             });
@@ -322,5 +345,3 @@ export default function EditorPage({ params }: PageProps) {
         </div>
     )
 }
-
-
