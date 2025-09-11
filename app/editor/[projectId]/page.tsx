@@ -44,6 +44,36 @@ export default function EditorPage({ params }: PageProps) {
     // Controls when we apply template-mapped styles on page add
     const shouldApplyTemplateStylesRef = useRef<boolean>(true)
 
+    // Parse inline style string into an object (camelCase keys)
+    const parseStyleAttr = (styleAttr?: string): Record<string, string> => {
+        if (!styleAttr) return {}
+        return styleAttr
+            .split(';')
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .reduce((acc: Record<string, string>, decl) => {
+                const idx = decl.indexOf(':')
+                if (idx === -1) return acc
+                const key = decl.slice(0, idx).trim()
+                const val = decl.slice(idx + 1).trim()
+                if (key) acc[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = val
+                return acc
+            }, {})
+    }
+
+    // Extract container styles from a template's first page component
+    const getContainerStylesForTemplate = (templateId: string): Record<string, string> => {
+        const tpl = TEMPLATES.find(t => t.id === templateId)
+        if (!tpl) return {}
+        const page = tpl.data?.pages?.[0]
+        const comp = page?.component as string | undefined
+        if (!comp) return {}
+        // Find the first data-slide-container style attribute
+        const match = comp.match(/data-slide-container[^>]*style="([^"]+)"/)
+        if (!match) return {}
+        return parseStyleAttr(match[1])
+    }
+
     // Helper function to detect if content is a complete slide container
     const isCompleteSlideContainer = (content: string): boolean => {
         return content.includes('slide-container') || content.includes('<style>');
@@ -200,18 +230,12 @@ export default function EditorPage({ params }: PageProps) {
                             if (wrapper && !wrapper.find('[data-slide-container]').length) {
                                 // Get the inner HTML, wrap it, and set it back.
                                 const currentContent = wrapper.getInnerHTML();
-                                // Pull a default style based on stored template id
+                                // Pull container styles from selected template (single source of truth)
                                 let custom: Record<string, string> = {}
                                 try {
-                                    const tid = localStorage.getItem('selectedTemplateId') || ''
-                                    // Simple mapping for a few known templates; extend as needed
-                                    const styleById: Record<string, Record<string, string>> = {
-                                        'title-slate-blue': { backgroundColor: '#e8f4f8', padding: '20px', borderRadius: '12px' },
-                                        'title-sage-green': { backgroundColor: '#f0f4f0', padding: '20px', borderRadius: '12px' },
-                                        'title-warm-cream': { backgroundColor: '#faf7f2', padding: '20px', borderRadius: '12px' },
-                                        'title-clean-white': { backgroundColor: '#ffffff', padding: '20px', borderRadius: '12px' },
-                                    }
-                                    custom = styleById[tid] || {}
+                                    const key = `selectedTemplateId:${projectId}`
+                                    const tid = localStorage.getItem(key) || localStorage.getItem('selectedTemplateId') || ''
+                                    custom = getContainerStylesForTemplate(tid)
                                 } catch {}
                                 wrapper.components(
                                     getSlideContainer(
@@ -226,7 +250,10 @@ export default function EditorPage({ params }: PageProps) {
                         // If this is a new project (deck is null), open the template browser.
                         if (!deck) {
                             // New project: clear any previous template id and hold off applying styles
-                            try { localStorage.removeItem('selectedTemplateId') } catch {}
+                            try {
+                                localStorage.removeItem('selectedTemplateId')
+                                localStorage.removeItem(`selectedTemplateId:${projectId}`)
+                            } catch {}
                             shouldApplyTemplateStylesRef.current = false
                             editor.runCommand('studio:layoutToggle', {
                                 id: 'template-browser',
@@ -237,7 +264,11 @@ export default function EditorPage({ params }: PageProps) {
                                     content: { itemsPerRow: 4 },
                                     onSelect: ({ loadTemplate, template }: any) => {
                                         // Store selected template id BEFORE loading, so any page:add from the loader sees the correct id
-                                        try { localStorage.setItem('selectedTemplateId', template?.id || '') } catch {}
+                                        try {
+                                            const tid = template?.id || ''
+                                            localStorage.setItem('selectedTemplateId', tid)
+                                            localStorage.setItem(`selectedTemplateId:${projectId}`, tid)
+                                        } catch {}
                                         shouldApplyTemplateStylesRef.current = true
                                         // Load the selected template to the current project
                                         loadTemplate(template);
