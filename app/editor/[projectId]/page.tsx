@@ -47,23 +47,6 @@ export default function EditorPage({ params }: PageProps) {
         return content.includes('slide-container') || content.includes('<style>');
     }
 
-    // Helper function to enforce project dimensions on AI-generated content
-    const enforceProjectDimensions = (content: string): string => {
-        if (!isCompleteSlideContainer(content)) {
-            return content; // Not a complete container, return as-is
-        }
-
-        const projectWidth = DEFAULT_SLIDE_FORMAT.width;
-        const projectHeight = DEFAULT_SLIDE_FORMAT.height;
-
-        // Replace any existing width/height in CSS with project dimensions
-        let updatedContent = content
-            .replace(/width:\s*\d+px/g, `width: ${projectWidth}px`)
-            .replace(/height:\s*\d+px/g, `height: ${projectHeight}px`);
-
-        return updatedContent;
-    }
-
     // Create global functions for AI tools to interact with the editor
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -76,8 +59,8 @@ export default function EditorPage({ params }: PageProps) {
                     // Check if AI provided a complete slide container
                     let finalContent: string;
                     if (isCompleteSlideContainer(content)) {
-                        // Use AI content directly but enforce project dimensions
-                        finalContent = enforceProjectDimensions(content);
+                        // Use AI content directly
+                        finalContent = content;
                     } else {
                         // Wrap simple content in our container
                         finalContent = getSlideContainer(content);
@@ -107,8 +90,8 @@ export default function EditorPage({ params }: PageProps) {
                     // Check if AI provided a complete slide container
                     let finalContent: string;
                     if (isCompleteSlideContainer(newContent)) {
-                        // Use AI content directly but enforce project dimensions
-                        finalContent = enforceProjectDimensions(newContent);
+                        // Use AI content directly
+                        finalContent = newContent;
                     } else {
                         // Wrap simple content in our container
                         finalContent = getSlideContainer(newContent);
@@ -133,8 +116,8 @@ export default function EditorPage({ params }: PageProps) {
                     // Check if AI provided a complete slide container
                     let finalContent: string;
                     if (isCompleteSlideContainer(newContent)) {
-                        // Use AI content directly but enforce project dimensions
-                        finalContent = enforceProjectDimensions(newContent);
+                        // Use AI content directly
+                        finalContent = newContent;
                     } else {
                         // Wrap simple content in our container
                         finalContent = getSlideContainer(newContent);
