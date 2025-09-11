@@ -45,19 +45,27 @@ When reading slides, you'll receive clean HTML content as plain text without JSO
 
 When creating or replacing slides, generate COMPLETE slide containers using this format:
 
-<div class="slide-container my-unique-theme">
+<div class="my-unique-theme" data-slide-container="true">
     <h1 class="slide-title">Your Title Here</h1>
     <p class="slide-subtitle">Your subtitle or content here</p>
     <!-- Add more content elements as needed -->
 </div>
 <style>
+    body {
+        margin: 0;
+        padding: 0;
+        position: relative;
+        width: 1280px;
+        min-height: 720px;
+        background: #f3f4f6;
+        overflow: hidden;
+    }
     .my-unique-theme {
         position: absolute;
+        top: 0;
+        left: 0;
         width: 1280px;
         height: 720px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
         padding: 20px;
         background-color: #ffffff; /* Choose appropriate background */
         border-radius: 12px;

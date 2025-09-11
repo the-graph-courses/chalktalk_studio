@@ -1,11 +1,6 @@
-// Templates following the Studio SDK format with embedded CSS styles
-// Based on the documentation examples that use <style> tags within component HTML
+import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from './slide-formats';
 
-/**
- * Elegant single-color templates with unique fonts.
- * Each template uses embedded CSS styles and distinct typography to create variety.
- * Updated for larger slide dimensions (1280x720) for better zoom behavior.
- */
+// Templates following the Studio SDK format with embedded CSS styles
 export const TEMPLATES = [
     {
         id: 'title-clean-white',
@@ -14,27 +9,24 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <div class="slide-container modern-slide">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            .modern-slide {
-                                position: absolute;
-                                width: 1280px;
-                                height: 720px;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                padding: 20px;
-                                background-color: #ffffff;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                                overflow: visible;
-                                border: 1px solid rgba(0, 0, 0, 0.1);
-                            }
-                            .modern-slide .slide-title {
+                            .slide-title {
                                 position: absolute;
                                 top: 260px;
                                 left: 100px;
@@ -44,7 +36,7 @@ export const TEMPLATES = [
                                 color: #2c3e50;
                                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
                             }
-                            .modern-slide .slide-subtitle {
+                            .slide-subtitle {
                                 position: absolute;
                                 top: 340px;
                                 left: 100px;
@@ -57,10 +49,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-slate-blue',
@@ -69,27 +61,24 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <div class="slide-container professional-slide">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#e8f4f8',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            .professional-slide {
-                                position: absolute;
-                                width: 1280px;
-                                height: 720px;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                padding: 20px;
-                                background-color: #e8f4f8;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                                overflow: visible;
-                                border: 1px solid rgba(0, 0, 0, 0.1);
-                            }
-                            .professional-slide .slide-title {
+                            .slide-title {
                                 position: absolute;
                                 top: 260px;
                                 left: 100px;
@@ -99,7 +88,7 @@ export const TEMPLATES = [
                                 color: #1a1a1a;
                                 font-family: 'Georgia', 'Times New Roman', serif;
                             }
-                            .professional-slide .slide-subtitle {
+                            .slide-subtitle {
                                 position: absolute;
                                 top: 340px;
                                 left: 100px;
@@ -112,10 +101,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-charcoal',
@@ -124,27 +113,24 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <div class="slide-container minimal-slide">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#2c3e50',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            .minimal-slide {
-                                position: absolute;
-                                width: 1280px;
-                                height: 720px;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                padding: 20px;
-                                background-color: #2c3e50;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                                overflow: visible;
-                                border: 1px solid rgba(0, 0, 0, 0.1);
-                            }
-                            .minimal-slide .slide-title {
+                            .slide-title {
                                 position: absolute;
                                 top: 260px;
                                 left: 100px;
@@ -155,7 +141,7 @@ export const TEMPLATES = [
                                 font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
                                 letter-spacing: -1px;
                             }
-                            .minimal-slide .slide-subtitle {
+                            .slide-subtitle {
                                 position: absolute;
                                 top: 330px;
                                 left: 100px;
@@ -168,10 +154,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-sage-green',
@@ -180,27 +166,24 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <div class="slide-container elegant-slide">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#f0f4f0',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            .elegant-slide {
-                                position: absolute;
-                                width: 1280px;
-                                height: 720px;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                padding: 20px;
-                                background-color: #f0f4f0;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                                overflow: visible;
-                                border: 1px solid rgba(0, 0, 0, 0.1);
-                            }
-                            .elegant-slide .slide-title {
+                            .slide-title {
                                 position: absolute;
                                 top: 260px;
                                 left: 100px;
@@ -210,7 +193,7 @@ export const TEMPLATES = [
                                 color: #2c3e50;
                                 font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
                             }
-                            .elegant-slide .slide-subtitle {
+                            .slide-subtitle {
                                 position: absolute;
                                 top: 335px;
                                 left: 100px;
@@ -223,10 +206,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
+                    `,
+                },
+            ],
+        },
     },
     {
         id: 'title-warm-cream',
@@ -235,27 +218,24 @@ export const TEMPLATES = [
             pages: [
                 {
                     name: 'Presentation',
-                    component: `
-                        <div class="slide-container classic-slide">
+                    component:
+                        getSlideContainer(
+                            `
                             <h1 class="slide-title">Your Title Here</h1>
                             <p class="slide-subtitle">A subtitle or brief description of your presentation</p>
-                        </div>
+                            `,
+                            DEFAULT_SLIDE_FORMAT,
+                            {
+                                padding: '20px',
+                                backgroundColor: '#faf7f2',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                overflow: 'visible',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                            },
+                        ) + `
                         <style>
-                            .classic-slide {
-                                position: absolute;
-                                width: 1280px;
-                                height: 720px;
-                                top: 50%;
-                                left: 50%;
-                                transform: translate(-50%, -50%);
-                                padding: 20px;
-                                background-color: #faf7f2;
-                                border-radius: 12px;
-                                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                                overflow: visible;
-                                border: 1px solid rgba(0, 0, 0, 0.1);
-                            }
-                            .classic-slide .slide-title {
+                            .slide-title {
                                 position: absolute;
                                 top: 260px;
                                 left: 100px;
@@ -265,7 +245,7 @@ export const TEMPLATES = [
                                 color: #8b4513;
                                 font-family: 'Playfair Display', Georgia, serif;
                             }
-                            .classic-slide .slide-subtitle {
+                            .slide-subtitle {
                                 position: absolute;
                                 top: 340px;
                                 left: 100px;
@@ -278,9 +258,10 @@ export const TEMPLATES = [
                                 margin: 0;
                             }
                         </style>
-                    `
-                }
-            ]
-        }
-    }
+                    `,
+                },
+            ],
+        },
+    },
 ];
+

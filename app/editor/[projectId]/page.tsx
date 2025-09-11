@@ -277,10 +277,9 @@ export default function EditorPage({ params }: PageProps) {
                     theme: 'light',
                     plugins: [
                         canvasFullSize.init({
-                            deviceMaxWidth: 2000, // Ensure body is wide enough
-                            deviceMinHeigth: 1200, // Ensure body is tall enough for slide + margins
-                            canvasOffsetY: 50,
+                            deviceMaxWidth: DEFAULT_SLIDE_FORMAT.width,
                             canvasOffsetX: 50,
+                            canvasOffsetY: 50,
                         }),
                         canvasAbsoluteMode,
                         marqueeSelect,
