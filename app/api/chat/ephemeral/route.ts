@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     });
 
     const result = streamText({
-        model: openrouter.chat('anthropic/claude-3-5-sonnet-20241022'),
+        model: openrouter.chat('anthropic/claude-sonnet-4'),
         messages: convertToModelMessages(messages),
         ...(tools && { tools }),
         system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:

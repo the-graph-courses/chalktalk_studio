@@ -1,11 +1,12 @@
 'use client'
-import React, { useEffect, useState } from 'react'
-import { useContext } from 'react';
+import React, { useEffect, useState, createContext, useContext } from 'react'
 import Header from './_components/Header';
 import { api } from '@/convex/_generated/api';
 import { useMutation } from 'convex/react';
 import { useUser } from '@clerk/nextjs';
-import { UserDetailContext } from '@/context/UserDetailContext';
+
+// Move UserDetailContext here instead of separate file
+const UserDetailContext = createContext<any>(null);
 
 
 
