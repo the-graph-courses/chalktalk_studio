@@ -8,6 +8,7 @@ export type RevealSlide = {
   name?: string
   html: string
   css: string[]
+  containerStyle?: string
 }
 
 const extractStyleBlocks = (html: string): { cleaned: string; styles: string[] } => {
@@ -37,12 +38,40 @@ const filterGlobalStyles = (cssList: string[]): string[] => {
     .filter((s) => s.trim().length > 0)
 }
 
-const extractSlideContainerInner = (html: string): string => {
+const extractSlideContainer = (html: string): { inner: string; style?: string } => {
   // Try to locate the slide container and take its inner HTML
-  const containerMatch = html.match(/<div[^>]*data-slide-container[^>]*>([\s\S]*?)<\/div>/i)
-  if (containerMatch) return containerMatch[1]
+  const containerMatch = html.match(/<div([^>]*)data-slide-container[^>]*>([\s\S]*?)<\/div>/i)
+  if (containerMatch) {
+    const attrs = containerMatch[1] || ''
+    const styleMatch = attrs.match(/style\s*=\s*"([^"]*)"/i)
+    const style = styleMatch ? styleMatch[1] : undefined
+    return { inner: containerMatch[2], style }
+  }
   // Fallback to full HTML
-  return html
+  return { inner: html }
+}
+
+const normalizeContainerStyle = (style?: string) => {
+  if (!style) return undefined
+  // Turn style string into map
+  const map: Record<string, string> = {}
+  style.split(';').map(s => s.trim()).filter(Boolean).forEach(pair => {
+    const idx = pair.indexOf(':')
+    if (idx === -1) return
+    const key = pair.slice(0, idx).trim().toLowerCase()
+    const val = pair.slice(idx + 1).trim()
+    map[key] = val
+  })
+  // Force relative positioning so absolute children position inside
+  map['position'] = 'relative'
+  // Remove top/left to let Reveal center it; user layouts are absolute within
+  delete map['top']
+  delete map['left']
+  // Ensure width/height preserved
+  // Center in slide
+  map['margin'] = '0 auto'
+  // Construct back to string
+  return Object.entries(map).map(([k, v]) => `${k}:${v}`).join(';')
 }
 
 // Convert GrapesJS component JSON to HTML (minimal subset)
@@ -108,9 +137,10 @@ export function extractRevealSlides(project: ProjectLike): RevealSlide[] {
       }
     }
     const { cleaned, styles } = extractStyleBlocks(raw || '')
-    const inner = extractSlideContainerInner(cleaned)
+    const { inner, style } = extractSlideContainer(cleaned)
+    const containerStyle = normalizeContainerStyle(style)
     const css = filterGlobalStyles(styles)
-    return { name: p.name, html: inner, css }
+    return { name: p.name, html: inner, css, containerStyle }
   })
 }
 
