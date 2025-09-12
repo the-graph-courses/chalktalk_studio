@@ -8,6 +8,7 @@ import 'reveal.js/dist/theme/white.css'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { extractRevealSlides, gatherSlideTTS } from '@/lib/reveal-export'
+import { extractTTSFromSlideHtml } from '@/lib/tts-extract'
 import { useSearchParams } from 'next/navigation'
 
 type PageProps = { params: Promise<{ projectId: string }> }
@@ -20,7 +21,6 @@ export default function PresentPage({ params }: PageProps) {
   const deckTitle = deck?.title || 'Presentation'
 
   const [reveal, setReveal] = useState<Reveal.Api | null>(null)
-  const [audioBlobs, setAudioBlobs] = useState<(string | null)[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [needsUserAction, setNeedsUserAction] = useState(false)
 
@@ -52,12 +52,49 @@ export default function PresentPage({ params }: PageProps) {
   }, [slides.length])
 
   // TTS cache per slide index
-  const [audioUrls, setAudioUrls] = useState<Record<number, string>>({})
+  // Per-slide audio sequences (array of data URLs)
+  const [audioSeqs, setAudioSeqs] = useState<Record<number, string[]>>({})
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
   const currentIndexRef = useRef<number>(0)
   const fetchTokenRef = useRef<number>(0)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [volume, setVolume] = useState(1)
+
+  // Load any pre-generated audio cache from localStorage (always register this hook)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`ttsCache:${projectId}`)
+      if (raw) {
+        const data = JSON.parse(raw) as { slides: { index: number; perElement: string[] }[] }
+        const seqs: Record<number, string[]> = {}
+        data.slides.forEach(s => { if (s.perElement?.length) seqs[s.index] = s.perElement })
+        setAudioSeqs(seqs)
+      }
+    } catch {}
+  }, [projectId])
+
+  // Also try to load sequences from Convex via API (if available)
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+        if (!res.ok) return
+        const obj = await res.json()
+        if (cancelled) return
+        // obj is a map { [slideIndex: string]: [{ elementIndex, audioDataUrl }] }
+        const seqs: Record<number, string[]> = {}
+        for (const [k, arr] of Object.entries(obj || {})) {
+          const n = Number(k)
+          if (!Array.isArray(arr)) continue
+          const urls = (arr as any[]).sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0)).map((x: any) => x.audioDataUrl).filter(Boolean)
+          if (urls.length) seqs[n] = urls
+        }
+        if (Object.keys(seqs).length) setAudioSeqs(seqs)
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [projectId])
 
   // Autoplay logic: play audio per slide and advance on end
   useEffect(() => {
@@ -71,54 +108,102 @@ export default function PresentPage({ params }: PageProps) {
       const indexh = event.indexh ?? 0
       currentIndexRef.current = indexh
       const token = ++fetchTokenRef.current
-      const url = audioUrls[indexh]
       // Stop current audio
       audio.pause()
       audio.currentTime = 0
       audio.playbackRate = playbackRate
       audio.volume = volume
-      // Gather text
-      const text = gatherSlideTTS(slides[indexh]?.html || '')
-      if (!text) {
-        // No text; auto-advance after short delay to keep flow
-        setLoadingIndex(null)
-        setTimeout(() => reveal.next(), 800)
-        return
-      }
-      // If cached, play
-      if (url) {
-        audio.src = url
-        audio.play().catch(() => setNeedsUserAction(true))
-        setLoadingIndex(null)
-        return
-      }
-      // Else fetch and play
-      try {
-        setLoadingIndex(indexh)
-        const res = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
-        })
-        if (!res.ok) throw new Error(await res.text())
-        const buf = await res.arrayBuffer()
-        const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))
-        // If slide changed while fetching, don't play or set cache for the wrong index
-        if (fetchTokenRef.current !== token) {
-          URL.revokeObjectURL(blobUrl)
-          return
+
+      // Try cached sequence first
+      let seq = audioSeqs[indexh]
+
+      // If no cached sequence, build from data-tts elements
+      if (!seq) {
+        const html = slides[indexh]?.html || ''
+        const entries = extractTTSFromSlideHtml(html)
+        if (entries.length === 0) {
+          // Fallback: single clip from slide text
+          const text = gatherSlideTTS(html)
+          if (!text) {
+            setLoadingIndex(null)
+            setTimeout(() => reveal.next(), 800)
+            return
+          }
+          try {
+            setLoadingIndex(indexh)
+            const res = await fetch('/api/tts', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text })
+            })
+            if (!res.ok) throw new Error(await res.text())
+            const buf = await res.arrayBuffer()
+            const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))
+            if (fetchTokenRef.current !== token) { URL.revokeObjectURL(blobUrl); return }
+            seq = [blobUrl]
+            setAudioSeqs((m) => ({ ...m, [indexh]: seq! }))
+          } catch (e) {
+            console.error('TTS error', e)
+            setTimeout(() => reveal.next(), 800)
+            setLoadingIndex(null)
+            return
+          }
+        } else {
+          // Generate element audios in order
+          const urls: string[] = []
+          try {
+            setLoadingIndex(indexh)
+            for (const ent of entries) {
+              if (fetchTokenRef.current !== token) return
+              const res = await fetch('/api/tts', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: ent.text })
+              })
+              if (!res.ok) throw new Error(await res.text())
+              const buf = await res.arrayBuffer()
+              const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))
+              urls.push(blobUrl)
+            }
+            if (fetchTokenRef.current !== token) { urls.forEach(u=>URL.revokeObjectURL(u)); return }
+            seq = urls
+            setAudioSeqs((m) => ({ ...m, [indexh]: urls }))
+          } catch (e) {
+            console.error('TTS error', e)
+            setTimeout(() => reveal.next(), 800)
+            setLoadingIndex(null)
+            return
+          }
         }
-        setAudioUrls((m) => ({ ...m, [indexh]: blobUrl }))
-        audio.src = blobUrl
-        audio.playbackRate = playbackRate
-        audio.volume = volume
-        await audio.play().catch(() => setNeedsUserAction(true))
-      } catch (e) {
-        console.error('TTS error', e)
-        // Advance to avoid getting stuck
-        setTimeout(() => reveal.next(), 800)
-      } finally {
+      }
+
+      // Play sequence sequentially
+      if (seq && seq.length) {
+        (async () => {
+          for (let i = 0; i < seq!.length; i++) {
+            if (fetchTokenRef.current !== token) return
+            audio.src = seq![i]
+            audio.playbackRate = playbackRate
+            audio.volume = volume
+            try { await audio.play() } catch { setNeedsUserAction(true); return }
+            await new Promise<void>((resolve) => {
+              const onEnd = () => { cleanup(); resolve() }
+              const onErr = () => { cleanup(); resolve() }
+              const cleanup = () => {
+                audio.removeEventListener('ended', onEnd)
+                audio.removeEventListener('error', onErr)
+              }
+              audio.addEventListener('ended', onEnd, { once: true })
+              audio.addEventListener('error', onErr, { once: true })
+            })
+            // Advance fragment after each element where possible
+            try { (reveal as any).nextFragment?.() } catch {}
+          }
+          // After sequence completes, advance slide
+          if (fetchTokenRef.current === token) reveal.next()
+          setLoadingIndex(null)
+        })()
+      } else {
         setLoadingIndex(null)
+        setTimeout(() => reveal.next(), 800)
       }
     }
     reveal.on('ready', onSlide)
@@ -128,13 +213,13 @@ export default function PresentPage({ params }: PageProps) {
       reveal.off('slidechanged', onSlide)
       audio.pause()
     }
-  }, [autoplay, reveal, audioBlobs])
+  }, [autoplay, reveal, audioSeqs, playbackRate, volume, slides])
 
   if (deck === undefined) return <div>Loading...</div>
   if (!deck) return <div>Not found</div>
 
   return (
-    <div className="w-screen h-screen bg-black">
+    <div className="w-screen h-screen bg-white">
       {/* Top bar */}
       <div className="fixed top-3 left-3 z-20 flex items-center gap-2">
         <a href={`/editor/${projectId}`} className="px-3 py-1 rounded bg-white/90 text-black text-sm shadow">Back to Editor</a>
@@ -194,7 +279,7 @@ export default function PresentPage({ params }: PageProps) {
         </div>
       )}
 
-      <div className="reveal" style={{ width: '100%', height: '100%' }}>
+      <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
         <div className="slides">
           {slides.map((s, i) => (
             <section key={i}>

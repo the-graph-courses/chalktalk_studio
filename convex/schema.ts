@@ -19,4 +19,13 @@ export default defineSchema({
         lastModified: v.optional(v.number()) // Unix timestamp for last modification
     }),
 
+    TTSAudioTable: defineTable({
+        projectId: v.string(),
+        slideIndex: v.number(),
+        elementIndex: v.number(), // order within slide
+        ttsText: v.string(),
+        audioDataUrl: v.string(), // data:audio/mpeg;base64,... for prototype
+        createdAt: v.number(),
+    }).index('by_project', ['projectId']).index('by_project_slide', ['projectId', 'slideIndex'])
+
 })

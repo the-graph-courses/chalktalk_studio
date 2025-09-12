@@ -244,11 +244,28 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
     }
 
     const handlePresent = () => {
-        router.push(`/present/${projectId}`)
+        if (typeof window !== 'undefined') window.open(`/present/${projectId}`, '_blank')
     }
 
     const handleVideo = () => {
-        router.push(`/present/${projectId}?autoplay=1`)
+        if (typeof window !== 'undefined') window.open(`/present/${projectId}?autoplay=1`, '_blank')
+    }
+
+    const handleGenerateAudio = async () => {
+        try {
+            const res = await fetch('/api/tts/generate', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId })
+            })
+            if (!res.ok) throw new Error(await res.text())
+            const data = await res.json()
+            // Store cache in localStorage for present page
+            try { localStorage.setItem(`ttsCache:${projectId}`, JSON.stringify(data)) } catch {}
+            alert('Audio generated and cached locally for this project.')
+        } catch (e) {
+            console.error(e)
+            alert('Audio generation failed. See console for details.')
+        }
     }
 
     const handleZoomIn = () => {
@@ -395,6 +412,9 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                         <DropdownMenuItem onClick={handlePresent}>
                             <Eye className="mr-2 h-4 w-4" />
                             Present
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleGenerateAudio}>
+                            Generate Audio (cache)
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleVideo}>
                             Video (auto TTS)
