@@ -319,6 +319,52 @@ export default function EditorPage({ params }: PageProps) {
                             // Note: In a real-world app, you might want to store this cleanup function
                             // and call it when the component unmounts
                         }
+
+                        // Command: Set fragments and TTS from text content
+                        editor.Commands.add('tts:set-fragments-from-text', {
+                            run: async (ed: any, opts: any = {}) => {
+                                const scope = opts.scope === 'deck' ? 'deck' : 'slide'
+                                let total = 0
+
+                                const applyOnCurrentPage = async () => {
+                                    // allow DOM to settle after page switch
+                                    await new Promise(r => setTimeout(r, 30))
+                                    const wrapper = ed.DomComponents.getWrapper()
+                                    if (!wrapper) return
+                                    let order = 0
+                                    const targets = wrapper.find('p, h1, h2, h3, h4, h5, h6, li, button, a, span')
+                                    targets.forEach((cmp: any) => {
+                                        const el = cmp.getEl?.()
+                                        const text = (el?.textContent || '').replace(/\s+/g, ' ').trim()
+                                        if (!text) return
+                                        // Set TTS text from visible text
+                                        cmp.addAttributes({ 'data-tts': text, 'data-fragment-index': String(order) })
+                                        // Set fragment effect and class
+                                        const cur = (cmp.getClasses?.() || cmp.getClass?.() || []) as string[]
+                                        const classes = new Set(cur)
+                                        classes.add('fragment')
+                                        cmp.setClass?.(Array.from(classes))
+                                        cmp.addAttributes({ 'data-fragment': 'appear' })
+                                        order += 1
+                                        total += 1
+                                    })
+                                }
+
+                                if (scope === 'slide') {
+                                    await applyOnCurrentPage()
+                                } else {
+                                    const selected = ed.Pages.getSelected?.()
+                                    const pages = ed.Pages.getAll?.() || []
+                                    for (const pg of pages) {
+                                        ed.Pages.select(pg)
+                                        await applyOnCurrentPage()
+                                    }
+                                    if (selected) ed.Pages.select(selected)
+                                }
+
+                                try { window.alert?.(`Set TTS + fragments on ${total} elements (${scope}).`) } catch {}
+                            }
+                        })
                     }}
                     options={{
                         licenseKey,

@@ -21,7 +21,6 @@ export default function PresentPage({ params }: PageProps) {
   const deckTitle = deck?.title || 'Presentation'
 
   const [reveal, setReveal] = useState<Reveal.Api | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null) // legacy; using per-slide audio elements
   const [needsUserAction, setNeedsUserAction] = useState(false)
 
   const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
@@ -47,26 +46,25 @@ export default function PresentPage({ params }: PageProps) {
     })
     setReveal(r)
     return () => {
-      try { r?.destroy() } catch {}
+      try { r?.destroy() } catch { }
     }
   }, [slides.length])
 
   // TTS cache per slide index
   // Per-slide audio sequences (array of data URLs)
   const [audioSeqs, setAudioSeqs] = useState<Record<number, string[]>>({})
-  const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
+  const [loadingIndex] = useState<number | null>(null)
   const currentIndexRef = useRef<number>(0)
-  const fetchTokenRef = useRef<number>(0)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [volume, setVolume] = useState(1)
-  const [preparing, setPreparing] = useState(true)
-  const [preparingMessage, setPreparingMessage] = useState<string>('Preparing audio…')
-  const [playing, setPlaying] = useState(false)
-  const [paused, setPaused] = useState(false)
+  const [playbackState, setPlaybackState] = useState<'stopped' | 'playing' | 'paused'>('stopped')
   const sessionTokenRef = useRef<number>(0)
-  const playSlideRef = useRef<(idx: number) => void>(() => {})
+  const playSlideRef = useRef<(idx: number) => void>(() => { })
   const currentClipRef = useRef<number>(0)
   const currentAudioElRef = useRef<HTMLAudioElement | null>(null)
+  const userUnlockedRef = useRef<boolean>(false)
+  const audioQueueRef = useRef<HTMLAudioElement[]>([])
+  const currentAudioIndexRef = useRef<number>(0)
 
   // Load any pre-generated audio cache from localStorage (always register this hook)
   useEffect(() => {
@@ -78,70 +76,90 @@ export default function PresentPage({ params }: PageProps) {
         data.slides.forEach(s => { if (s.perElement?.length) seqs[s.index] = s.perElement })
         setAudioSeqs(seqs)
       }
-    } catch {}
+    } catch { }
   }, [projectId])
 
   // Also try to load sequences from Convex; generate if missing
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        setPreparing(true)
-        setPreparingMessage('Loading audio from server…')
-        let res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
-        if (!res.ok) return
-        const obj = await res.json()
-        if (cancelled) return
-        const seqs: Record<number, string[]> = {}
-        for (const [k, arr] of Object.entries(obj || {})) {
-          const n = Number(k)
-          if (!Array.isArray(arr)) continue
-          const urls = (arr as any[])
-            .sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0))
-            .map((x: any) => x.audioDataUrl)
-            .filter(Boolean)
-          if (urls.length) seqs[n] = urls
-        }
-        if (!Object.keys(seqs).length) {
-          setPreparingMessage('Generating audio…')
-          await fetch('/api/tts/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId }) })
-          res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
-          if (res.ok) {
-            const obj2 = await res.json()
-            for (const [k, arr] of Object.entries(obj2 || {})) {
-              const n = Number(k)
-              if (!Array.isArray(arr)) continue
-              const urls = (arr as any[])
-                .sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0))
-                .map((x: any) => x.audioDataUrl)
-                .filter(Boolean)
-              if (urls.length) seqs[n] = urls
+      ; (async () => {
+        try {
+          let res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+          if (!res.ok) return
+          const obj = await res.json()
+          if (cancelled) return
+          const seqs: Record<number, string[]> = {}
+          for (const [k, arr] of Object.entries(obj || {})) {
+            const n = Number(k)
+            if (!Array.isArray(arr)) continue
+            const urls = (arr as any[])
+              .sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0))
+              .map((x: any) => x.audioDataUrl)
+              .filter(Boolean)
+            if (urls.length) seqs[n] = urls
+          }
+          if (!Object.keys(seqs).length) {
+            await fetch('/api/tts/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId }) })
+            res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+            if (res.ok) {
+              const obj2 = await res.json()
+              for (const [k, arr] of Object.entries(obj2 || {})) {
+                const n = Number(k)
+                if (!Array.isArray(arr)) continue
+                const urls = (arr as any[])
+                  .sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0))
+                  .map((x: any) => x.audioDataUrl)
+                  .filter(Boolean)
+                if (urls.length) seqs[n] = urls
+              }
             }
           }
+          setAudioSeqs(seqs)
+        } catch {
+          // Error loading audio
         }
-        setAudioSeqs(seqs)
-        setPreparing(false)
-      } catch {
-        setPreparing(false)
-      }
-    })()
+      })()
     return () => { cancelled = true }
   }, [projectId])
 
   // Start playback automatically when user clicks Play
   useEffect(() => {
     if (!reveal) return
-    if (playing) {
+    if (playbackState === 'playing') {
       try {
         const idx = (reveal as any)?.getIndices?.().h ?? 0
         playSlideRef.current(idx)
-      } catch {}
+      } catch { }
     }
-  }, [playing, reveal, audioSeqs])
+  }, [playbackState, reveal, audioSeqs])
 
   // Playback control: respond to slide changes only when playing
   useEffect(() => {
     if (!reveal) return
+    const waitUntilCanPlay = (el: HTMLAudioElement, timeoutMs = 4000) => {
+      return new Promise<void>((resolve) => {
+        let done = false
+        const onReady = () => {
+          if (done) return
+          done = true
+          el.removeEventListener('canplaythrough', onReady)
+          resolve()
+        }
+        const to = setTimeout(() => {
+          if (done) return
+          done = true
+          el.removeEventListener('canplaythrough', onReady)
+          resolve()
+        }, timeoutMs)
+        el.addEventListener('canplaythrough', onReady, { once: true })
+        // if already have enough data
+        if (el.readyState >= 3) {
+          clearTimeout(to)
+          onReady()
+        }
+      })
+    }
+
     const playSlide = async (indexh: number) => {
       const session = ++sessionTokenRef.current
       currentIndexRef.current = indexh
@@ -149,55 +167,119 @@ export default function PresentPage({ params }: PageProps) {
       const sections = Array.from(document.querySelectorAll('.reveal .slides > section')) as HTMLElement[]
       const sec = sections[indexh]
       const audios = sec ? (Array.from(sec.querySelectorAll('audio[data-tts-audio]')) as HTMLAudioElement[]) : []
+      
+      // Store audio queue for this slide
+      audioQueueRef.current = audios
+      currentAudioIndexRef.current = 0
+      
       if (audios.length === 0) {
-        if (playing && sessionTokenRef.current === session) setTimeout(() => reveal.next(), 400)
+        if (playbackState === 'playing' && sessionTokenRef.current === session) {
+          setTimeout(() => reveal.next(), 400)
+        }
         return
       }
-      let i = 0
+      
       currentClipRef.current = 0
-      const playNext = () => {
-        if (!playing || sessionTokenRef.current !== session) return
+      
+      const playNext = async () => {
+        if (sessionTokenRef.current !== session) return
+        if (playbackState !== 'playing') return
+        
+        const i = currentAudioIndexRef.current
         if (i >= audios.length) {
-          try { (reveal as any).next?.() } catch {}
+          try { (reveal as any).next?.() } catch { }
           return
         }
+        
         const el = audios[i]
         currentAudioElRef.current = el
-        i = i + 1
-        currentClipRef.current = i - 1
+        currentAudioIndexRef.current = i + 1
+        currentClipRef.current = i
+        
         // Apply rate/volume
         el.playbackRate = playbackRate
         el.volume = volume
-        // Ensure listeners only once
-        const onEnd = () => {
-          el.removeEventListener('ended', onEnd)
-          try { (reveal as any).nextFragment?.() } catch {}
-          playNext()
+        
+        // Clear any existing listeners first
+        el.onended = null
+        el.onerror = null
+        
+        // Set up new listeners
+        el.onended = () => {
+          el.onended = null
+          if (playbackState === 'playing' && sessionTokenRef.current === session) {
+            try { (reveal as any).nextFragment?.() } catch { }
+            playNext()
+          }
         }
-        const onErr = () => {
-          el.removeEventListener('error', onErr)
-          playNext()
+        
+        el.onerror = () => {
+          el.onerror = null
+          if (playbackState === 'playing' && sessionTokenRef.current === session) {
+            playNext()
+          }
         }
-        el.addEventListener('ended', onEnd, { once: true })
-        el.addEventListener('error', onErr, { once: true })
+        
         el.currentTime = 0
-        el.play().catch(() => setNeedsUserAction(true))
+        // Wait to reduce stutters on first play
+        await waitUntilCanPlay(el)
+        
+        if (playbackState === 'playing' && sessionTokenRef.current === session) {
+          el.play().catch(() => setNeedsUserAction(true))
+        }
       }
+      
       playNext()
     }
     playSlideRef.current = playSlide
 
     const onSlideChanged = (event: any) => {
-      if (!playing) return
+      if (playbackState !== 'playing') return
       const indexh = event.indexh ?? 0
       playSlide(indexh)
     }
     reveal.on('slidechanged', onSlideChanged)
     return () => {
       reveal.off('slidechanged', onSlideChanged)
-      try { currentAudioElRef.current?.pause() } catch {}
+      try { currentAudioElRef.current?.pause() } catch { }
     }
-  }, [reveal, audioSeqs, playbackRate, volume, playing])
+  }, [reveal, audioSeqs, playbackRate, volume, playbackState])
+
+  // Global click/tap unlock handler so browsers allow audio playback
+  useEffect(() => {
+    if (userUnlockedRef.current) return
+    const onFirstGesture = () => {
+      userUnlockedRef.current = true
+      // Prime an Audio element
+      try {
+        const a = new Audio()
+        a.muted = true
+        a.play().finally(() => { a.pause(); a.currentTime = 0; a.muted = false })
+      } catch { }
+      window.removeEventListener('pointerdown', onFirstGesture)
+      window.removeEventListener('keydown', onFirstGesture)
+    }
+    window.addEventListener('pointerdown', onFirstGesture, { once: true })
+    window.addEventListener('keydown', onFirstGesture, { once: true })
+    return () => {
+      window.removeEventListener('pointerdown', onFirstGesture)
+      window.removeEventListener('keydown', onFirstGesture)
+    }
+  }, [])
+
+  // Always reflect current playbackRate/volume onto any rendered audio tags for current slide
+  useEffect(() => {
+    try {
+      const sections = Array.from(document.querySelectorAll('.reveal .slides > section')) as HTMLElement[]
+      const idx = (reveal as any)?.getIndices?.().h ?? 0
+      const sec = sections[idx]
+      const audios = sec ? (Array.from(sec.querySelectorAll('audio[data-tts-audio]')) as HTMLAudioElement[]) : []
+      audios.forEach((el) => {
+        el.playbackRate = playbackRate
+        el.volume = volume
+      })
+    } catch { }
+  }, [reveal, playbackRate, volume])
 
   if (deck === undefined) return <div>Loading...</div>
   if (!deck) return <div>Not found</div>
@@ -217,9 +299,8 @@ export default function PresentPage({ params }: PageProps) {
             className="px-3 py-1 rounded bg-emerald-500 text-white text-sm shadow"
             onClick={() => {
               setNeedsUserAction(false)
-              const a = (audioRef.current ||= new Audio())
-              if (a.src) {
-                a.play().catch(() => setNeedsUserAction(true))
+              if (currentAudioElRef.current) {
+                currentAudioElRef.current.play().catch(() => setNeedsUserAction(true))
               }
             }}
           >
@@ -238,35 +319,70 @@ export default function PresentPage({ params }: PageProps) {
               const idx = rates.indexOf(playbackRate)
               const next = rates[(idx + 1) % rates.length]
               setPlaybackRate(next)
-              const a = (audioRef.current ||= new Audio())
-              a.playbackRate = next
+              if (currentAudioElRef.current) {
+                currentAudioElRef.current.playbackRate = next
+              }
             }}
           >
             {playbackRate.toFixed(2)}x
           </button>
-          {!playing ? (
+          {playbackState === 'stopped' ? (
             <button
               className="px-2 py-1 rounded bg-black/70 text-white text-xs"
               onClick={() => {
-                setPlaying(true)
-                setPaused(false)
-                try { (reveal as any)?.slide?.(0) } catch {}
+                setPlaybackState('playing')
+                try { (reveal as any)?.slide?.(0) } catch { }
               }}
             >
               Play
             </button>
+          ) : playbackState === 'playing' ? (
+            <>
+              <button
+                className="px-2 py-1 rounded bg-black/70 text-white text-xs"
+                onClick={() => {
+                  setPlaybackState('paused')
+                  if (currentAudioElRef.current) {
+                    currentAudioElRef.current.pause()
+                  }
+                }}
+              >
+                Pause
+              </button>
+              <button
+                className="px-2 py-1 rounded bg-red-600 text-white text-xs"
+                onClick={() => {
+                  setPlaybackState('stopped')
+                  sessionTokenRef.current++
+                  if (currentAudioElRef.current) {
+                    currentAudioElRef.current.pause()
+                    currentAudioElRef.current.currentTime = 0
+                  }
+                  currentAudioElRef.current = null
+                  audioQueueRef.current = []
+                  currentAudioIndexRef.current = 0
+                }}
+              >
+                Stop
+              </button>
+            </>
           ) : (
             <button
-              className="px-2 py-1 rounded bg-black/70 text-white text-xs"
-              onClick={() => {
-                setPaused((p) => !p)
+              className="px-2 py-1 rounded bg-green-600 text-white text-xs"
+              onClick={async () => {
+                setPlaybackState('playing')
                 const el = currentAudioElRef.current
-                if (!el) return
-                if (paused) el.play().catch(() => setNeedsUserAction(true))
-                else el.pause()
+                if (el) {
+                  // Resume current audio
+                  el.play().catch(() => setNeedsUserAction(true))
+                } else {
+                  // Restart from current slide
+                  const idx = (reveal as any)?.getIndices?.().h ?? 0
+                  playSlideRef.current(idx)
+                }
               }}
             >
-              {paused ? 'Resume' : 'Pause'}
+              Resume
             </button>
           )}
           <div className="flex items-center gap-2 text-xs">
@@ -280,8 +396,9 @@ export default function PresentPage({ params }: PageProps) {
               onChange={(e) => {
                 const v = Number(e.target.value)
                 setVolume(v)
-                const a = (audioRef.current ||= new Audio())
-                a.volume = v
+                if (currentAudioElRef.current) {
+                  currentAudioElRef.current.volume = v
+                }
               }}
             />
           </div>
@@ -293,7 +410,7 @@ export default function PresentPage({ params }: PageProps) {
           {slides.map((s, i) => (
             <section key={i}>
               <div
-                style={s.containerStyle ? (Object.fromEntries(s.containerStyle.split(';').filter(Boolean).map(p=>p.split(':')).map(([k, v])=>[k.trim() as string, (v||'').trim()])) as React.CSSProperties) : undefined}
+                style={s.containerStyle ? (Object.fromEntries(s.containerStyle.split(';').filter(Boolean).map(p => p.split(':')).map(([k, v]) => [k.trim() as string, (v || '').trim()])) as React.CSSProperties) : undefined}
                 dangerouslySetInnerHTML={{ __html: s.html }}
               />
               {/* Embed per-element audio tags for this slide if sequences are preloaded */}

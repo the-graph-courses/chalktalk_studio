@@ -385,6 +385,33 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                     </DropdownMenuContent>
                 </DropdownMenu>
 
+                {/* TTS Menu */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8">
+                            TTS <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => {
+                            if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
+                                const editor = window.grapesjsAITools.getEditor()
+                                editor?.runCommand('tts:set-fragments-from-text', { scope: 'slide' })
+                            }
+                        }}>
+                            Set fragments from text (slide)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                            if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
+                                const editor = window.grapesjsAITools.getEditor()
+                                editor?.runCommand('tts:set-fragments-from-text', { scope: 'deck' })
+                            }
+                        }}>
+                            Set fragments from text (deck)
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
                 {/* Edit Menu */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
