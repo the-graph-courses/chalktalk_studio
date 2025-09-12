@@ -261,7 +261,15 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
             const data = await res.json()
             // Store cache in localStorage for present page
             try { localStorage.setItem(`ttsCache:${projectId}`, JSON.stringify(data)) } catch {}
-            alert('Audio generated and cached locally for this project.')
+            // Also fetch from Convex to verify persistence
+            try {
+                const verify = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+                const serverData = verify.ok ? await verify.json() : null
+                const totalServerClips = serverData ? Object.values(serverData).reduce((acc: number, arr: any) => acc + (Array.isArray(arr) ? arr.length : 0), 0) : 0
+                alert(`Audio generated. Saved ${data.saved ?? '?'} clips. Server has ${totalServerClips}.`)
+            } catch {
+                alert(`Audio generated. Saved ${data.saved ?? '?'} clips.`)
+            }
         } catch (e) {
             console.error(e)
             alert('Audio generation failed. See console for details.')

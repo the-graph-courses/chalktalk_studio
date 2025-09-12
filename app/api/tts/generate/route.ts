@@ -48,22 +48,25 @@ export async function POST(req: NextRequest) {
           perElementDataUrls.push(dataUrl)
           batchItems.push({ slideIndex: i, elementIndex: j, ttsText: e.text, audioDataUrl: dataUrl })
         }
+      } else {
+        // Fallback: single clip from slide text
+        const text = s.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        if (text) {
+          const buf = await ttsBuffer(text, DEFAULT_VOICE)
+          const b64 = Buffer.from(buf).toString('base64')
+          const dataUrl = `data:audio/mpeg;base64,${b64}`
+          perElementDataUrls.push(dataUrl)
+          batchItems.push({ slideIndex: i, elementIndex: 0, ttsText: text, audioDataUrl: dataUrl })
+        }
       }
       // merged: for now just return first element (or concat later)
       result.slides.push({ index: i, perElement: perElementDataUrls })
     }
 
-    // Try saving to Convex if the API is available
-    try {
-      // @ts-ignore dynamic access in case codegen isn't updated yet
-      if ((api as any).ttsAudio?.SaveTTSBatch) {
-        await fetchMutation((api as any).ttsAudio.SaveTTSBatch, { projectId, items: batchItems })
-      }
-    } catch (e) {
-      console.warn('Failed to persist TTS batch to Convex (continuing with response):', e)
-    }
+    // Persist to Convex
+    const persistRes = await fetchMutation(api.ttsAudio.SaveTTSBatch, { projectId, items: batchItems })
 
-    return Response.json(result)
+    return Response.json({ ...result, saved: persistRes?.saved ?? batchItems.length })
   } catch (e: any) {
     return new Response('Generation failed: ' + (e?.message || ''), { status: 500 })
   }
