@@ -54,6 +54,10 @@ export default function PresentPage({ params }: PageProps) {
   // TTS cache per slide index
   const [audioUrls, setAudioUrls] = useState<Record<number, string>>({})
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null)
+  const currentIndexRef = useRef<number>(0)
+  const fetchTokenRef = useRef<number>(0)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [volume, setVolume] = useState(1)
 
   // Autoplay logic: play audio per slide and advance on end
   useEffect(() => {
@@ -65,10 +69,14 @@ export default function PresentPage({ params }: PageProps) {
     }
     const onSlide = async (event: any) => {
       const indexh = event.indexh ?? 0
+      currentIndexRef.current = indexh
+      const token = ++fetchTokenRef.current
       const url = audioUrls[indexh]
       // Stop current audio
       audio.pause()
       audio.currentTime = 0
+      audio.playbackRate = playbackRate
+      audio.volume = volume
       // Gather text
       const text = gatherSlideTTS(slides[indexh]?.html || '')
       if (!text) {
@@ -95,8 +103,15 @@ export default function PresentPage({ params }: PageProps) {
         if (!res.ok) throw new Error(await res.text())
         const buf = await res.arrayBuffer()
         const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))
+        // If slide changed while fetching, don't play or set cache for the wrong index
+        if (fetchTokenRef.current !== token) {
+          URL.revokeObjectURL(blobUrl)
+          return
+        }
         setAudioUrls((m) => ({ ...m, [indexh]: blobUrl }))
         audio.src = blobUrl
+        audio.playbackRate = playbackRate
+        audio.volume = volume
         await audio.play().catch(() => setNeedsUserAction(true))
       } catch (e) {
         console.error('TTS error', e)
@@ -143,6 +158,41 @@ export default function PresentPage({ params }: PageProps) {
           </button>
         )}
       </div>
+
+      {/* Controls bottom center */}
+      {autoplay && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-white/85 text-black rounded px-3 py-2 shadow">
+          <button
+            className="px-2 py-1 rounded bg-black/70 text-white text-xs"
+            onClick={() => {
+              const rates = [0.75, 1, 1.25, 1.5]
+              const idx = rates.indexOf(playbackRate)
+              const next = rates[(idx + 1) % rates.length]
+              setPlaybackRate(next)
+              const a = (audioRef.current ||= new Audio())
+              a.playbackRate = next
+            }}
+          >
+            {playbackRate.toFixed(2)}x
+          </button>
+          <div className="flex items-center gap-2 text-xs">
+            <span>Vol</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={volume}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setVolume(v)
+                const a = (audioRef.current ||= new Audio())
+                a.volume = v
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="reveal" style={{ width: '100%', height: '100%' }}>
         <div className="slides">
