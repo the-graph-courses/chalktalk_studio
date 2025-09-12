@@ -14,6 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as slideDeck from "../slideDeck.js";
+import type * as ttsAudio from "../ttsAudio.js";
 import type * as user from "../user.js";
 
 /**
@@ -26,6 +27,7 @@ import type * as user from "../user.js";
  */
 declare const fullApi: ApiFromModules<{
   slideDeck: typeof slideDeck;
+  ttsAudio: typeof ttsAudio;
   user: typeof user;
 }>;
 export declare const api: FilterApi<

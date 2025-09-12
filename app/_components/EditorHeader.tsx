@@ -244,18 +244,35 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
     }
 
     const handlePresent = () => {
-        if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
-            const editor = window.grapesjsAITools.getEditor()
-            if (editor) {
-                // Get all pages
-                const pages = editor.Pages.getAll()
-                if (pages.length > 0) {
-                    // Select first page and enter fullscreen-like mode
-                    editor.Pages.select(pages[0])
-                    // You could implement a presentation mode here
-                    alert('Presentation mode - use arrow keys to navigate between slides (feature to be enhanced)')
-                }
+        if (typeof window !== 'undefined') window.open(`/present/${projectId}`, '_blank')
+    }
+
+    const handleVideo = () => {
+        if (typeof window !== 'undefined') window.open(`/present/${projectId}?autoplay=1`, '_blank')
+    }
+
+    const handleGenerateAudio = async () => {
+        try {
+            const res = await fetch('/api/tts/generate', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId })
+            })
+            if (!res.ok) throw new Error(await res.text())
+            const data = await res.json()
+            // Store cache in localStorage for present page
+            try { localStorage.setItem(`ttsCache:${projectId}`, JSON.stringify(data)) } catch {}
+            // Also fetch from Convex to verify persistence
+            try {
+                const verify = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+                const serverData = verify.ok ? await verify.json() : null
+                const totalServerClips = serverData ? Object.values(serverData).reduce((acc: number, arr: any) => acc + (Array.isArray(arr) ? arr.length : 0), 0) : 0
+                alert(`Audio generated. Saved ${data.saved ?? '?'} clips. Server has ${totalServerClips}.`)
+            } catch {
+                alert(`Audio generated. Saved ${data.saved ?? '?'} clips.`)
             }
+        } catch (e) {
+            console.error(e)
+            alert('Audio generation failed. See console for details.')
         }
     }
 
@@ -368,6 +385,33 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                     </DropdownMenuContent>
                 </DropdownMenu>
 
+                {/* TTS Menu */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8">
+                            TTS <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => {
+                            if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
+                                const editor = window.grapesjsAITools.getEditor()
+                                editor?.runCommand('tts:set-fragments-from-text', { scope: 'slide' })
+                            }
+                        }}>
+                            Set fragments from text (slide)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                            if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
+                                const editor = window.grapesjsAITools.getEditor()
+                                editor?.runCommand('tts:set-fragments-from-text', { scope: 'deck' })
+                            }
+                        }}>
+                            Set fragments from text (deck)
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
                 {/* Edit Menu */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -403,6 +447,12 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                         <DropdownMenuItem onClick={handlePresent}>
                             <Eye className="mr-2 h-4 w-4" />
                             Present
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleGenerateAudio}>
+                            Generate Audio (cache)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleVideo}>
+                            Video (auto TTS)
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleZoomIn}>
