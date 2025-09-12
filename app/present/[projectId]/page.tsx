@@ -21,7 +21,7 @@ export default function PresentPage({ params }: PageProps) {
   const deckTitle = deck?.title || 'Presentation'
 
   const [reveal, setReveal] = useState<Reveal.Api | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null) // legacy; using per-slide audio elements
   const [needsUserAction, setNeedsUserAction] = useState(false)
 
   const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
@@ -59,6 +59,14 @@ export default function PresentPage({ params }: PageProps) {
   const fetchTokenRef = useRef<number>(0)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [volume, setVolume] = useState(1)
+  const [preparing, setPreparing] = useState(true)
+  const [preparingMessage, setPreparingMessage] = useState<string>('Preparing audio…')
+  const [playing, setPlaying] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const sessionTokenRef = useRef<number>(0)
+  const playSlideRef = useRef<(idx: number) => void>(() => {})
+  const currentClipRef = useRef<number>(0)
+  const currentAudioElRef = useRef<HTMLAudioElement | null>(null)
 
   // Load any pre-generated audio cache from localStorage (always register this hook)
   useEffect(() => {
@@ -73,147 +81,123 @@ export default function PresentPage({ params }: PageProps) {
     } catch {}
   }, [projectId])
 
-  // Also try to load sequences from Convex via API (if available)
+  // Also try to load sequences from Convex; generate if missing
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+        setPreparing(true)
+        setPreparingMessage('Loading audio from server…')
+        let res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
         if (!res.ok) return
         const obj = await res.json()
         if (cancelled) return
-        // obj is a map { [slideIndex: string]: [{ elementIndex, audioDataUrl }] }
         const seqs: Record<number, string[]> = {}
         for (const [k, arr] of Object.entries(obj || {})) {
           const n = Number(k)
           if (!Array.isArray(arr)) continue
-          const urls = (arr as any[]).sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0)).map((x: any) => x.audioDataUrl).filter(Boolean)
+          const urls = (arr as any[])
+            .sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0))
+            .map((x: any) => x.audioDataUrl)
+            .filter(Boolean)
           if (urls.length) seqs[n] = urls
         }
-        if (Object.keys(seqs).length) setAudioSeqs(seqs)
-      } catch {}
+        if (!Object.keys(seqs).length) {
+          setPreparingMessage('Generating audio…')
+          await fetch('/api/tts/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId }) })
+          res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+          if (res.ok) {
+            const obj2 = await res.json()
+            for (const [k, arr] of Object.entries(obj2 || {})) {
+              const n = Number(k)
+              if (!Array.isArray(arr)) continue
+              const urls = (arr as any[])
+                .sort((a, b) => (a.elementIndex ?? 0) - (b.elementIndex ?? 0))
+                .map((x: any) => x.audioDataUrl)
+                .filter(Boolean)
+              if (urls.length) seqs[n] = urls
+            }
+          }
+        }
+        setAudioSeqs(seqs)
+        setPreparing(false)
+      } catch {
+        setPreparing(false)
+      }
     })()
     return () => { cancelled = true }
   }, [projectId])
 
-  // Autoplay logic: play audio per slide and advance on end
+  // Start playback automatically when user clicks Play
   useEffect(() => {
-    if (!autoplay || !reveal) return
-    const audio = (audioRef.current ||= new Audio())
-    audio.onended = () => {
-      // advance to next slide after audio ends
-      reveal.next()
+    if (!reveal) return
+    if (playing) {
+      try {
+        const idx = (reveal as any)?.getIndices?.().h ?? 0
+        playSlideRef.current(idx)
+      } catch {}
     }
-    const onSlide = async (event: any) => {
-      const indexh = event.indexh ?? 0
+  }, [playing, reveal, audioSeqs])
+
+  // Playback control: respond to slide changes only when playing
+  useEffect(() => {
+    if (!reveal) return
+    const playSlide = async (indexh: number) => {
+      const session = ++sessionTokenRef.current
       currentIndexRef.current = indexh
-      const token = ++fetchTokenRef.current
-      // Stop current audio
-      audio.pause()
-      audio.currentTime = 0
-      audio.playbackRate = playbackRate
-      audio.volume = volume
-
-      // Try cached sequence first
-      let seq = audioSeqs[indexh]
-
-      // If no cached sequence, build from data-tts elements
-      if (!seq) {
-        const html = slides[indexh]?.html || ''
-        const entries = extractTTSFromSlideHtml(html)
-        if (entries.length === 0) {
-          // Fallback: single clip from slide text
-          const text = gatherSlideTTS(html)
-          if (!text) {
-            setLoadingIndex(null)
-            setTimeout(() => reveal.next(), 800)
-            return
-          }
-          try {
-            setLoadingIndex(indexh)
-            const res = await fetch('/api/tts', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text })
-            })
-            if (!res.ok) throw new Error(await res.text())
-            const buf = await res.arrayBuffer()
-            const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))
-            if (fetchTokenRef.current !== token) { URL.revokeObjectURL(blobUrl); return }
-            seq = [blobUrl]
-            setAudioSeqs((m) => ({ ...m, [indexh]: seq! }))
-          } catch (e) {
-            console.error('TTS error', e)
-            setTimeout(() => reveal.next(), 800)
-            setLoadingIndex(null)
-            return
-          }
-        } else {
-          // Generate element audios in order
-          const urls: string[] = []
-          try {
-            setLoadingIndex(indexh)
-            for (const ent of entries) {
-              if (fetchTokenRef.current !== token) return
-              const res = await fetch('/api/tts', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: ent.text })
-              })
-              if (!res.ok) throw new Error(await res.text())
-              const buf = await res.arrayBuffer()
-              const blobUrl = URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))
-              urls.push(blobUrl)
-            }
-            if (fetchTokenRef.current !== token) { urls.forEach(u=>URL.revokeObjectURL(u)); return }
-            seq = urls
-            setAudioSeqs((m) => ({ ...m, [indexh]: urls }))
-          } catch (e) {
-            console.error('TTS error', e)
-            setTimeout(() => reveal.next(), 800)
-            setLoadingIndex(null)
-            return
-          }
+      // Find audio elements embedded in this slide
+      const sections = Array.from(document.querySelectorAll('.reveal .slides > section')) as HTMLElement[]
+      const sec = sections[indexh]
+      const audios = sec ? (Array.from(sec.querySelectorAll('audio[data-tts-audio]')) as HTMLAudioElement[]) : []
+      if (audios.length === 0) {
+        if (playing && sessionTokenRef.current === session) setTimeout(() => reveal.next(), 400)
+        return
+      }
+      let i = 0
+      currentClipRef.current = 0
+      const playNext = () => {
+        if (!playing || sessionTokenRef.current !== session) return
+        if (i >= audios.length) {
+          try { (reveal as any).next?.() } catch {}
+          return
         }
+        const el = audios[i]
+        currentAudioElRef.current = el
+        i = i + 1
+        currentClipRef.current = i - 1
+        // Apply rate/volume
+        el.playbackRate = playbackRate
+        el.volume = volume
+        // Ensure listeners only once
+        const onEnd = () => {
+          el.removeEventListener('ended', onEnd)
+          try { (reveal as any).nextFragment?.() } catch {}
+          playNext()
+        }
+        const onErr = () => {
+          el.removeEventListener('error', onErr)
+          playNext()
+        }
+        el.addEventListener('ended', onEnd, { once: true })
+        el.addEventListener('error', onErr, { once: true })
+        el.currentTime = 0
+        el.play().catch(() => setNeedsUserAction(true))
       }
+      playNext()
+    }
+    playSlideRef.current = playSlide
 
-      // Play sequence sequentially
-      if (seq && seq.length) {
-        (async () => {
-          for (let i = 0; i < seq!.length; i++) {
-            if (fetchTokenRef.current !== token) return
-            audio.src = seq![i]
-            audio.playbackRate = playbackRate
-            audio.volume = volume
-            try { await audio.play() } catch { setNeedsUserAction(true); return }
-            await new Promise<void>((resolve) => {
-              const onEnd = () => { cleanup(); resolve() }
-              const onErr = () => { cleanup(); resolve() }
-              const cleanup = () => {
-                audio.removeEventListener('ended', onEnd)
-                audio.removeEventListener('error', onErr)
-              }
-              audio.addEventListener('ended', onEnd, { once: true })
-              audio.addEventListener('error', onErr, { once: true })
-            })
-            // Advance fragment after each element where possible
-            try { (reveal as any).nextFragment?.() } catch {}
-          }
-          // After sequence completes, advance slide
-          if (fetchTokenRef.current === token) reveal.next()
-          setLoadingIndex(null)
-        })()
-      } else {
-        setLoadingIndex(null)
-        setTimeout(() => reveal.next(), 800)
-      }
+    const onSlideChanged = (event: any) => {
+      if (!playing) return
+      const indexh = event.indexh ?? 0
+      playSlide(indexh)
     }
-    reveal.on('ready', onSlide)
-    reveal.on('slidechanged', onSlide)
+    reveal.on('slidechanged', onSlideChanged)
     return () => {
-      reveal.off('ready', onSlide)
-      reveal.off('slidechanged', onSlide)
-      audio.pause()
+      reveal.off('slidechanged', onSlideChanged)
+      try { currentAudioElRef.current?.pause() } catch {}
     }
-  }, [autoplay, reveal, audioSeqs, playbackRate, volume, slides])
+  }, [reveal, audioSeqs, playbackRate, volume, playing])
 
   if (deck === undefined) return <div>Loading...</div>
   if (!deck) return <div>Not found</div>
@@ -260,6 +244,31 @@ export default function PresentPage({ params }: PageProps) {
           >
             {playbackRate.toFixed(2)}x
           </button>
+          {!playing ? (
+            <button
+              className="px-2 py-1 rounded bg-black/70 text-white text-xs"
+              onClick={() => {
+                setPlaying(true)
+                setPaused(false)
+                try { (reveal as any)?.slide?.(0) } catch {}
+              }}
+            >
+              Play
+            </button>
+          ) : (
+            <button
+              className="px-2 py-1 rounded bg-black/70 text-white text-xs"
+              onClick={() => {
+                setPaused((p) => !p)
+                const el = currentAudioElRef.current
+                if (!el) return
+                if (paused) el.play().catch(() => setNeedsUserAction(true))
+                else el.pause()
+              }}
+            >
+              {paused ? 'Resume' : 'Pause'}
+            </button>
+          )}
           <div className="flex items-center gap-2 text-xs">
             <span>Vol</span>
             <input
@@ -287,6 +296,10 @@ export default function PresentPage({ params }: PageProps) {
                 style={s.containerStyle ? (Object.fromEntries(s.containerStyle.split(';').filter(Boolean).map(p=>p.split(':')).map(([k, v])=>[k.trim() as string, (v||'').trim()])) as React.CSSProperties) : undefined}
                 dangerouslySetInnerHTML={{ __html: s.html }}
               />
+              {/* Embed per-element audio tags for this slide if sequences are preloaded */}
+              {audioSeqs[i]?.map((url, j) => (
+                <audio key={j} data-tts-audio data-order={j} preload="auto" src={url} />
+              ))}
               {s.css?.length ? (
                 <style dangerouslySetInnerHTML={{ __html: s.css.join('\n') }} />
               ) : null}
