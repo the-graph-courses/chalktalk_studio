@@ -3,6 +3,7 @@
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
 import { canvasAbsoluteMode, canvasFullSize, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
+import grapesRevealTraits from '@/lib/grapes-reveal-traits'
 import marqueeSelect from '@/lib/marquee-select'
 import { useMemo, use, useRef, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
@@ -330,6 +331,7 @@ export default function EditorPage({ params }: PageProps) {
                             }),
                             canvasAbsoluteMode,
                             marqueeSelect,
+                            grapesRevealTraits,
                             iconifyComponent.init({
                                 block: {
                                     category: 'Media',

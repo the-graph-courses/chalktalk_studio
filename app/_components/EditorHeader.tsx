@@ -244,19 +244,11 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
     }
 
     const handlePresent = () => {
-        if (typeof window !== 'undefined' && window.grapesjsAITools?.getEditor) {
-            const editor = window.grapesjsAITools.getEditor()
-            if (editor) {
-                // Get all pages
-                const pages = editor.Pages.getAll()
-                if (pages.length > 0) {
-                    // Select first page and enter fullscreen-like mode
-                    editor.Pages.select(pages[0])
-                    // You could implement a presentation mode here
-                    alert('Presentation mode - use arrow keys to navigate between slides (feature to be enhanced)')
-                }
-            }
-        }
+        router.push(`/present/${projectId}`)
+    }
+
+    const handleVideo = () => {
+        router.push(`/present/${projectId}?autoplay=1`)
     }
 
     const handleZoomIn = () => {
@@ -403,6 +395,9 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                         <DropdownMenuItem onClick={handlePresent}>
                             <Eye className="mr-2 h-4 w-4" />
                             Present
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleVideo}>
+                            Video (auto TTS)
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleZoomIn}>
