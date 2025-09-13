@@ -1,4 +1,4 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createCerebras } from '@ai-sdk/cerebras';
 import { streamText, convertToModelMessages, type UIMessage, tool, stepCountIs } from 'ai';
 import { createSlideTools } from '@/lib/slide-tools';
 import { auth } from '@clerk/nextjs/server';
@@ -19,12 +19,12 @@ export async function POST(req: Request) {
 
     const tools = createSlideTools(projectId, userId, preferences);
 
-    const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
+    const cerebras = createCerebras({
+        apiKey: process.env.CEREBRAS_CODE_KEY,
     });
 
     const result = streamText({
-        model: openrouter.chat('anthropic/claude-sonnet-4'),
+        model: cerebras('qwen-3-coder-480b'),
         messages: convertToModelMessages(messages),
         ...(tools && { tools }),
         system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:
@@ -43,17 +43,18 @@ You have access to tools to interact with slide presentations:
 
 When reading slides, you'll receive clean HTML content as plain text without JSON escaping.
 
-When creating or replacing slides, generate COMPLETE slides wrapped in a div with id "slide-container".
+When creating or replacing slides, generate complete slides wrapped in a div with id "slide-container".
 
-IMPORTANT RULES:
-- Always use embedded <style> tags, never inline styles
-- Make slides visually appealing with appropriate colors, fonts, and layouts
-- Choose appropriate background colors and typography for the content theme
+Slides will be edited in a grapesjs editor, so it is important to avoid nested elements, so that the user can edit one element without affecting others. All elements should be absolute positioned on a 1280x720px canvas. 
 
-Focus on creating beautiful, professional slide designs. Be helpful, concise, and focused on presentation and design-related tasks.`,
+Each individual element should also have the class fragment, to enable reveal.js fragment animations.
+
+The CSS for each slide is independent, and should be stored inline.
+
+`,
 
         // Stop after a maximum of 5 steps if tools were called
-        stopWhen: stepCountIs(5),
+        stopWhen: stepCountIs(25),
     });
 
     return result.toUIMessageStreamResponse();
