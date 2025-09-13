@@ -137,6 +137,12 @@ export async function executeSlideToolServer(
                 name = 'New Slide';
             }
 
+            // Guard: if content is empty, synthesize a minimal slide
+            if (!content || (typeof content === 'string' && content.trim().length < 3)) {
+                const safeTitle = name || 'New Slide';
+                content = `<h1 style="position:absolute;left:60px;top:40px">${safeTitle}</h1>`;
+            }
+
             if (!isCompleteSlideContainer(content)) {
                 content = getSlideContainer(content);
             } else {
@@ -175,6 +181,12 @@ export async function executeSlideToolServer(
             } else {
                 // Fallback
                 newContent = '';
+            }
+
+            // Guard: if content is empty, keep a minimal placeholder
+            if (!newContent || (typeof newContent === 'string' && newContent.trim().length < 3)) {
+                const placeholder = `<p style="position:absolute;left:60px;top:40px">(empty slide)</p>`;
+                newContent = placeholder;
             }
 
             if (!isCompleteSlideContainer(newContent)) {

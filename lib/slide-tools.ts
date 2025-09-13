@@ -43,12 +43,15 @@ export function createSlideTools(projectId?: string, userId?: string, preference
         }),
 
         createSlide: tool({
-            description: `Create a new slide with specified name and content.${preferences?.preferAbsolutePositioning ? ' Prefer using absolute positioning for layout control and avoid deeply nested div structures.' : ''}`,
+            description: `Create a new slide. Always provide non-empty HTML content only (no JSON).${preferences?.preferAbsolutePositioning ? ' Prefer absolute positioning and avoid deep nesting.' : ''}`,
             inputSchema: z.object({
-                slideData: z.any().describe('Complete slide information including name, content, and any other relevant data')
+                name: z.string().min(1).describe('Optional slide name/title').optional(),
+                content: z.string().min(10).describe('Complete HTML markup for the slide body (no <html> or <body>)'),
+                insertAtIndex: z.number().int().min(0).describe('Index to insert the slide at (0-based)').optional()
             }),
-            execute: async ({ slideData }) => {
+            execute: async ({ name, content, insertAtIndex }) => {
                 try {
+                    const slideData = { name, content, insertAtIndex };
                     const result = await executeSlideToolServer('create_slide', { slideData }, projectId, userId);
 
                     // The result now contains a `command` field that the client can use.
@@ -64,13 +67,15 @@ export function createSlideTools(projectId?: string, userId?: string, preference
         }),
 
         replaceSlide: tool({
-            description: `Replace the content and optionally the name of an existing slide.${preferences?.preferAbsolutePositioning ? ' Prefer using absolute positioning for layout control and avoid deeply nested div structures.' : ''}`,
+            description: `Replace the content of an existing slide. Always provide non-empty HTML content only (no JSON).${preferences?.preferAbsolutePositioning ? ' Prefer absolute positioning and avoid deep nesting.' : ''}`,
             inputSchema: z.object({
                 slideIndex: z.number().min(0).describe('The index of the slide to replace (starting from 0)'),
-                slideData: z.any().describe('New slide data including content, name, and any other relevant information')
+                content: z.string().min(10).describe('Complete HTML markup for the slide body (no <html> or <body>)'),
+                name: z.string().min(1).optional()
             }),
-            execute: async ({ slideIndex, slideData }) => {
+            execute: async ({ slideIndex, content, name }) => {
                 try {
+                    const slideData = { content, name };
                     const result = await executeSlideToolServer('replace_slide', { slideIndex, slideData }, projectId, userId);
 
                     return {
