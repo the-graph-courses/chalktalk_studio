@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       projectId = 'project_5ixc4na0jc4_1757422475707',
       name = 'AI Created Slide',
       content = getSlideContainer(`
-        <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700; color: white;">AI Created Slide</h1>
+        <h2 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700; color: white;">AI Created Slide</h2>
         <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5; color: white;">This slide was created with rich content directly by the AI, demonstrating the ability to generate complete slides in one step.</p>
       `, undefined, {
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

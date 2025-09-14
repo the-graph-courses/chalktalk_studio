@@ -8,48 +8,48 @@ import { auth } from '@clerk/nextjs/server';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-    const { userId } = await auth();
-    if (!userId) {
-        return new Response('Unauthorized', { status: 401 });
-    }
-    const { messages, projectId, preferences, model = 'cerebras' }: {
-        messages: UIMessage[];
-        projectId: string;
-        preferences?: { preferAbsolutePositioning?: boolean };
-        model?: string;
-    } = await req.json();
+  const { userId } = await auth();
+  if (!userId) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  const { messages, projectId, preferences, model = 'cerebras' }: {
+    messages: UIMessage[];
+    projectId: string;
+    preferences?: { preferAbsolutePositioning?: boolean };
+    model?: string;
+  } = await req.json();
 
-    const tools = createSlideTools(projectId, userId, preferences);
+  const tools = createSlideTools(projectId, userId, preferences);
 
-    // Initialize providers
-    const cerebras = createCerebras({
-        apiKey: process.env.CEREBRAS_CODE_KEY,
-    });
+  // Initialize providers
+  const cerebras = createCerebras({
+    apiKey: process.env.CEREBRAS_CODE_KEY,
+  });
 
-    const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
-    });
+  const openrouter = createOpenRouter({
+    apiKey: process.env.OPENROUTER_API_KEY,
+  });
 
-    // Select model based on request
-    let selectedModel;
-    switch (model) {
-        case 'claude-sonnet-4':
-            selectedModel = openrouter('anthropic/claude-sonnet-4');
-            break;
-        case 'gpt-4o':
-            selectedModel = openrouter('openai/gpt-4o');
-            break;
-        case 'cerebras':
-        default:
-            selectedModel = cerebras('qwen-3-coder-480b');
-            break;
-    }
+  // Select model based on request
+  let selectedModel;
+  switch (model) {
+    case 'claude-sonnet-4':
+      selectedModel = openrouter('anthropic/claude-sonnet-4');
+      break;
+    case 'gpt-4o':
+      selectedModel = openrouter('openai/gpt-4o');
+      break;
+    case 'cerebras':
+    default:
+      selectedModel = cerebras('qwen-3-coder-480b');
+      break;
+  }
 
-    const result = streamText({
-        model: selectedModel,
-        messages: convertToModelMessages(messages),
-        ...(tools && { tools }),
-        system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:
+  const result = streamText({
+    model: selectedModel,
+    messages: convertToModelMessages(messages),
+    ...(tools && { tools }),
+    system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:
 
 1. Creating and editing slide presentations
 2. Understanding design principles for presentations  
@@ -79,6 +79,7 @@ HTML CONTENT REQUIREMENTS:
 - Use proper CSS syntax with semicolons and spacing
 - Add class="fragment" to elements for Reveal.js animations (used in Present)
 - Make slides visually appealing with proper typography, colors, and spacing (theme covers defaults)
+- HEADING HIERARCHY: Use h1 for slides where the only content is the title. Use h2 for most other slide tops with additional content
 
 STYLING REQUIREMENTS:
 - Include beautiful typography (font families, sizes, weights)
@@ -105,7 +106,7 @@ EXAMPLE HTML CONTENT WITH OPTIONAL STYLE OVERRIDES:
 </style>
 <div class="slide-bg">
   <div style="position: absolute; left: 80px; top: 100px;">
-    <h1 class="main-title fragment">Compelling Title</h1>
+    <h2 class="main-title fragment">Compelling Title</h2>
     <div class="highlight-box" style="margin-top: 40px; max-width: 800px;">
       <ul class="content-list">
         <li class="fragment">First key point with impact</li>
@@ -118,9 +119,9 @@ EXAMPLE HTML CONTENT WITH OPTIONAL STYLE OVERRIDES:
 
 `,
 
-        // Stop after a maximum of 5 steps if tools were called
-        stopWhen: stepCountIs(25),
-    });
+    // Stop after a maximum of 5 steps if tools were called
+    stopWhen: stepCountIs(25),
+  });
 
-    return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

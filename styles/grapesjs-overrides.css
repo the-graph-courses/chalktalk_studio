@@ -1,29 +1,5 @@
 /* Ensure proper height inheritance for GrapesJS canvas */
-.gjs-editor {
-  height: 100% !important;
-}
-
-.gjs-cv-canvas {
-  height: 100% !important;
-}
-
-.gjs-cv-canvas__frames {
-  height: 100% !important;
-}
 
 .gjs-frame-wrapper {
-  height: 100% !important;
-}
-
-/* Fix for Studio SDK specific elements */
-.studio-editor {
-  height: 100% !important;
-  display: flex;
-  flex-direction: column;
-}
-
-.studio-editor > div {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
+  min-height: 100% !important;
 }

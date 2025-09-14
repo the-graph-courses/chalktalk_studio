@@ -20,7 +20,7 @@ export async function POST(request: Request) {
             slideIndex = 0,
             newName = 'AI Replaced Slide',
             newContent = getSlideContainer(`
-                <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">AI Replaced Slide</h1>
+                <h2 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">AI Replaced Slide</h2>
                 <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px; line-height: 1.5;">The content of this slide has been replaced using absolute positioning for optimal layout control.</p>
             `, undefined, {
                 background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',

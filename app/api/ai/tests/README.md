@@ -48,7 +48,7 @@ curl -X POST http://localhost:3000/api/ai/tests/create-slide \
   -d '{
     "projectId": "your-project-id",
     "name": "My Custom Slide",
-    "content": "<div style=\"padding: 40px; background: #f8f9fa; border-radius: 8px;\"><h1>Custom Content</h1><p>This slide was created with custom HTML content!</p></div>",
+    "content": "<div style=\"padding: 40px; background: #f8f9fa; border-radius: 8px;\"><h2>Custom Content</h2><p>This slide was created with custom HTML content!</p></div>",
     "insertAtIndex": -1
   }'
 
@@ -69,7 +69,7 @@ curl -X POST http://localhost:3000/api/ai/tests/replace-slide \
     "projectId": "your-project-id",
     "slideIndex": 0,
     "newName": "Updated Slide Name",
-    "newContent": "<div style=\"padding: 40px; background: #f0f0f0;\"><h1>Updated Content</h1><p>This slide has been modified</p></div>"
+    "newContent": "<div style=\"padding: 40px; background: #f0f0f0;\"><h2>Updated Content</h2><p>This slide has been modified</p></div>"
   }'
 ```
 
@@ -147,11 +147,12 @@ The AI chat system can perform these operations:
 2. **Use absolute positioning**: Ensures proper layout control in the editor
 3. **Include inline styles**: All styling should be embedded in the HTML
 4. **Provide semantic structure**: Use proper heading hierarchy and meaningful content
+5. **Heading Hierarchy**: Use h1 for title-only slides, h2 for slides with additional content
 
 ### Example Rich Content Structure:
 ```html
 <div data-slide-container="true" style="position: absolute; top: 0; left: 0; width: 1280px; height: 720px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; overflow: visible;">
-  <h1 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Title</h1>
+  <h2 style="position: absolute; top: 50px; left: 50px; font-size: 48px; font-weight: 700;">Title</h2>
   <p style="position: absolute; top: 130px; left: 50px; font-size: 22px; max-width: 550px;">Content goes here...</p>
   <!-- Additional positioned elements -->
 </div>
