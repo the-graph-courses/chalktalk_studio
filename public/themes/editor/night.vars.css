@@ -1,0 +1,29 @@
+.reveal {
+  --r-background-color: #111111;
+  --r-main-font: 'Open Sans', sans-serif;
+  --r-main-font-size: 40px;
+  --r-main-color: #eeeeee;
+  --r-block-margin: 20px;
+  --r-heading-margin: 0 0 20px 0;
+  --r-heading-font: 'Montserrat', Impact, sans-serif;
+  --r-heading-color: #eeeeee;
+  --r-heading-line-height: 1.2;
+  --r-heading-letter-spacing: -0.03em;
+  --r-heading-text-transform: none;
+  --r-heading-text-shadow: none;
+  --r-heading-font-weight: normal;
+  --r-heading1-text-shadow: none;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1.00em;
+  --r-code-font: monospace;
+  --r-link-color: #e7ad52;
+  --r-link-color-dark: #e7ad52;
+  --r-link-color-hover: #e7ad52;
+  --r-selection-background-color: #e7ad52;
+  --r-selection-color: #000000;
+  --r-overlay-element-bg-color: 240,240,240;
+  --r-overlay-element-fg-color: 0,0,0;
+}
+

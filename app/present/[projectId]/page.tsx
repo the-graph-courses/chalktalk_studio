@@ -29,6 +29,24 @@ export default function PresentPage({ params }: PageProps) {
   // Initialize Reveal after slides are in DOM
   useEffect(() => {
     if (!slides.length) return
+    // Inject core + theme CSS from public/present
+    try {
+      const head = document.head
+      const addLink = (href: string, id: string) => {
+        if (!document.getElementById(id)) {
+          const l = document.createElement('link')
+          l.rel = 'stylesheet'
+          l.href = href
+          l.id = id
+          head.appendChild(l)
+        }
+      }
+      // Core CSS already imported from package; we only add theme dynamically if available
+      const themeId = ((): string => {
+        try { return localStorage.getItem(`selectedThemeId:${projectId}`) || localStorage.getItem('selectedThemeId') || 'white' } catch { return 'white' }
+      })()
+      addLink(`/present/theme/${themeId}.css`, 'reveal-theme')
+    } catch {}
     const deckEl = document.querySelector('.reveal') as HTMLElement | null
     if (!deckEl) return
     const r = new (Reveal as any)(deckEl)

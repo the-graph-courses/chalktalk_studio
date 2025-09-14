@@ -5,6 +5,7 @@ export const TEMPLATES = [
     {
         id: 'title-clean-white',
         name: 'Clean White (Modern)',
+        revealTheme: 'white',
         data: {
             pages: [
                 {
@@ -57,6 +58,7 @@ export const TEMPLATES = [
     {
         id: 'title-slate-blue',
         name: 'Slate Blue (Professional)',
+        revealTheme: 'white',
         data: {
             pages: [
                 {
@@ -109,6 +111,7 @@ export const TEMPLATES = [
     {
         id: 'title-charcoal',
         name: 'Charcoal (Minimal)',
+        revealTheme: 'black',
         data: {
             pages: [
                 {
@@ -162,6 +165,7 @@ export const TEMPLATES = [
     {
         id: 'title-sage-green',
         name: 'Sage Green (Elegant)',
+        revealTheme: 'white',
         data: {
             pages: [
                 {
@@ -214,6 +218,7 @@ export const TEMPLATES = [
     {
         id: 'title-warm-cream',
         name: 'Warm Cream (Classic)',
+        revealTheme: 'serif',
         data: {
             pages: [
                 {
@@ -264,4 +269,3 @@ export const TEMPLATES = [
         },
     },
 ];
-

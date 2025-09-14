@@ -5,7 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown, ChevronUp, Upload, Brain } from 'lucide-react';
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
 
@@ -256,7 +256,10 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const [showSettings, setShowSettings] = useState(false);
     const [preferAbsolutePositioning, setPreferAbsolutePositioning] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('cerebras');
+    const [showModelPicker, setShowModelPicker] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
+    const modelPickerRef = useRef<HTMLDivElement>(null);
 
     const { messages, sendMessage, status, setMessages } = useChat({
         transport: new DefaultChatTransport({
@@ -267,6 +270,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                     body: {
                         messages,
                         projectId,
+                        model: selectedModel,
                         preferences: {
                             preferAbsolutePositioning,
                         },
@@ -278,6 +282,13 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
 
     const isLoading = status === 'streaming' || status === 'submitted';
 
+    // Available AI models
+    const models = [
+        { id: 'cerebras', name: 'Qwen 3 480B', icon: '🧠', description: 'Cerebras' },
+        { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', icon: '🎭', description: 'Anthropic' },
+        { id: 'gpt-4o', name: 'GPT-4o', icon: '🤖', description: 'OpenAI' },
+    ];
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -286,19 +297,22 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
         scrollToBottom();
     }, [messages]);
 
-    // Close settings dropdown when clicking outside
+    // Close dropdowns when clicking outside
     React.useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
                 setShowSettings(false);
             }
+            if (modelPickerRef.current && !modelPickerRef.current.contains(event.target as Node)) {
+                setShowModelPicker(false);
+            }
         }
 
-        if (showSettings) {
+        if (showSettings || showModelPicker) {
             document.addEventListener('mousedown', handleClickOutside);
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [showSettings]);
+    }, [showSettings, showModelPicker]);
 
     // Execute tool commands once when output becomes available
     React.useEffect(() => {
@@ -409,6 +423,49 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                         <h2 className="text-lg font-semibold">AI Chat</h2>
                     </div>
                     <div className="flex items-center gap-1">
+                        {/* Model Picker */}
+                        <div className="relative" ref={modelPickerRef}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowModelPicker(!showModelPicker)}
+                                className="text-xs font-medium"
+                                disabled={isLoading}
+                                title="Select AI Model"
+                            >
+                                <Brain className="size-3 mr-1" />
+                                {models.find(m => m.id === selectedModel)?.icon} {models.find(m => m.id === selectedModel)?.name}
+                                <ChevronDown className="size-3 ml-1" />
+                            </Button>
+                            {showModelPicker && (
+                                <div className="absolute right-0 top-full mt-1 w-72 bg-background border border-border rounded-md shadow-lg z-10">
+                                    <div className="p-2">
+                                        <div className="text-sm font-medium mb-2 px-2">Select AI Model</div>
+                                        {models.map((model) => (
+                                            <button
+                                                key={model.id}
+                                                onClick={() => {
+                                                    setSelectedModel(model.id);
+                                                    setShowModelPicker(false);
+                                                }}
+                                                disabled={isLoading}
+                                                className={`w-full flex items-center gap-3 p-2 rounded hover:bg-muted text-left transition-colors ${selectedModel === model.id ? 'bg-muted' : ''
+                                                    }`}
+                                            >
+                                                <span className="text-lg">{model.icon}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium truncate">{model.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{model.description}</div>
+                                                </div>
+                                                {selectedModel === model.id && (
+                                                    <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         {/* Settings Dropdown */}
                         <div className="relative" ref={settingsRef}>
                             <Button
@@ -458,6 +515,10 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                             <Zap className="size-12 mx-auto mb-4 opacity-50" />
                             <p className="text-sm">Hi! I'm your ephemeral AI assistant for ChalkTalk Studio.</p>
                             <p className="text-xs mt-2">I can help with presentations, analyze images/PDFs, and answer questions.</p>
+                            <p className="text-xs mt-1 flex items-center justify-center gap-1">
+                                <Brain className="size-3" />
+                                Current model: {models.find(m => m.id === selectedModel)?.icon} {models.find(m => m.id === selectedModel)?.name}
+                            </p>
                             <p className="text-xs mt-1 text-orange-500">⚡ Note: This chat is not saved and will be lost when you close it.</p>
                         </div>
                     )}
