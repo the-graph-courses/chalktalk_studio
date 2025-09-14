@@ -60,6 +60,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@upstash/context7-mcp": "^1.0.17",
+    "sass": "^1.92.1",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.7",
     "typescript": "^5"

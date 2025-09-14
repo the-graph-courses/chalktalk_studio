@@ -260,7 +260,7 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
             if (!res.ok) throw new Error(await res.text())
             const data = await res.json()
             // Store cache in localStorage for present page
-            try { localStorage.setItem(`ttsCache:${projectId}`, JSON.stringify(data)) } catch {}
+            try { localStorage.setItem(`ttsCache:${projectId}`, JSON.stringify(data)) } catch { }
             // Also fetch from Convex to verify persistence
             try {
                 const verify = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
