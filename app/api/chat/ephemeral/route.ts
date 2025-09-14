@@ -1,4 +1,5 @@
 import { createCerebras } from '@ai-sdk/cerebras';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText, convertToModelMessages, type UIMessage, tool, stepCountIs } from 'ai';
 import { createSlideTools } from '@/lib/slide-tools';
 import { auth } from '@clerk/nextjs/server';
@@ -11,20 +12,41 @@ export async function POST(req: Request) {
     if (!userId) {
         return new Response('Unauthorized', { status: 401 });
     }
-    const { messages, projectId, preferences }: {
+    const { messages, projectId, preferences, model = 'cerebras' }: {
         messages: UIMessage[];
         projectId: string;
         preferences?: { preferAbsolutePositioning?: boolean };
+        model?: string;
     } = await req.json();
 
     const tools = createSlideTools(projectId, userId, preferences);
 
+    // Initialize providers
     const cerebras = createCerebras({
         apiKey: process.env.CEREBRAS_CODE_KEY,
     });
 
+    const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+    });
+
+    // Select model based on request
+    let selectedModel;
+    switch (model) {
+        case 'claude-sonnet-4':
+            selectedModel = openrouter('anthropic/claude-sonnet-4');
+            break;
+        case 'gpt-4o':
+            selectedModel = openrouter('openai/gpt-4o');
+            break;
+        case 'cerebras':
+        default:
+            selectedModel = cerebras('qwen-3-coder-480b');
+            break;
+    }
+
     const result = streamText({
-        model: cerebras('qwen-3-coder-480b'),
+        model: selectedModel,
         messages: convertToModelMessages(messages),
         ...(tools && { tools }),
         system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:
@@ -49,12 +71,14 @@ Available tools:
 
 HTML CONTENT REQUIREMENTS:
 - Provide clean HTML only (no <html>, <head>, or <body> wrappers)
-- ALWAYS include a <style> tag at the beginning with comprehensive CSS styling
+- Default: do NOT include global styles; rely on the page theme already present in the editor
+- If custom styling is requested, include a <style> tag scoped ONLY to the page content
+  - Never target html, body, or :root; prefer classes on your elements or scope under .reveal
+  - Keep nesting minimal for GrapesJS editor compatibility
 - Position elements absolutely on a 1280x720px canvas
 - Use proper CSS syntax with semicolons and spacing
-- Add class="fragment" to elements for Reveal.js animations
-- Keep nesting minimal for GrapesJS editor compatibility
-- Make slides visually appealing with proper typography, colors, and spacing
+- Add class="fragment" to elements for Reveal.js animations (used in Present)
+- Make slides visually appealing with proper typography, colors, and spacing (theme covers defaults)
 
 STYLING REQUIREMENTS:
 - Include beautiful typography (font families, sizes, weights)
@@ -67,14 +91,15 @@ STYLING REQUIREMENTS:
 CORRECT WORKFLOW:
 1. User asks for slide creation/modification
 2. You respond: "I'll create a slide about [topic]" (natural language)
-3. You make the appropriate tool call with proper HTML content including <style> tag
+3. You make the appropriate tool call with proper HTML content; add a <style> tag only if customizing beyond the theme
 4. You confirm what was created/modified
 
-EXAMPLE HTML CONTENT WITH STYLING:
+EXAMPLE HTML CONTENT WITH OPTIONAL STYLE OVERRIDES:
 <style>
+  /* Optional override styles; remove if not customizing */
   .slide-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 1280px; height: 720px; position: relative; }
-  .main-title { font-family: 'Arial', sans-serif; font-size: 48px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-  .content-list { font-family: 'Arial', sans-serif; font-size: 24px; color: white; line-height: 1.6; }
+  .main-title { font-size: 48px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+  .content-list { font-size: 24px; color: white; line-height: 1.6; }
   .content-list li { margin-bottom: 12px; padding-left: 20px; }
   .highlight-box { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; backdrop-filter: blur(10px); }
 </style>

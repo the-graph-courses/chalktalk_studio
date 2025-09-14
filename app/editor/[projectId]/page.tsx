@@ -80,12 +80,19 @@ export default function EditorPage({ params }: PageProps) {
         try {
             const cmp = page.getMainComponent?.() || editor.DomComponents.getWrapper()
             if (!cmp) return
+            // Build var map and resolve content CSS
+            const varMap: Record<string, string> = {}
+            varsCss.replace(/--([a-zA-Z0-9\-]+)\s*:\s*([^;]+);/g, (_m: string, k: string, v: string) => {
+                varMap[`--${k.trim()}`] = v.trim()
+                return ''
+            })
+            const resolvedCss = contentCss.replace(/var\((--[a-zA-Z0-9\-]+)\)/g, (_m: string, key: string) => varMap[key] ?? _m)
+
             // Remove prior theme tags
             const prior = cmp.find?.('style[data-ct-page-theme]') || []
             prior.forEach((st: any) => st.remove?.())
-            // Append new ones (vars first, then content)
-            cmp.append(`<style data-ct-page-theme="vars" data-theme="${themeId}">${varsCss}</style>`)
-            cmp.append(`<style data-ct-page-theme="content">${contentCss}</style>`)
+            // Append resolved content CSS (single block)
+            cmp.append(`<style data-ct-page-theme="content" data-theme="${themeId}">${resolvedCss}</style>`)
         } catch (e) {
             console.error('Failed to ensure page theme styles:', e)
         }
@@ -438,9 +445,54 @@ export default function EditorPage({ params }: PageProps) {
                             }
                         })
 
+                        // Ensure all new components dropped at root are moved inside the slide container
+                        editor.on('component:add', (cmp: any) => {
+                            try {
+                                const wrapper = editor.DomComponents.getWrapper()
+                                if (!wrapper) return
+                                // Skip if we're adding the container itself or editor theme <style> blocks
+                                const attrs = cmp.getAttributes?.() || {}
+                                if (attrs['data-slide-container']) return
+                                const tag = (cmp.get?.('tagName') || cmp.getTagName?.() || '').toString().toLowerCase()
+                                if (tag === 'style') return
+                                const parent = cmp.parent?.()
+                                if (parent && parent === wrapper) {
+                                    const container = wrapper.find?.('[data-slide-container]')?.[0]
+                                    if (container) {
+                                        try {
+                                            container.append(cmp)
+                                        } catch {
+                                            // Fallback: re-create via HTML if needed
+                                            const html = cmp.toHTML?.() || ''
+                                            try { cmp.remove?.() } catch {}
+                                            if (html) container.append(html)
+                                        }
+                                    }
+                                }
+                            } catch { }
+                        })
+
                         // On initial ready (existing deck), ensure all pages carry inline theme
                         try {
                             applyThemeToAllPages(editor, getSelectedThemeId()).catch(() => {})
+                        } catch {}
+
+                        // Migration: ensure all slide containers have class="reveal" for variable scoping
+                        try {
+                            const pages = editor.Pages.getAll?.() || []
+                            pages.forEach((p: any) => {
+                                const cmp = p.getMainComponent?.() || editor.DomComponents.getWrapper()
+                                const containers = cmp?.find?.('[data-slide-container]') || []
+                                const c = containers[0]
+                                if (c) {
+                                    const cls = (c.getClasses?.() || c.getClass?.() || []) as string[]
+                                    if (!cls.includes('reveal')) {
+                                        const set = new Set(cls)
+                                        set.add('reveal')
+                                        c.setClass?.(Array.from(set))
+                                    }
+                                }
+                            })
                         } catch {}
                     }}
                     options={{
