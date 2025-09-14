@@ -45,6 +45,59 @@ export default function EditorPage({ params }: PageProps) {
     // Controls when we apply template-mapped styles on page add
     const shouldApplyTemplateStylesRef = useRef<boolean>(true)
 
+    // Cache for editor theme CSS texts
+    const themeCssCache = useRef<Record<string, string>>({})
+    const contentCssCache = useRef<string | null>(null)
+
+    const getSelectedThemeId = () => {
+        try {
+            return localStorage.getItem(`selectedThemeId:${projectId}`) || localStorage.getItem('selectedThemeId') || 'white'
+        } catch { return 'white' }
+    }
+
+    const fetchCssText = async (url: string) => {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`Failed to load CSS: ${url}`)
+        return await res.text()
+    }
+
+    const ensurePageThemeStyles = async (editor: any, page: any, themeId: string) => {
+        // Load content CSS once
+        if (!contentCssCache.current) {
+            try {
+                contentCssCache.current = await fetchCssText('/themes/editor/content.css')
+            } catch (e) { console.error(e) }
+        }
+        // Load theme vars CSS per theme
+        if (!themeCssCache.current[themeId]) {
+            try {
+                themeCssCache.current[themeId] = await fetchCssText(`/themes/editor/${themeId}.vars.css`)
+            } catch (e) { console.error(e) }
+        }
+        const varsCss = themeCssCache.current[themeId] || ''
+        const contentCss = contentCssCache.current || ''
+
+        try {
+            const cmp = page.getMainComponent?.() || editor.DomComponents.getWrapper()
+            if (!cmp) return
+            // Remove prior theme tags
+            const prior = cmp.find?.('style[data-ct-page-theme]') || []
+            prior.forEach((st: any) => st.remove?.())
+            // Append new ones (vars first, then content)
+            cmp.append(`<style data-ct-page-theme="vars" data-theme="${themeId}">${varsCss}</style>`)
+            cmp.append(`<style data-ct-page-theme="content">${contentCss}</style>`)
+        } catch (e) {
+            console.error('Failed to ensure page theme styles:', e)
+        }
+    }
+
+    const applyThemeToAllPages = async (editor: any, themeId: string) => {
+        const pages = editor.Pages.getAll?.() || []
+        for (const p of pages) {
+            await ensurePageThemeStyles(editor, p, themeId)
+        }
+    }
+
     // Parse inline style string into an object (camelCase keys)
     const parseStyleAttr = (styleAttr?: string): Record<string, string> => {
         if (!styleAttr) return {}
@@ -106,6 +159,10 @@ export default function EditorPage({ params }: PageProps) {
                         select: true,
                         at: insertAtIndex
                     })
+                    // Ensure inline theme styles on the new page
+                    const themeId = getSelectedThemeId()
+                    // Fire and forget
+                    ensurePageThemeStyles(editor, page, themeId)
                     return !!page
                 },
                 editSlide: (slideIndex: number, newContent: string, newName?: string) => {
@@ -132,6 +189,9 @@ export default function EditorPage({ params }: PageProps) {
 
                     editor.Pages.select(page);
                     editor.setComponents(finalContent);
+                    // Re-inject theme styles since the page content was replaced
+                    const themeId = getSelectedThemeId()
+                    ensurePageThemeStyles(editor, page, themeId)
                     return true
                 },
                 replaceSlide: (slideIndex: number, newContent: string, newName?: string) => {
@@ -158,6 +218,9 @@ export default function EditorPage({ params }: PageProps) {
 
                     editor.Pages.select(page);
                     editor.setComponents(finalContent);
+                    // Re-inject theme styles since the page content was replaced
+                    const themeId = getSelectedThemeId()
+                    ensurePageThemeStyles(editor, page, themeId)
                     return true
                 },
                 getEditor: () => editorRef.current
@@ -220,7 +283,7 @@ export default function EditorPage({ params }: PageProps) {
 
                         // This is the fix for your point about "opening a new page in an existing presentation"
                         // When a new page is added via the UI, we ensure it gets our slide container.
-                        editor.on('page:add', (page) => {
+                        editor.on('page:add', async (page) => {
                             // Avoid applying stale template styles before user selects a template in a new project
                             if (!shouldApplyTemplateStylesRef.current) return;
                             // Select the page first to access its components
@@ -245,6 +308,8 @@ export default function EditorPage({ params }: PageProps) {
                                         custom,
                                     )
                                 );
+                                // Ensure this page gets current theme styles inline
+                                await ensurePageThemeStyles(editor, page, getSelectedThemeId())
                             }
                         });
 
@@ -254,6 +319,8 @@ export default function EditorPage({ params }: PageProps) {
                             try {
                                 localStorage.removeItem('selectedTemplateId')
                                 localStorage.removeItem(`selectedTemplateId:${projectId}`)
+                                localStorage.removeItem('selectedThemeId')
+                                localStorage.removeItem(`selectedThemeId:${projectId}`)
                             } catch {}
                             shouldApplyTemplateStylesRef.current = false
                             editor.runCommand('studio:layoutToggle', {
@@ -263,12 +330,15 @@ export default function EditorPage({ params }: PageProps) {
                                 layout: {
                                     type: 'panelTemplates',
                                     content: { itemsPerRow: 4 },
-                                    onSelect: ({ loadTemplate, template }: any) => {
+                                    onSelect: async ({ loadTemplate, template }: any) => {
                                         // Store selected template id BEFORE loading, so any page:add from the loader sees the correct id
                                         try {
                                             const tid = template?.id || ''
                                             localStorage.setItem('selectedTemplateId', tid)
                                             localStorage.setItem(`selectedTemplateId:${projectId}`, tid)
+                                            const themeId = template?.revealTheme || 'white'
+                                            localStorage.setItem('selectedThemeId', themeId)
+                                            localStorage.setItem(`selectedThemeId:${projectId}`, themeId)
                                         } catch {}
                                         shouldApplyTemplateStylesRef.current = true
                                         // Load the selected template to the current project
@@ -278,6 +348,8 @@ export default function EditorPage({ params }: PageProps) {
                                         // Ensure first template page is selected
                                         const pages = editor.Pages.getAll()
                                         if (pages && pages[0]) editor.Pages.select(pages[0])
+                                        // Apply theme to all pages
+                                        await applyThemeToAllPages(editor, getSelectedThemeId())
                                     }
                                 }
                             });
@@ -365,6 +437,11 @@ export default function EditorPage({ params }: PageProps) {
                                 try { window.alert?.(`Set TTS + fragments on ${total} elements (${scope}).`) } catch {}
                             }
                         })
+
+                        // On initial ready (existing deck), ensure all pages carry inline theme
+                        try {
+                            applyThemeToAllPages(editor, getSelectedThemeId()).catch(() => {})
+                        } catch {}
                     }}
                     options={{
                         licenseKey,

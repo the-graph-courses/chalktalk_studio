@@ -34,16 +34,6 @@ export const getSlideContainer = (
         ...customStyles,
     };
 
-    const bodyStyles = {
-        margin: '0',
-        padding: '0',
-        position: 'relative',
-        width: `${format.width}px`,
-        minHeight: `${format.height}px`,
-        background: '#f3f4f6',
-        overflow: 'hidden',
-    };
-
     const toCss = (styles: Record<string, string>) =>
         Object.entries(styles)
             .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}:${value}`)
@@ -51,6 +41,7 @@ export const getSlideContainer = (
 
     return `
         <div
+            class="reveal"
             data-slide-container="true"
             data-slide-format-id="${format.id}"
             draggable="false"
@@ -58,7 +49,5 @@ export const getSlideContainer = (
         >
             ${content}
         </div>
-        <style>body { ${toCss(bodyStyles)} }</style>
     `;
 };
-

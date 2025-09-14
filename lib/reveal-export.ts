@@ -14,9 +14,15 @@ export type RevealSlide = {
 const extractStyleBlocks = (html: string): { cleaned: string; styles: string[] } => {
   const styles: string[] = []
   let cleaned = html
-  // Extract <style>...</style> blocks
-  cleaned = cleaned.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (_m, css) => {
-    styles.push(css as string)
+  // Extract <style>...</style> blocks; skip our editor-injected theme blocks
+  cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (m) => {
+    if (/data-ct-page-theme/i.test(m)) {
+      // Drop editor theme blocks in Present; theme comes from linked CSS
+      return ''
+    }
+    const cssMatch = m.match(/<style[^>]*>([\s\S]*?)<\/style>/i)
+    const css = cssMatch ? cssMatch[1] : ''
+    styles.push(css)
     return ''
   })
   return { cleaned, styles }

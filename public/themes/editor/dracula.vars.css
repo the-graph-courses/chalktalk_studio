@@ -1,0 +1,29 @@
+.reveal {
+  --r-background-color: #282A36;
+  --r-main-font: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+  --r-main-font-size: 40px;
+  --r-main-color: #F8F8F2;
+  --r-block-margin: 20px;
+  --r-heading-margin: 0 0 20px 0;
+  --r-heading-font: 'Lato', 'League Gothic', Impact, sans-serif;
+  --r-heading-color: #BD93F9;
+  --r-heading-line-height: 1.2;
+  --r-heading-letter-spacing: normal;
+  --r-heading-text-transform: none;
+  --r-heading-text-shadow: none;
+  --r-heading-font-weight: normal;
+  --r-heading1-text-shadow: none;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1.00em;
+  --r-code-font: "Fira Code", Menlo, Consolas, Monaco, Liberation Mono, Lucida Console, monospace;
+  --r-link-color: #FF79C6;
+  --r-link-color-dark: #FF79C6;
+  --r-link-color-hover: #8BE9FD;
+  --r-selection-background-color: #44475A;
+  --r-selection-color: #F8F8F2;
+  --r-overlay-element-bg-color: 240,240,240;
+  --r-overlay-element-fg-color: 0,0,0;
+}
+
