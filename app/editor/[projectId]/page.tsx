@@ -2,6 +2,7 @@
 
 import StudioEditor from '@grapesjs/studio-sdk/react'
 import '@grapesjs/studio-sdk/style'
+import '@/styles/grapesjs-overrides.css'
 import { canvasAbsoluteMode, canvasFullSize, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
 import grapesRevealTraits from '@/lib/grapes-reveal-traits'
 import marqueeSelect from '@/lib/marquee-select'
