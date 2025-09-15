@@ -17,7 +17,7 @@ export default defineSchema({
         project: v.string(), // Store as JSON string to avoid nesting limits
         uid: v.id('UserTable'),
         lastModified: v.optional(v.number()) // Unix timestamp for last modification
-    }),
+    }).index("by_uid", ["uid"]),
 
     TTSAudioTable: defineTable({
         projectId: v.string(),

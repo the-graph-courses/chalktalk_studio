@@ -15,30 +15,24 @@ export function createSlideTools(projectId?: string, userId?: string, preference
 
     return {
         readDeck: tool({
-            description: 'Read the entire slide deck with optional slide names. Use this to get an overview of all slides in the presentation.',
+            description: 'Read the entire slide deck. Use this to get an overview of all slides in the presentation.',
             inputSchema: z.object({
                 includeNames: z.boolean().default(true).describe('Whether to include slide names in the response'),
             }),
             execute: async ({ includeNames }) => {
-                try {
-                    return await executeSlideToolServer('read_deck', { includeNames }, projectId, userId);
-                } catch (error) {
-                    return { error: error instanceof Error ? error.message : 'Unknown error' };
-                }
+                return await executeSlideToolServer('read_deck', { includeNames }, projectId, userId);
             },
         }),
 
         readSlide: tool({
-            description: 'Read a specific slide by its index (starting from 0). Use this to examine the content of a particular slide.',
+            description: 'Read a specific slide by its index (starting from 0). Returns the HTML content and CSS styles for the slide.',
             inputSchema: z.object({
                 slideIndex: z.number().min(0).describe('The index of the slide to read (starting from 0)'),
             }),
             execute: async ({ slideIndex }) => {
-                try {
-                    return await executeSlideToolServer('read_slide', { slideIndex }, projectId, userId);
-                } catch (error) {
-                    return { error: error instanceof Error ? error.message : 'Unknown error' };
-                }
+                // This needs to actually return the data, not just a command
+                // For now, return a message that the operation needs client-side execution
+                return await executeSlideToolServer('read_slide', { slideIndex }, projectId, userId);
             },
         }),
 
@@ -81,6 +75,25 @@ export function createSlideTools(projectId?: string, userId?: string, preference
                     return {
                         ...result,
                         message: 'Slide replaced successfully. The editor will now update it.'
+                    };
+                } catch (error) {
+                    return { error: error instanceof Error ? error.message : 'Unknown error' };
+                }
+            },
+        }),
+
+        deleteSlide: tool({
+            description: 'Delete a slide by its index (starting from 0). Use this to remove a slide from the presentation.',
+            inputSchema: z.object({
+                slideIndex: z.number().min(0).describe('The index of the slide to delete (starting from 0)'),
+            }),
+            execute: async ({ slideIndex }) => {
+                try {
+                    const result = await executeSlideToolServer('delete_slide', { slideIndex }, projectId, userId);
+
+                    return {
+                        ...result,
+                        message: 'Slide deleted successfully. The editor will now remove it.'
                     };
                 } catch (error) {
                     return { error: error instanceof Error ? error.message : 'Unknown error' };

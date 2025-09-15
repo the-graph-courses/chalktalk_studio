@@ -480,13 +480,13 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                                         variant={isAIChatOpen ? "default" : "ghost"}
                                         size="sm"
                                         onClick={toggleAIChat}
-                                        title="Toggle AI Chat"
+                                        title="Toggle Chat"
                                     >
                                         <Zap className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Toggle AI Chat</p>
+                                    <p>Toggle Chat</p>
                                 </TooltipContent>
                             </Tooltip>
                             <Tooltip>

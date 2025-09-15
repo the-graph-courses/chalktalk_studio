@@ -2,9 +2,6 @@
 
 import { use } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Reveal from 'reveal.js'
-import 'reveal.js/dist/reveal.css'
-import 'reveal.js/dist/theme/white.css'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { extractRevealSlides, gatherSlideTTS } from '@/lib/reveal-export'
@@ -13,6 +10,13 @@ import { useSearchParams } from 'next/navigation'
 
 type PageProps = { params: Promise<{ projectId: string }> }
 
+// Global type declaration for Reveal.js loaded from CDN
+declare global {
+  interface Window {
+    Reveal: any
+  }
+}
+
 export default function PresentPage({ params }: PageProps) {
   const { projectId } = use(params)
   const deck = useQuery(api.slideDeck.GetProject, { projectId })
@@ -20,7 +24,7 @@ export default function PresentPage({ params }: PageProps) {
   const autoplay = search.get('autoplay') === '1'
   const deckTitle = deck?.title || 'Presentation'
 
-  const [reveal, setReveal] = useState<Reveal.Api | null>(null)
+  const [reveal, setReveal] = useState<any | null>(null)
   const [needsUserAction, setNeedsUserAction] = useState(false)
 
   const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
@@ -29,45 +33,128 @@ export default function PresentPage({ params }: PageProps) {
   // Initialize Reveal after slides are in DOM
   useEffect(() => {
     if (!slides.length) return
-    // Inject core + theme CSS from public/present
-    try {
-      const head = document.head
-      const addLink = (href: string, id: string) => {
-        if (!document.getElementById(id)) {
-          const l = document.createElement('link')
-          l.rel = 'stylesheet'
-          l.href = href
-          l.id = id
-          head.appendChild(l)
+
+    // Load Reveal.js from CDN
+    const loadReveal = async () => {
+      try {
+        const head = document.head
+        const addLink = (href: string, id: string) => {
+          if (!document.getElementById(id)) {
+            const l = document.createElement('link')
+            l.rel = 'stylesheet'
+            l.href = href
+            l.id = id
+            head.appendChild(l)
+          }
+        }
+
+        const addScript = (src: string, id: string): Promise<void> => {
+          return new Promise((resolve, reject) => {
+            if (document.getElementById(id)) {
+              resolve()
+              return
+            }
+            const script = document.createElement('script')
+            script.src = src
+            script.id = id
+            script.onload = () => resolve()
+            script.onerror = reject
+            head.appendChild(script)
+          })
+        }
+
+        // Load Reveal.js CSS from CDN
+        addLink('https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css', 'reveal-css')
+
+        // Get theme preference
+        const themeId = ((): string => {
+          try { return localStorage.getItem(`selectedThemeId:${projectId}`) || localStorage.getItem('selectedThemeId') || 'white' } catch { return 'white' }
+        })()
+
+        // Load theme from CDN
+        addLink(`https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/theme/${themeId}.css`, 'reveal-theme')
+
+        // Add CSS overrides for consistent font sizing
+        const addStyle = (css: string, id: string) => {
+          if (!document.getElementById(id)) {
+            const style = document.createElement('style')
+            style.id = id
+            style.textContent = css
+            head.appendChild(style)
+          }
+        }
+
+        addStyle(`
+          :root {
+            --r-main-font-size: 30px !important;
+          }
+          
+          .reveal {
+            font-size: var(--r-main-font-size) !important;
+          }
+          
+          .reveal .slides section {
+            font-size: var(--r-main-font-size) !important;
+          }
+        `, 'reveal-font-overrides')
+
+        // Load Reveal.js script from CDN
+        await addScript('https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.js', 'reveal-js')
+
+        // Initialize Reveal
+        const deckEl = document.querySelector('.reveal') as HTMLElement | null
+        if (!deckEl || !window.Reveal) return
+
+        const r = new window.Reveal(deckEl)
+        r.initialize({
+          hash: true,
+          width: 1280,
+          height: 720,
+          margin: 0,
+          controls: true,
+          progress: true,
+          center: true,
+          slideNumber: true,
+          embedded: false,
+          transition: 'none',
+        })
+        setReveal(r)
+
+        return () => {
+          try { r?.destroy() } catch { }
+        }
+      } catch (error) {
+        console.error('Failed to load Reveal.js:', error)
+        // Display simple error to user
+        const deckEl = document.querySelector('.reveal') as HTMLElement | null
+        if (deckEl) {
+          deckEl.innerHTML = `
+            <div style="
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              height: 100vh; 
+              flex-direction: column;
+              font-family: system-ui, sans-serif;
+              color: #dc2626;
+              text-align: center;
+              padding: 2rem;
+            ">
+              <h2 style="margin-bottom: 1rem; font-size: 1.5rem;">Failed to load presentation</h2>
+              <p style="margin-bottom: 1rem; max-width: 600px; line-height: 1.5;">
+                There was an error loading Reveal.js or the presentation theme. Please try refreshing the page.
+              </p>
+              <p style="font-size: 0.875rem; color: #6b7280;">
+                Check the browser console for technical details.
+              </p>
+            </div>
+          `
         }
       }
-      // Core CSS already imported from package; we only add theme dynamically if available
-      const themeId = ((): string => {
-        try { return localStorage.getItem(`selectedThemeId:${projectId}`) || localStorage.getItem('selectedThemeId') || 'white' } catch { return 'white' }
-      })()
-      // Load Reveal theme from public/themes
-      addLink(`/themes/${themeId}.css`, 'reveal-theme')
-    } catch {}
-    const deckEl = document.querySelector('.reveal') as HTMLElement | null
-    if (!deckEl) return
-    const r = new (Reveal as any)(deckEl)
-    r.initialize({
-      hash: true,
-      width: 1280,
-      height: 720,
-      margin: 0,
-      controls: true,
-      progress: true,
-      center: true,
-      slideNumber: true,
-      embedded: false,
-      transition: 'none',
-    })
-    setReveal(r)
-    return () => {
-      try { r?.destroy() } catch { }
     }
-  }, [slides.length])
+
+    loadReveal()
+  }, [slides.length, projectId])
 
   // TTS cache per slide index
   // Per-slide audio sequences (array of data URLs)
@@ -186,43 +273,43 @@ export default function PresentPage({ params }: PageProps) {
       const sections = Array.from(document.querySelectorAll('.reveal .slides > section')) as HTMLElement[]
       const sec = sections[indexh]
       const audios = sec ? (Array.from(sec.querySelectorAll('audio[data-tts-audio]')) as HTMLAudioElement[]) : []
-      
+
       // Store audio queue for this slide
       audioQueueRef.current = audios
       currentAudioIndexRef.current = 0
-      
+
       if (audios.length === 0) {
         if (playbackState === 'playing' && sessionTokenRef.current === session) {
           setTimeout(() => reveal.next(), 400)
         }
         return
       }
-      
+
       currentClipRef.current = 0
-      
+
       const playNext = async () => {
         if (sessionTokenRef.current !== session) return
         if (playbackState !== 'playing') return
-        
+
         const i = currentAudioIndexRef.current
         if (i >= audios.length) {
           try { (reveal as any).next?.() } catch { }
           return
         }
-        
+
         const el = audios[i]
         currentAudioElRef.current = el
         currentAudioIndexRef.current = i + 1
         currentClipRef.current = i
-        
+
         // Apply rate/volume
         el.playbackRate = playbackRate
         el.volume = volume
-        
+
         // Clear any existing listeners first
         el.onended = null
         el.onerror = null
-        
+
         // Set up new listeners
         el.onended = () => {
           el.onended = null
@@ -231,23 +318,23 @@ export default function PresentPage({ params }: PageProps) {
             playNext()
           }
         }
-        
+
         el.onerror = () => {
           el.onerror = null
           if (playbackState === 'playing' && sessionTokenRef.current === session) {
             playNext()
           }
         }
-        
+
         el.currentTime = 0
         // Wait to reduce stutters on first play
         await waitUntilCanPlay(el)
-        
+
         if (playbackState === 'playing' && sessionTokenRef.current === session) {
           el.play().catch(() => setNeedsUserAction(true))
         }
       }
-      
+
       playNext()
     }
     playSlideRef.current = playSlide

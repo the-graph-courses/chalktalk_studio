@@ -1,6 +1,6 @@
 import { createCerebras } from '@ai-sdk/cerebras';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { streamText, convertToModelMessages, type UIMessage, tool, stepCountIs } from 'ai';
+import { streamText, convertToModelMessages, type UIMessage, tool, stepCountIs, consumeStream } from 'ai';
 import { createSlideTools } from '@/lib/slide-tools';
 import { auth } from '@clerk/nextjs/server';
 
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     model: selectedModel,
     messages: convertToModelMessages(messages),
     ...(tools && { tools }),
+    abortSignal: req.signal,
     system: `You are an AI assistant for ChalkTalk Studio, a presentation creation platform. You can help users with:
 
 1. Creating and editing slide presentations
@@ -59,6 +60,7 @@ export async function POST(req: Request) {
 
 CRITICAL TOOL USAGE RULES:
 - When users ask you to create or modify slides, you MUST use the appropriate tool functions
+- When deleting a slide, you MUST ask for confirmation from the user before calling the tool.
 - NEVER output JSON or code snippets in your text response - only use tool calls
 - Always provide clean HTML content in the tool's 'content' parameter
 - Respond with natural language explaining what you're doing, then make the tool call
@@ -68,6 +70,12 @@ Available tools:
 - readSlide: Read a specific slide by index  
 - createSlide: Create a new slide with HTML content
 - replaceSlide: Replace content of an existing slide
+- deleteSlide: Delete a slide by its index
+
+SLIDE DIMENSIONS:
+- All slides are created with dimensions of 1280x720 pixels (16:9 aspect ratio)
+- Design your content to fit within these dimensions
+- The slide container will automatically be sized to these dimensions
 
 HTML CONTENT REQUIREMENTS:
 - Provide clean HTML only (no <html>, <head>, or <body> wrappers)
@@ -75,6 +83,7 @@ HTML CONTENT REQUIREMENTS:
 - If custom styling is requested, include a <style> tag scoped ONLY to the page content
   - Never target html, body, or :root; prefer classes on your elements or scope under .reveal
   - Keep nesting minimal for GrapesJS editor compatibility
+  - When providing custom styles, always set the main container to width: 1280px; height: 720px; margin: 0;
 - Use proper CSS syntax with semicolons and spacing
 - Add class="fragment" to elements for Reveal.js animations (used in Present)
 - Make slides visually appealing with proper typography, colors, and spacing (theme covers defaults)
@@ -106,7 +115,7 @@ CORRECT WORKFLOW:
 EXAMPLE HTML CONTENT WITH OPTIONAL STYLE OVERRIDES:
 <style>
   /* Optional override styles; remove if not customizing */
-  .slide { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100%; width: 100%; display: block; }
+  .slide { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 1280px; height: 720px; margin: 0; display: block; }
   .content { padding: 56px 48px; display: flex; flex-direction: column; gap: 32px; }
   .title { font-size: 48px; font-weight: 800; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); margin: 0; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -142,5 +151,12 @@ EXAMPLE HTML CONTENT WITH OPTIONAL STYLE OVERRIDES:
     stopWhen: stepCountIs(50),
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    onFinish: async ({ isAborted }) => {
+      if (isAborted) {
+        console.log('Stream was aborted by user');
+      }
+    },
+    consumeSseStream: consumeStream,
+  });
 }

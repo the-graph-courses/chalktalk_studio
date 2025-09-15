@@ -1,7 +1,7 @@
 .reveal {
   --r-background-color: #ffffff;
   --r-main-font: 'Lato', sans-serif;
-  --r-main-font-size: 40px;
+  --r-main-font-size: 30px;
   --r-main-color: #000000;
   --r-block-margin: 20px;
   --r-heading-margin: 0 0 20px 0;
@@ -23,7 +23,6 @@
   --r-link-color-hover: #00008B;
   --r-selection-background-color: rgba(0, 0, 0, 0.99);
   --r-selection-color: #ffffff;
-  --r-overlay-element-bg-color: 0,0,0;
-  --r-overlay-element-fg-color: 240,240,240;
+  --r-overlay-element-bg-color: 0, 0, 0;
+  --r-overlay-element-fg-color: 240, 240, 240;
 }
-

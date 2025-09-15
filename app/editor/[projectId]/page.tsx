@@ -24,7 +24,11 @@ declare global {
             addSlide: (name: string, content: string, insertAtIndex?: number) => boolean
             editSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
             replaceSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
+            deleteSlide: (slideIndex: number) => boolean
             getEditor: () => any
+            getSlideHtml: (slideIndex: number) => string | null
+            getSlideCss: (slideIndex: number) => string | null
+            getAllSlidesHtmlCss: () => Array<{ index: number; name: string; html: string; css: string }> | null
         }
     }
 }
@@ -234,7 +238,62 @@ export default function EditorPage({ params }: PageProps) {
                     ensurePageThemeStyles(editor, page, themeId)
                     return true
                 },
-                getEditor: () => editorRef.current
+                deleteSlide: (slideIndex: number) => {
+                    if (!editorRef.current) return false
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const pageToDelete = pages[slideIndex]
+                    if (!pageToDelete) return false
+
+                    // If deleting the selected page, select another one first
+                    const selectedPage = editor.Pages.getSelected()
+                    if (selectedPage && selectedPage.getId() === pageToDelete.getId()) {
+                        const remainingPages = pages.filter((p: any) => p.getId() !== pageToDelete.getId())
+                        if (remainingPages.length > 0) {
+                            editor.Pages.select(remainingPages[0])
+                        }
+                    }
+
+                    // Remove the page
+                    editor.Pages.remove(pageToDelete)
+                    return true
+                },
+                getEditor: () => editorRef.current,
+                getSlideHtml: (slideIndex: number) => {
+                    if (!editorRef.current) return null
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const page = pages[slideIndex]
+                    if (!page) return null
+
+                    const component = page.getMainComponent()
+                    return editor.getHtml({ component })
+                },
+                getSlideCss: (slideIndex: number) => {
+                    if (!editorRef.current) return null
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const page = pages[slideIndex]
+                    if (!page) return null
+
+                    const component = page.getMainComponent()
+                    return editor.getCss({ component })
+                },
+                getAllSlidesHtmlCss: () => {
+                    if (!editorRef.current) return null
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+
+                    return pages.map((page: any, index: number) => {
+                        const component = page.getMainComponent()
+                        return {
+                            index,
+                            name: page.getName() || page.getId() || `Slide ${index + 1}`,
+                            html: editor.getHtml({ component }),
+                            css: editor.getCss({ component })
+                        }
+                    })
+                }
             }
         }
 

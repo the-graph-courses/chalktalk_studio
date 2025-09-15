@@ -9,7 +9,7 @@ html * {
 :root {
     --r-background-color: #fdf6e3;
     --r-main-font: Lato, sans-serif;
-    --r-main-font-size: 40px;
+    --r-main-font-size: 30px;
     --r-main-color: #657b83;
     --r-block-margin: 20px;
     --r-heading-margin: 0 0 20px 0;
@@ -17,7 +17,7 @@ html * {
     --r-heading-color: #586e75;
     --r-heading-line-height: 1.2;
     --r-heading-letter-spacing: normal;
-    --r-heading-text-transform: uppercase;
+    --r-heading-text-transform: none;
     --r-heading-text-shadow: none;
     --r-heading-font-weight: normal;
     --r-heading1-text-shadow: none;

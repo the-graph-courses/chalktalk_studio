@@ -5,7 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown, ChevronUp, Upload, Brain } from 'lucide-react';
+import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown, ChevronUp, Upload, Brain, Trash2, AlertTriangle, Square, RefreshCcw } from 'lucide-react';
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
 
@@ -97,13 +97,15 @@ function getToolIcon(toolName: string) {
             return <Plus className="size-4" />;
         case 'replaceSlide':
             return <Code className="size-4" />;
+        case 'deleteSlide':
+            return <Trash2 className="size-4" />;
         default:
             return <Play className="size-4" />;
     }
 }
 
 // Helper function to execute editor commands
-function executeEditorCommand(output: any): boolean {
+function executeEditorCommand(output: any): any {
     if (typeof window === 'undefined') return false;
 
     // @ts-ignore - Access global grapesjsAITools
@@ -126,6 +128,48 @@ function executeEditorCommand(output: any): boolean {
                     commandData.newContent,
                     commandData.newName
                 );
+            case 'deleteSlide':
+                return aiTools.deleteSlide(
+                    commandData.slideIndex
+                );
+            case 'readSlide': {
+                const html = aiTools.getSlideHtml(commandData.slideIndex);
+                const css = aiTools.getSlideCss(commandData.slideIndex);
+
+                if (html === null || css === null) {
+                    return { error: `Slide ${commandData.slideIndex} not found` };
+                }
+
+                const editor = aiTools.getEditor();
+                const pages = editor?.Pages?.getAll();
+                const page = pages?.[commandData.slideIndex];
+                const slideName = page?.getName() || page?.getId() || `Slide ${commandData.slideIndex + 1}`;
+
+                return {
+                    success: true,
+                    slideIndex: commandData.slideIndex,
+                    slideName,
+                    html,
+                    css
+                };
+            }
+            case 'readDeck': {
+                const slidesData = aiTools.getAllSlidesHtmlCss();
+                if (!slidesData) return { error: 'Failed to read slides' };
+
+                const slides = slidesData.map(slide => ({
+                    index: slide.index,
+                    name: commandData.includeNames ? slide.name : undefined,
+                    html: slide.html,
+                    css: slide.css
+                }));
+
+                return {
+                    success: true,
+                    totalSlides: slides.length,
+                    slides
+                };
+            }
             default:
                 return false;
         }
@@ -186,19 +230,46 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                     <div className="text-xs bg-green-50 dark:bg-green-950/20 p-2 rounded border">
                         {commandExecuted ? (
                             <div className="text-green-700 dark:text-green-400">
-                                {part.output.message || 'Command executed successfully'}
+                                {part.output.command === 'readSlide' || part.output.command === 'readDeck' ?
+                                    'Data retrieved successfully' :
+                                    (part.output.message || 'Command executed successfully')}
                             </div>
-                        ) : part.output.slideContent ? (
-                            // Show clean HTML content for slide reads
+                        ) : part.output.html || part.output.slideContent ? (
+                            // Show HTML and CSS for slide reads
                             <div className="text-green-700 dark:text-green-400">
                                 <div className="text-xs text-muted-foreground mb-1">
-                                    Slide: {part.output.slideName} (Index: {part.output.slideIndex})
+                                    {part.output.slideName ? `Slide: ${part.output.slideName}` : 'Slide'}
+                                    {part.output.slideIndex !== undefined ? ` (Index: ${part.output.slideIndex})` : ''}
                                 </div>
-                                <CollapsibleContent
-                                    content={part.output.slideContent}
-                                    className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border mt-1"
-                                    maxLines={10}
-                                />
+
+                                {part.output.html && part.output.css ? (
+                                    // New format with separate HTML and CSS
+                                    <div className="space-y-2 mt-1">
+                                        <div>
+                                            <div className="text-xs font-medium mb-1">HTML:</div>
+                                            <CollapsibleContent
+                                                content={part.output.html}
+                                                className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border"
+                                                maxLines={8}
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-medium mb-1">CSS:</div>
+                                            <CollapsibleContent
+                                                content={part.output.css}
+                                                className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border"
+                                                maxLines={6}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // Fallback to old format
+                                    <CollapsibleContent
+                                        content={part.output.slideContent}
+                                        className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border mt-1"
+                                        maxLines={10}
+                                    />
+                                )}
                             </div>
                         ) : part.output.slides ? (
                             // Show clean content for deck reads
@@ -212,11 +283,35 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                                             <div className="text-xs font-medium mb-1">
                                                 Slide {slide.index}: {slide.name}
                                             </div>
-                                            <CollapsibleContent
-                                                content={slide.content}
-                                                className="text-xs overflow-x-auto whitespace-pre-wrap"
-                                                maxLines={8}
-                                            />
+
+                                            {slide.html && slide.css ? (
+                                                // New format with separate HTML and CSS
+                                                <div className="space-y-1">
+                                                    <div>
+                                                        <div className="text-xs font-medium mb-1">HTML:</div>
+                                                        <CollapsibleContent
+                                                            content={slide.html}
+                                                            className="text-xs overflow-x-auto whitespace-pre-wrap bg-background/50 p-1 rounded border"
+                                                            maxLines={6}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-medium mb-1">CSS:</div>
+                                                        <CollapsibleContent
+                                                            content={slide.css}
+                                                            className="text-xs overflow-x-auto whitespace-pre-wrap bg-background/50 p-1 rounded border"
+                                                            maxLines={4}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                // Fallback to old format
+                                                <CollapsibleContent
+                                                    content={slide.content}
+                                                    className="text-xs overflow-x-auto whitespace-pre-wrap"
+                                                    maxLines={8}
+                                                />
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -261,7 +356,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const settingsRef = useRef<HTMLDivElement>(null);
     const modelPickerRef = useRef<HTMLDivElement>(null);
 
-    const { messages, sendMessage, status, setMessages } = useChat({
+    const { messages, sendMessage, status, setMessages, stop } = useChat({
         transport: new DefaultChatTransport({
             api: '/api/chat/ephemeral',
             prepareSendMessagesRequest({ messages }) {
@@ -328,6 +423,17 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                     ) {
                         const executed = executeEditorCommand(part.output);
                         if (executed) {
+                            // For read commands, update the output with the actual data
+                            if (part.output.command === 'readSlide' || part.output.command === 'readDeck') {
+                                part.output = executed;
+                            } else {
+                                // For write commands, trigger a save to persist the state
+                                if (window.grapesjsAITools?.getEditor) {
+                                    const editor = window.grapesjsAITools.getEditor();
+                                    editor?.store();
+                                }
+                            }
+
                             setExecutedCommandIds(prev => {
                                 const next = new Set(prev);
                                 next.add(toolCallId);
@@ -345,6 +451,15 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
 
         if (!input.trim() && (!files || files.length === 0)) return;
 
+        // At the start of a new conversation, save the current editor state
+        // to ensure the AI has the latest version of the presentation.
+        if (messages.length === 0) {
+            if (window.grapesjsAITools?.getEditor) {
+                const editor = window.grapesjsAITools.getEditor();
+                editor?.store();
+            }
+        }
+
         const fileParts = files && files.length > 0 ? await convertFilesToDataURLs(files) : [];
 
         sendMessage({
@@ -355,6 +470,17 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
         setInput('');
         setFiles(undefined);
 
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const handleNewChat = () => {
+        stop();
+        setMessages([]);
+        setExecutedCommandIds(new Set());
+        setInput('');
+        setFiles(undefined);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -420,9 +546,19 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <div className="flex items-center gap-2">
                         <Zap className="size-5 text-primary" />
-                        <h2 className="text-lg font-semibold">AI Chat</h2>
+                        <h2 className="text-lg font-semibold">Chat</h2>
                     </div>
                     <div className="flex items-center gap-1">
+                        {/* New Chat Button */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleNewChat}
+                            disabled={isLoading}
+                            title="Start New Chat"
+                        >
+                            <RefreshCcw className="size-4" />
+                        </Button>
                         {/* Model Picker */}
                         <div className="relative" ref={modelPickerRef}>
                             <Button
@@ -579,12 +715,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                                         );
                                     }
                                     // Handle tool calls
-                                    if (part.type === 'tool-readDeck' || part.type === 'tool-readSlide' ||
-                                        part.type === 'tool-createSlide' || part.type === 'tool-replaceSlide') {
-                                        return renderToolCall(part, message.id, index, executedCommandIds);
-                                    }
-                                    // Handle dynamic tools
-                                    if (part.type === 'dynamic-tool') {
+                                    if (part.type?.startsWith('tool-') || part.type === 'dynamic-tool') {
                                         return renderToolCall(part, message.id, index, executedCommandIds);
                                     }
                                     return null;
@@ -656,13 +787,21 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                                     <Paperclip className="size-4" />
                                 </Button>
                             </div>
-                            <Button type="submit" size="icon" disabled={isLoading || (!input.trim() && (!files || files.length === 0))}>
-                                {isLoading ? (
-                                    <Loader2 className="size-4 animate-spin" />
-                                ) : (
+                            {isLoading ? (
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="destructive"
+                                    onClick={() => stop()}
+                                    title="Stop AI response"
+                                >
+                                    <Square className="size-4 fill-current" />
+                                </Button>
+                            ) : (
+                                <Button type="submit" size="icon" disabled={!input.trim() && (!files || files.length === 0)}>
                                     <Send className="size-4" />
-                                )}
-                            </Button>
+                                </Button>
+                            )}
                         </div>
                     </form>
 

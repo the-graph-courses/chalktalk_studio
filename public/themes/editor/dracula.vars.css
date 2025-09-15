@@ -1,7 +1,7 @@
 .reveal {
   --r-background-color: #282A36;
   --r-main-font: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
-  --r-main-font-size: 40px;
+  --r-main-font-size: 30px;
   --r-main-color: #F8F8F2;
   --r-block-margin: 20px;
   --r-heading-margin: 0 0 20px 0;
@@ -23,7 +23,6 @@
   --r-link-color-hover: #8BE9FD;
   --r-selection-background-color: #44475A;
   --r-selection-color: #F8F8F2;
-  --r-overlay-element-bg-color: 240,240,240;
-  --r-overlay-element-fg-color: 0,0,0;
+  --r-overlay-element-bg-color: 240, 240, 240;
+  --r-overlay-element-fg-color: 0, 0, 0;
 }
-

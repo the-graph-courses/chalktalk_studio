@@ -53,59 +53,43 @@ export async function executeSlideToolServer(
                 throw new Error(`Slide ${slideIndex} not found`);
             }
 
-            // Handle different project structures
+            // Return the raw component data for now
+            // Ideally this would be HTML/CSS but that requires client-side extraction
             let content = '';
             if (slide.component) {
-                // Simple structure (our test projects)
                 content = slide.component;
             } else if (slide.frames?.[0]?.component) {
-                // Complex GrapesJS structure
+                // For complex structures, try to extract readable content
                 const frame = slide.frames[0];
                 const component = frame.component;
-
-                // Try to extract meaningful content
-                if (component.components?.[0]?.content) {
-                    content = component.components[0].content;
-                } else {
-                    // Fallback: serialize the entire component
-                    content = JSON.stringify(component, null, 2);
-                }
+                content = JSON.stringify(component, null, 2);
             }
 
             return {
                 success: true,
                 slideIndex,
-                slideName: slide.name,
+                slideName: slide.name || `Slide ${slideIndex + 1}`,
                 slideContent: content,
+                note: 'This is raw component data. For proper HTML/CSS, the editor must be open.'
             };
         }
 
         case 'read_deck': {
             const { includeNames } = parameters;
             const slides = projectData.pages?.map((page: any, index: number) => {
-                // Handle different project structures
                 let content = '';
                 if (page.component) {
-                    // Simple structure (our test projects)
                     content = page.component;
                 } else if (page.frames?.[0]?.component) {
-                    // Complex GrapesJS structure
                     const frame = page.frames[0];
                     const component = frame.component;
-
-                    // Try to extract meaningful content
-                    if (component.components?.[0]?.content) {
-                        content = component.components[0].content;
-                    } else {
-                        // Fallback: serialize the entire component
-                        content = JSON.stringify(component, null, 2);
-                    }
+                    content = JSON.stringify(component, null, 2);
                 }
 
                 return {
                     index,
-                    name: includeNames ? page.name : undefined,
-                    content: content,
+                    name: includeNames ? (page.name || `Slide ${index + 1}`) : undefined,
+                    content: content
                 };
             }) || [];
 
@@ -113,6 +97,7 @@ export async function executeSlideToolServer(
                 success: true,
                 totalSlides: slides.length,
                 slides,
+                note: 'This is raw component data. For proper HTML/CSS, the editor must be open.'
             };
         }
 
@@ -202,6 +187,23 @@ export async function executeSlideToolServer(
                     slideIndex,
                     newContent,
                     newName,
+                },
+            };
+        }
+
+        case 'delete_slide': {
+            const { slideIndex } = parameters;
+
+            // Check if slide exists
+            if (!projectData.pages?.[slideIndex]) {
+                throw new Error(`Slide ${slideIndex} not found`);
+            }
+
+            return {
+                success: true,
+                command: 'deleteSlide',
+                data: {
+                    slideIndex,
                 },
             };
         }

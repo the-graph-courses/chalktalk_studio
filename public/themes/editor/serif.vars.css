@@ -1,7 +1,7 @@
 .reveal {
   --r-background-color: #F0F1EB;
   --r-main-font: 'Palatino Linotype', 'Book Antiqua', Palatino, FreeSerif, serif;
-  --r-main-font-size: 40px;
+  --r-main-font-size: 30px;
   --r-main-color: #000000;
   --r-block-margin: 20px;
   --r-heading-margin: 0 0 20px 0;
@@ -23,7 +23,6 @@
   --r-link-color-hover: #6a6053;
   --r-selection-background-color: #26351C;
   --r-selection-color: #ffffff;
-  --r-overlay-element-bg-color: 0,0,0;
-  --r-overlay-element-fg-color: 240,240,240;
+  --r-overlay-element-bg-color: 0, 0, 0;
+  --r-overlay-element-fg-color: 240, 240, 240;
 }
-
