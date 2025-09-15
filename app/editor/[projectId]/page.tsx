@@ -6,9 +6,9 @@ import '@/styles/grapesjs-overrides.css'
 import { canvasAbsoluteMode, canvasFullSize, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
 import grapesRevealTraits from '@/lib/grapes-reveal-traits'
 import marqueeSelect from '@/lib/marquee-select'
-import { useMemo, use, useRef, useEffect } from 'react'
+import { useMemo, use, useRef, useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, useQuery, useConvex } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useUserDetail } from '@/app/provider'
 import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats'
@@ -37,10 +37,13 @@ export default function EditorPage({ params }: PageProps) {
 
     const saveDeck = useMutation(api.slideDeck.SaveDeck)
     const { userDetail } = useUserDetail()
-    const deck = useQuery(
-        api.slideDeck.GetDeck,
+    const deckMeta = useQuery(
+        api.slideDeck.GetDeckMeta,
         userDetail ? { projectId, uid: userDetail._id } : 'skip'
     )
+    const convex = useConvex()
+    const [initialProject, setInitialProject] = useState<any>(null);
+
 
     const editorRef = useRef<any>(null)
     // Controls when we apply template-mapped styles on page add
@@ -243,45 +246,65 @@ export default function EditorPage({ params }: PageProps) {
         }
     }, [])
 
-    if (!userDetail) return <div>Loading user...</div>
-    if (deck === undefined) return <div>Loading deck...</div>
+    useEffect(() => {
+        if (userDetail && !initialProject) {
+            convex.query(api.slideDeck.GetDeck, { projectId, uid: userDetail._id }).then(deck => {
+                let project = deck?.project || {
+                    pages: [
+                        {
+                            name: 'Presentation',
+                            component: getSlideContainer(``)
+                        },
+                    ],
+                }
 
-    console.log('Deck loaded:', {
-        projectId,
-        deckExists: !!deck,
-        projectType: typeof deck?.project,
-        hasPages: !!(deck?.project?.pages || (typeof deck?.project === 'string' && deck.project.includes('pages')))
-    })
-
-    // Handle case where project might still be a string
-    let initialProject = deck?.project || {
-        pages: [
-            {
-                name: 'Presentation',
-                component: getSlideContainer(``)
-            },
-        ],
-    }
-
-    // If project is still a string, parse it
-    if (typeof initialProject === 'string') {
-        console.log('Project is string, parsing...')
-        try {
-            initialProject = JSON.parse(initialProject)
-            console.log('Parsed project successfully, pages:', initialProject.pages?.length)
-        } catch (error) {
-            console.error('Failed to parse project in editor:', error)
-            return <div>Error: Invalid project format</div>
+                if (typeof project === 'string') {
+                    try {
+                        project = JSON.parse(project)
+                    } catch (error) {
+                        console.error('Failed to parse project in editor:', error)
+                        // Maybe set an error state here
+                        project = { pages: [] };
+                    }
+                }
+                setInitialProject(project);
+            })
         }
-    }
+    }, [userDetail, projectId, convex, initialProject]);
+
+    // Add flush-on-leave save logic
+    useEffect(() => {
+        const handleSave = () => {
+            if (editorRef.current) {
+                editorRef.current.store();
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                handleSave();
+            }
+        };
+
+        window.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('pagehide', handleSave);
+
+        return () => {
+            window.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('pagehide', handleSave);
+        };
+    }, []);
+
+    if (!userDetail) return <div>Loading user...</div>
+    if (initialProject === null) return <div>Loading deck...</div>
 
 
     return (
         <div className="h-full w-full flex flex-col min-h-0">
             <EditorHeader
                 projectId={projectId}
-                deckId={deck?._id}
-                initialTitle={deck?.title}
+                deckId={deckMeta?._id}
+                initialTitle={deckMeta?.title}
                 userDetailId={userDetail._id}
             />
             <div className="flex-1 min-h-0">
@@ -308,7 +331,7 @@ export default function EditorPage({ params }: PageProps) {
                                     const key = `selectedTemplateId:${projectId}`
                                     const tid = localStorage.getItem(key) || localStorage.getItem('selectedTemplateId') || ''
                                     custom = getContainerStylesForTemplate(tid)
-                                } catch {}
+                                } catch { }
                                 wrapper.components(
                                     getSlideContainer(
                                         currentContent,
@@ -322,14 +345,14 @@ export default function EditorPage({ params }: PageProps) {
                         });
 
                         // If this is a new project (deck is null), open the template browser.
-                        if (!deck) {
+                        if (!deckMeta) {
                             // New project: clear any previous template id and hold off applying styles
                             try {
                                 localStorage.removeItem('selectedTemplateId')
                                 localStorage.removeItem(`selectedTemplateId:${projectId}`)
                                 localStorage.removeItem('selectedThemeId')
                                 localStorage.removeItem(`selectedThemeId:${projectId}`)
-                            } catch {}
+                            } catch { }
                             shouldApplyTemplateStylesRef.current = false
                             editor.runCommand('studio:layoutToggle', {
                                 id: 'template-browser',
@@ -347,7 +370,7 @@ export default function EditorPage({ params }: PageProps) {
                                             const themeId = template?.revealTheme || 'white'
                                             localStorage.setItem('selectedThemeId', themeId)
                                             localStorage.setItem(`selectedThemeId:${projectId}`, themeId)
-                                        } catch {}
+                                        } catch { }
                                         shouldApplyTemplateStylesRef.current = true
                                         // Load the selected template to the current project
                                         loadTemplate(template);
@@ -442,7 +465,7 @@ export default function EditorPage({ params }: PageProps) {
                                     if (selected) ed.Pages.select(selected)
                                 }
 
-                                try { window.alert?.(`Set TTS + fragments on ${total} elements (${scope}).`) } catch {}
+                                try { window.alert?.(`Set TTS + fragments on ${total} elements (${scope}).`) } catch { }
                             }
                         })
 
@@ -465,7 +488,7 @@ export default function EditorPage({ params }: PageProps) {
                                         } catch {
                                             // Fallback: re-create via HTML if needed
                                             const html = cmp.toHTML?.() || ''
-                                            try { cmp.remove?.() } catch {}
+                                            try { cmp.remove?.() } catch { }
                                             if (html) container.append(html)
                                         }
                                     }
@@ -475,8 +498,8 @@ export default function EditorPage({ params }: PageProps) {
 
                         // On initial ready (existing deck), ensure all pages carry inline theme
                         try {
-                            applyThemeToAllPages(editor, getSelectedThemeId()).catch(() => {})
-                        } catch {}
+                            applyThemeToAllPages(editor, getSelectedThemeId()).catch(() => { })
+                        } catch { }
 
                         // Migration: ensure all slide containers have class="reveal" for variable scoping
                         try {
@@ -494,7 +517,7 @@ export default function EditorPage({ params }: PageProps) {
                                     }
                                 }
                             })
-                        } catch {}
+                        } catch { }
                     }}
                     options={{
                         licenseKey,
@@ -554,8 +577,8 @@ export default function EditorPage({ params }: PageProps) {
                             onLoad: async () => {
                                 return { project: initialProject };
                             },
-                            autosaveChanges: 100,
-                            autosaveIntervalMs: 10000
+                            autosaveChanges: 150,
+                            autosaveIntervalMs: 20000
                         }
                     }}
                 />

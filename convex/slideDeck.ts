@@ -15,6 +15,10 @@ export const SaveDeck = mutation({
             .first();
 
         if (existing) {
+            // Server-side check to prevent saving if the project is unchanged
+            if (existing.project === args.project && existing.title === args.title) {
+                return existing._id;
+            }
             await ctx.db.patch(existing._id, {
                 title: args.title,
                 project: args.project,
@@ -31,6 +35,28 @@ export const SaveDeck = mutation({
             lastModified: Date.now(),
         });
         return result;
+    }
+})
+
+export const GetDeckMeta = query({
+    args: {
+        projectId: v.string(),
+        uid: v.id('UserTable'),
+    },
+    handler: async (ctx, args) => {
+        const deck = await ctx.db
+            .query('SlideDeckTable')
+            .filter(q => q.and(
+                q.eq(q.field('projectId'), args.projectId),
+                q.eq(q.field('uid'), args.uid),
+            ))
+            .first();
+
+        if (!deck) return null;
+
+        // Return only metadata, excluding the large 'project' field
+        const { project, ...meta } = deck;
+        return meta;
     }
 })
 
@@ -81,7 +107,14 @@ export const ListDecksByUser = query({
             .query('SlideDeckTable')
             .filter(q => q.eq(q.field('uid'), args.uid))
             .collect();
-        return decks.sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0));
+        // Return only metadata, excluding the large 'project' field
+        return decks.map(d => ({
+            _id: d._id,
+            projectId: d.projectId,
+            title: d.title,
+            lastModified: d.lastModified,
+            _creationTime: d._creationTime,
+        })).sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0));
     }
 })
 
