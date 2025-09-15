@@ -8,7 +8,7 @@ import EphemeralChatPanel from "@/app/_components/EphemeralChatPanel";
 import SlideThumbnailPanel from "./SlideThumbnailPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 
 const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSidebar: false });
 
@@ -39,7 +39,11 @@ export default function LayoutWrapper({
 }) {
     const { isSignedIn, isLoaded } = useUser();
     const params = useParams();
+    const pathname = usePathname();
     const projectId = params.projectId;
+
+    // Check if we're in present mode
+    const isPresentMode = pathname?.startsWith('/present/');
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
@@ -52,6 +56,22 @@ export default function LayoutWrapper({
         setIsAIChatOpen(!isAIChatOpen);
     };
 
+    // If in present mode, render without any layout wrapper
+    if (isPresentMode) {
+        return (
+            <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
+                <PanelControlsContext.Provider value={{
+                    isSignedIn: isSignedIn || false,
+                    isAIChatOpen: false,
+                    isTestPanelOpen: false,
+                    toggleAIChat: () => { },
+                    toggleTestPanel: () => { },
+                }}>
+                    {children}
+                </PanelControlsContext.Provider>
+            </SidebarAvailableContext.Provider>
+        );
+    }
 
     if (!isLoaded) {
         return (

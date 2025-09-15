@@ -19,6 +19,8 @@ export default function PresentPage({ params }: PageProps) {
   const [reveal, setReveal] = useState<Reveal.Api | null>(null)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [exportTheme, setExportTheme] = useState('white')
+  const [isControlsVisible, setIsControlsVisible] = useState(true)
+  const [isControlsHovered, setIsControlsHovered] = useState(false)
 
   const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
 
@@ -69,7 +71,30 @@ export default function PresentPage({ params }: PageProps) {
     }
   }, [slides.length])
 
+  // Auto-hide controls after 3 seconds of no interaction
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isControlsVisible && !isControlsHovered && !showExportMenu) {
+      timer = setTimeout(() => setIsControlsVisible(false), 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [isControlsVisible, isControlsHovered, showExportMenu]);
 
+  // Keyboard shortcuts for control toggle
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'c' && e.ctrlKey) {
+        e.preventDefault();
+        setIsControlsVisible(!isControlsVisible);
+      }
+      if (e.key === 'Escape') {
+        setIsControlsVisible(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isControlsVisible]);
 
   // Handle export functionality
   const handleExport = async () => {
@@ -175,59 +200,95 @@ export default function PresentPage({ params }: PageProps) {
   }
 
   return (
-    <div className="w-screen h-screen bg-white">
-      {/* Top bar */}
-      <div className="fixed top-3 left-3 z-20 flex items-center gap-2">
-        <a href={`/editor/${projectId}`} className="px-3 py-1 rounded bg-white/90 text-black text-sm shadow">Back to Editor</a>
+    <div className="w-screen h-screen bg-white relative">
+      {/* Collapsible Top Bar */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-sm text-white transition-transform duration-300 ${isControlsVisible ? 'translate-y-0' : '-translate-y-full'
+          }`}
+        onMouseEnter={() => setIsControlsHovered(true)}
+        onMouseLeave={() => setIsControlsHovered(false)}
+      >
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex items-center gap-2">
+            <a
+              href={`/editor/${projectId}`}
+              className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-white text-sm transition-colors flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Editor
+            </a>
 
-        {/* Export button */}
-        <div className="relative">
-          <button
-            className="px-3 py-1 rounded bg-blue-500 text-white text-sm shadow hover:bg-blue-600 flex items-center gap-1"
-            onClick={() => setShowExportMenu(!showExportMenu)}
-          >
-            Export HTML
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-            </svg>
-          </button>
-
-          {showExportMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white rounded shadow-lg border border-gray-200 min-w-[200px] z-30">
+            <div className="relative">
               <button
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
-                onClick={() => handleExport()}
+                className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white text-sm flex items-center gap-1 transition-colors"
+                onClick={() => setShowExportMenu(!showExportMenu)}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                Export HTML
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
-                Download Presentation
               </button>
-              <div className="border-t border-gray-200 px-4 py-2">
-                <div className="text-xs text-gray-600 mb-1">Theme:</div>
-                <select
-                  value={exportTheme}
-                  onChange={(e) => setExportTheme(e.target.value)}
-                  className="w-full text-xs border border-gray-300 rounded px-2 py-1"
-                >
-                  <option value="white">White</option>
-                  <option value="black">Black</option>
-                  <option value="league">League</option>
-                  <option value="beige">Beige</option>
-                  <option value="sky">Sky</option>
-                  <option value="night">Night</option>
-                  <option value="serif">Serif</option>
-                  <option value="simple">Simple</option>
-                  <option value="solarized">Solarized</option>
-                  <option value="blood">Blood</option>
-                  <option value="moon">Moon</option>
-                  <option value="dracula">Dracula</option>
-                </select>
-              </div>
+
+              {showExportMenu && (
+                <div className="absolute top-full left-0 mt-1 bg-white rounded shadow-lg border border-gray-200 min-w-[200px] z-30">
+                  <button
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-black"
+                    onClick={() => handleExport()}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    Download Presentation
+                  </button>
+                  <div className="border-t border-gray-200 px-4 py-2">
+                    <div className="text-xs text-gray-600 mb-1">Theme:</div>
+                    <select
+                      value={exportTheme}
+                      onChange={(e) => setExportTheme(e.target.value)}
+                      className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                    >
+                      <option value="white">White</option>
+                      <option value="black">Black</option>
+                      <option value="league">League</option>
+                      <option value="beige">Beige</option>
+                      <option value="sky">Sky</option>
+                      <option value="night">Night</option>
+                      <option value="serif">Serif</option>
+                      <option value="simple">Simple</option>
+                      <option value="solarized">Solarized</option>
+                      <option value="blood">Blood</option>
+                      <option value="moon">Moon</option>
+                      <option value="dracula">Dracula</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-white/80">
+              {deckTitle}
+            </div>
+            <div className="text-xs text-white/60">
+              Ctrl+C to toggle • ESC to show
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Show controls trigger - appears when controls are hidden */}
+      {!isControlsVisible && (
+        <button
+          className="fixed top-2 left-2 z-20 w-8 h-8 rounded bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors text-lg"
+          onClick={() => setIsControlsVisible(true)}
+          title="Show controls (Ctrl+C or ESC)"
+        >
+          ⋮
+        </button>
+      )}
 
       <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
         <div className="slides">
