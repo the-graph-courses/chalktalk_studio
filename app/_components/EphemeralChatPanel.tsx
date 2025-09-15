@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { Button } from '@/components/ui/button';
@@ -359,19 +359,6 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const { messages, sendMessage, status, setMessages, stop } = useChat({
         transport: new DefaultChatTransport({
             api: '/api/chat/ephemeral',
-            prepareSendMessagesRequest({ messages }) {
-                const projectId = getCurrentProjectId();
-                return {
-                    body: {
-                        messages,
-                        projectId,
-                        model: selectedModel,
-                        preferences: {
-                            preferAbsolutePositioning,
-                        },
-                    },
-                };
-            },
         }),
     });
 
@@ -465,6 +452,14 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
         sendMessage({
             role: 'user',
             parts: [{ type: 'text', text: input }, ...fileParts],
+        }, {
+            body: {
+                projectId: getCurrentProjectId(),
+                model: selectedModel,
+                preferences: {
+                    preferAbsolutePositioning,
+                },
+            },
         });
 
         setInput('');

@@ -22,6 +22,8 @@ export default function PresentPage({ params }: PageProps) {
 
   const [reveal, setReveal] = useState<Reveal.Api | null>(null)
   const [needsUserAction, setNeedsUserAction] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [exportTheme, setExportTheme] = useState('white')
 
   const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
   // No global CSS merge; inject styles per slide inside each section for scoping
@@ -300,6 +302,64 @@ export default function PresentPage({ params }: PageProps) {
     } catch { }
   }, [reveal, playbackRate, volume])
 
+  // Handle export functionality
+  const handleExport = async () => {
+    try {
+      setShowExportMenu(false)
+
+      // Get current theme from localStorage or use selected export theme
+      const currentTheme = (() => {
+        try {
+          return localStorage.getItem(`selectedThemeId:${projectId}`) ||
+            localStorage.getItem('selectedThemeId') ||
+            exportTheme
+        } catch {
+          return exportTheme
+        }
+      })()
+
+      const params = new URLSearchParams({
+        projectId,
+        cdn: 'true',
+        theme: currentTheme
+      })
+
+      const response = await fetch(`/api/export/reveal?${params}`)
+
+      if (!response.ok) {
+        throw new Error('Export failed')
+      }
+
+      // Create download
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${deckTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_presentation.html`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('Export failed. Please try again.')
+    }
+  }
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (showExportMenu && !target.closest('.relative')) {
+        setShowExportMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showExportMenu])
+
   if (deck === undefined) return <div>Loading...</div>
   if (!deck) return <div>Not found</div>
 
@@ -350,6 +410,54 @@ export default function PresentPage({ params }: PageProps) {
       {/* Top bar */}
       <div className="fixed top-3 left-3 z-20 flex items-center gap-2">
         <a href={`/editor/${projectId}`} className="px-3 py-1 rounded bg-white/90 text-black text-sm shadow">Back to Editor</a>
+
+        {/* Export button */}
+        <div className="relative">
+          <button
+            className="px-3 py-1 rounded bg-blue-500 text-white text-sm shadow hover:bg-blue-600 flex items-center gap-1"
+            onClick={() => setShowExportMenu(!showExportMenu)}
+          >
+            Export HTML
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+            </svg>
+          </button>
+
+          {showExportMenu && (
+            <div className="absolute top-full left-0 mt-1 bg-white rounded shadow-lg border border-gray-200 min-w-[200px] z-30">
+              <button
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                onClick={() => handleExport()}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                Download Presentation
+              </button>
+              <div className="border-t border-gray-200 px-4 py-2">
+                <div className="text-xs text-gray-600 mb-1">Theme:</div>
+                <select
+                  value={exportTheme}
+                  onChange={(e) => setExportTheme(e.target.value)}
+                  className="w-full text-xs border border-gray-300 rounded px-2 py-1"
+                >
+                  <option value="white">White</option>
+                  <option value="black">Black</option>
+                  <option value="league">League</option>
+                  <option value="beige">Beige</option>
+                  <option value="sky">Sky</option>
+                  <option value="night">Night</option>
+                  <option value="serif">Serif</option>
+                  <option value="simple">Simple</option>
+                  <option value="solarized">Solarized</option>
+                  <option value="blood">Blood</option>
+                  <option value="moon">Moon</option>
+                  <option value="dracula">Dracula</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
         {autoplay && (
           <div className="px-3 py-1 rounded bg-white/70 text-black text-sm shadow">
             {loadingIndex !== null ? `Generating audio for slide ${loadingIndex + 1}…` : 'Auto‑TTS enabled'}
