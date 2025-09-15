@@ -369,10 +369,6 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                             <Download className="mr-2 h-4 w-4" />
                             Export single page as HTML
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`/present/${projectId}`, '_blank')}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Present & Export
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleShare}>
                             <Share2 className="mr-2 h-4 w-4" />
                             Share
