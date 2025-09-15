@@ -45,7 +45,8 @@ export default function PresentPage({ params }: PageProps) {
       const themeId = ((): string => {
         try { return localStorage.getItem(`selectedThemeId:${projectId}`) || localStorage.getItem('selectedThemeId') || 'white' } catch { return 'white' }
       })()
-      addLink(`/present/theme/${themeId}.css`, 'reveal-theme')
+      // Load Reveal theme from public/themes
+      addLink(`/themes/${themeId}.css`, 'reveal-theme')
     } catch {}
     const deckEl = document.querySelector('.reveal') as HTMLElement | null
     if (!deckEl) return
@@ -302,6 +303,48 @@ export default function PresentPage({ params }: PageProps) {
   if (deck === undefined) return <div>Loading...</div>
   if (!deck) return <div>Not found</div>
 
+  // Basic CSS scoping: prefixes selectors so per-slide CSS only affects this slide
+  const scopeCss = (cssText: string, scopeSelector: string): string => {
+    try {
+      // Handle @media blocks by scoping their inner rules
+      const scoped: string = cssText.replace(/@media[^\{]+\{([\s\S]*?)\}/g, (m: string, inner: string) => {
+        const innerScoped: string = scopeCss(inner, scopeSelector)
+        return m.replace(inner, innerScoped)
+      })
+      // Scope simple rules
+      return scoped
+        .split('}')
+        .map((chunk: string) => chunk.trim())
+        .filter(Boolean)
+        .map((rule: string) => {
+          const parts: string[] = rule.split('{')
+          if (parts.length < 2) return rule + '}'
+          const sel: string = parts[0].trim()
+          const body: string = parts.slice(1).join('{') // in case of nested braces in values
+          // Skip at-rules other than @media already handled
+          if (/^@/i.test(sel)) return `${sel}{${body}}`
+          const scopedSel: string = sel
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+            .map((s: string) => {
+              // Replace bare html/body with scope
+              if (/^html\b/i.test(s) || /^body\b/i.test(s)) {
+                // remove leading html/body and following space
+                s = s.replace(/^html\b\s*/i, '').replace(/^body\b\s*/i, '')
+                return `${scopeSelector}${s ? ' ' + s : ''}`
+              }
+              return `${scopeSelector} ${s}`
+            })
+            .join(', ')
+          return `${scopedSel}{${body}}`
+        })
+        .join('\n')
+    } catch {
+      return cssText
+    }
+  }
+
   return (
     <div className="w-screen h-screen bg-white">
       {/* Top bar */}
@@ -426,8 +469,9 @@ export default function PresentPage({ params }: PageProps) {
       <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
         <div className="slides">
           {slides.map((s, i) => (
-            <section key={i}>
+            <section key={i} data-slide-scope={`s${i}`}>
               <div
+                className="ct-slide"
                 style={s.containerStyle ? (Object.fromEntries(s.containerStyle.split(';').filter(Boolean).map(p => p.split(':')).map(([k, v]) => [k.trim() as string, (v || '').trim()])) as React.CSSProperties) : undefined}
                 dangerouslySetInnerHTML={{ __html: s.html }}
               />
@@ -436,7 +480,10 @@ export default function PresentPage({ params }: PageProps) {
                 <audio key={j} data-tts-audio data-order={j} preload="auto" src={url} />
               ))}
               {s.css?.length ? (
-                <style dangerouslySetInnerHTML={{ __html: s.css.join('\n') }} />
+                <style
+                  // Scope per-slide CSS to this slide only
+                  dangerouslySetInnerHTML={{ __html: scopeCss(s.css.join('\n'), `[data-slide-scope=\"s${i}\"] .ct-slide`) }}
+                />
               ) : null}
             </section>
           ))}

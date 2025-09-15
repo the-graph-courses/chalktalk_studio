@@ -16,10 +16,8 @@ const extractStyleBlocks = (html: string): { cleaned: string; styles: string[] }
   let cleaned = html
   // Extract <style>...</style> blocks; skip our editor-injected theme blocks
   cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (m) => {
-    if (/data-ct-page-theme/i.test(m)) {
-      // Drop editor theme blocks in Present; theme comes from linked CSS
-      return ''
-    }
+    // Preserve editor theme/content CSS so slides keep their styles;
+    // we will scope it on injection inside Present.
     const cssMatch = m.match(/<style[^>]*>([\s\S]*?)<\/style>/i)
     const css = cssMatch ? cssMatch[1] : ''
     styles.push(css)
@@ -29,19 +27,8 @@ const extractStyleBlocks = (html: string): { cleaned: string; styles: string[] }
 }
 
 const filterGlobalStyles = (cssList: string[]): string[] => {
-  // Remove rules that target body/html to avoid leaking into Reveal shell
-  return cssList
-    .map((css) =>
-      css
-        // crude split, acceptable for simple blocks the editor emits
-        .split('}')
-        .map((rule) => rule.trim())
-        .filter((rule) => rule.length > 0)
-        .filter((rule) => !/^\s*(body|html)\s*[,\{]/i.test(rule))
-        .map((rule) => rule + '}')
-        .join('\n')
-    )
-    .filter((s) => s.trim().length > 0)
+  // Keep CSS as-is; scoping is applied at injection time in Present
+  return cssList.filter((s) => s.trim().length > 0)
 }
 
 const extractSlideContainer = (html: string): { inner: string; style?: string } => {
@@ -131,15 +118,20 @@ function componentJsonToHtml(node: any): string {
 export function extractRevealSlides(project: ProjectLike): RevealSlide[] {
   const pages = project?.pages || []
   return pages.map((p) => {
-    // Prefer simple structure
-    let raw = p.component as string | undefined
-    if (!raw && p.frames?.[0]?.component) {
-      // Convert component JSON tree to HTML
-      const c = p.frames[0].component
-      try {
-        raw = componentJsonToHtml(c)
-      } catch {
-        raw = ''
+    // Prefer page HTML containing our slide container
+    let raw = typeof p.component === 'string' ? p.component : undefined
+    // If component string doesn't look like a wrapped slide, try frames[0]
+    if ((!raw || !/data-slide-container/i.test(raw)) && p.frames?.[0]?.component) {
+      const frameComp = p.frames[0].component
+      if (typeof frameComp === 'string') {
+        raw = frameComp
+      } else {
+        // Convert component JSON tree to HTML
+        try {
+          raw = componentJsonToHtml(frameComp)
+        } catch {
+          raw = ''
+        }
       }
     }
     const { cleaned, styles } = extractStyleBlocks(raw || '')
