@@ -4,6 +4,7 @@ import Header from './_components/Header';
 import { api } from '@/convex/_generated/api';
 import { useMutation } from 'convex/react';
 import { useUser } from '@clerk/nextjs';
+import { ThemeProvider } from 'next-themes';
 
 // Move UserDetailContext here instead of separate file
 const UserDetailContext = createContext<any>(null);
@@ -39,9 +40,17 @@ function Provider({
     }
 
     return (
-        <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
-            {children}
-        </UserDetailContext.Provider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            storageKey="chalktalk-theme"
+            disableTransitionOnChange
+        >
+            <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
+                {children}
+            </UserDetailContext.Provider>
+        </ThemeProvider>
     )
 }
 
