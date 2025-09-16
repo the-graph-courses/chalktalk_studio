@@ -1,7 +1,17 @@
-/* Ensure proper height inheritance for GrapesJS canvas */
+/* Isolate GrapesJS from theme by resetting to light mode values */
+.gjs-editor {
+  /* Force light mode colors for the editor */
+  color-scheme: light !important;
+}
 
+/* Reset the frame wrapper to standard values */
 .gjs-frame-wrapper {
   min-height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+/* Prevent theme styles from affecting the iframe body */
+.gjs-frame-wrapper iframe {
+  color-scheme: light !important;
 }
