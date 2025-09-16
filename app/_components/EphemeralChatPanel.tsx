@@ -762,19 +762,19 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
 
                         {/* Input Row */}
                         <div className="flex gap-2">
-                            <div className="flex-1 relative">
+                            <div className="flex-1 relative flex items-center">
                                 <Input
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     placeholder="Ask me anything about your presentation..."
-                                    className="pr-12"
+                                    className="pr-10 h-10"
                                     disabled={isLoading}
                                 />
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    size="icon"
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 size-7"
+                                    size="sm"
+                                    className="absolute right-1 h-8 w-8 p-0 hover:bg-transparent"
                                     onClick={handleFileSelect}
                                     disabled={isLoading}
                                     title="Upload image or PDF"

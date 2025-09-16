@@ -81,7 +81,7 @@ HTML CONTENT REQUIREMENTS:
   - When providing custom styles, always set the main container to width: 1280px; height: 720px; margin: 0;
 - Always add class="fragment" to all elements. This is going to be needed for Reveal.js animations
 - IMPORTANT: Add data-tts attributes to each fragment with natural presentation script text
-- For code blocks: Use <pre><code> structure with data-tts and class="fragment" on the <code> tag
+- For code blocks: ALWAYS use <code> tags wrapped in <pre> tags (NOT bare <pre> tags), and apply the fragment class to the <pre> element
 
 TTS SCRIPT REQUIREMENTS:
 - Each fragment with class="fragment" must include a data-tts attribute
@@ -110,9 +110,9 @@ EXAMPLE HTML CONTENT (DEFAULT - NO CUSTOM STYLES):
 </ul>
 <p class="fragment" data-tts="Our expected return on investment is two point five million dollars by the end of quarter four, two thousand twenty-four.">Expected ROI of $2.5M by end of Q4 2024.</p>
 
-EXAMPLE HTML CONTENT (WITH CODE):
+EXAMPLE HTML CONTENT (WITH CODE - CORRECT FORMAT):
 <h2 class="fragment" data-tts="Here's a simple React state hook example.">React State Hook</h2>
-<pre><code class="fragment" data-tts="This code shows the basic useState hook syntax for managing component state.">
+<pre class="fragment" data-tts="This code shows the basic useState hook syntax for managing component state."><code>
 const [count, setCount] = useState(0);
 
 const increment = () =&gt; {

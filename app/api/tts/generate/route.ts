@@ -5,7 +5,7 @@ import { extractRevealSlides } from '@/lib/reveal-export'
 import { extractTTSFromSlideHtml } from '@/lib/tts-extract'
 
 const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABSAPIKEY
-const DEFAULT_VOICE = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'
+const DEFAULT_VOICE = process.env.ELEVENLABS_VOICE_ID || 'TX3LPaxmHKxFdv7VOQHJ'
 
 async function ttsBuffer(text: string, voiceId: string) {
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`
@@ -16,7 +16,7 @@ async function ttsBuffer(text: string, voiceId: string) {
       'Content-Type': 'application/json',
       'Accept': 'audio/mpeg',
     },
-    body: JSON.stringify({ text, model_id: 'eleven_turbo_v2', optimize_streaming_latency: 0 })
+    body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2', optimize_streaming_latency: 0 })
   })
   if (!res.ok) throw new Error(await res.text().catch(() => 'TTS error'))
   return await res.arrayBuffer()

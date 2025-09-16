@@ -1,5 +1,20 @@
 'use client'
 
+/**
+ * SlideThumbnailPanel Component
+ * 
+ * STATUS: TEMPORARILY DISABLED (2025-09-16)
+ * This component is currently disabled via feature flag in lib/feature-flags.ts
+ * due to thumbnail generation issues that need debugging.
+ * 
+ * To re-enable: Set FEATURES.THUMBNAIL_PANEL = true in lib/feature-flags.ts
+ * 
+ * Known issues to debug:
+ * - Thumbnail creator causing problems (specific issues TBD)
+ * - May need investigation of html-to-image library usage
+ * - Canvas rendering issues in sandboxed iframe
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import * as htmlToImage from 'html-to-image'
 import { Plus, Loader2, AlertCircle, MoreHorizontal } from 'lucide-react'

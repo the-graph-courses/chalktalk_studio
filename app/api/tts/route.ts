@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 
 const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABSAPIKEY
-const DEFAULT_VOICE = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM' // Rachel
+const DEFAULT_VOICE = process.env.ELEVENLABS_VOICE_ID || 'TX3LPaxmHKxFdv7VOQHJ'
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         text,
-        model_id: 'eleven_turbo_v2',
+        model_id: 'eleven_multilingual_v2',
         optimize_streaming_latency: 0,
         voice_settings: { stability: 0.5, similarity_boost: 0.5 },
       }),

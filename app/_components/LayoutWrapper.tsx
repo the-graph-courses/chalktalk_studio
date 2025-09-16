@@ -9,6 +9,7 @@ import SlideThumbnailPanel from "./SlideThumbnailPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
 import { useParams, usePathname } from 'next/navigation';
+import { FEATURES } from '@/lib/feature-flags';
 
 const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSidebar: false });
 
@@ -49,7 +50,7 @@ export default function LayoutWrapper({
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-    const [isThumbnailPanelOpen, setIsThumbnailPanelOpen] = useState(true);
+    const [isThumbnailPanelOpen, setIsThumbnailPanelOpen] = useState<boolean>(FEATURES.THUMBNAIL_PANEL);
 
     const toggleTestPanel = () => {
         setIsTestPanelOpen(prev => !prev);
@@ -62,7 +63,10 @@ export default function LayoutWrapper({
     };
 
     const toggleThumbnailPanel = () => {
-        setIsThumbnailPanelOpen(prev => !prev);
+        // Only allow toggling if the feature is enabled
+        if (FEATURES.THUMBNAIL_PANEL) {
+            setIsThumbnailPanelOpen(prev => !prev);
+        }
     };
 
     // If in present mode, render without any layout wrapper
@@ -75,7 +79,7 @@ export default function LayoutWrapper({
                     isTestPanelOpen: false,
                     toggleAIChat: () => { },
                     toggleTestPanel: () => { },
-                    isThumbnailPanelOpen: true,
+                    isThumbnailPanelOpen: FEATURES.THUMBNAIL_PANEL,
                     toggleThumbnailPanel: () => { },
                 }}>
                     {children}
@@ -175,7 +179,7 @@ export default function LayoutWrapper({
                 isTestPanelOpen,
                 toggleAIChat,
                 toggleTestPanel,
-                isThumbnailPanelOpen: true, // Default value for non-sidebar layout
+                isThumbnailPanelOpen: FEATURES.THUMBNAIL_PANEL, // Controlled by feature flag
                 toggleThumbnailPanel: () => { }, // No-op for non-sidebar layout
             }}>
                 <div className="min-h-screen flex flex-col">
@@ -195,11 +199,14 @@ export default function LayoutWrapper({
                         </div>
                     </div>
 
-                    <div className="flex-shrink-0">
-                        {projectId && (
-                            <SlideThumbnailPanel />
-                        )}
-                    </div>
+                    {/* Thumbnail Panel - TEMPORARILY DISABLED for debugging */}
+                    {FEATURES.THUMBNAIL_PANEL && (
+                        <div className="flex-shrink-0">
+                            {projectId && (
+                                <SlideThumbnailPanel />
+                            )}
+                        </div>
+                    )}
 
                     {projectId && (
                         <>
