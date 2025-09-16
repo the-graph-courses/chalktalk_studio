@@ -36,58 +36,111 @@ export default function PresentVoicePage({ params }: PageProps) {
 
     const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
 
-    // Process slides to inject audio elements and timing
-    const processedSlides = useMemo(() => {
-        if (!slides.length || Object.keys(audioCache).length === 0) return slides
+    // Store processed slides with duration calculations
+    const [processedSlidesState, setProcessedSlidesState] = useState<typeof slides>([])
 
-        return slides.map((slide, slideIndex) => {
-            const slideAudio = audioCache[slideIndex]
-            if (!slideAudio || !Array.isArray(slideAudio)) return slide
-
-            // Parse the HTML to inject audio elements
-            const parser = new DOMParser()
-            const doc = parser.parseFromString(slide.html, 'text/html')
-
-            // Find all elements with data-tts attribute
-            const ttsElements = doc.querySelectorAll('[data-tts]')
-
-            ttsElements.forEach((element, fragmentIndex) => {
-                const audioData = slideAudio[fragmentIndex]
-                if (!audioData) return
-
-                // Wrap element in fragment if not already
-                let fragmentWrapper = element.closest('.fragment')
-                if (!fragmentWrapper) {
-                    fragmentWrapper = doc.createElement('div')
-                    fragmentWrapper.className = 'fragment'
-                    element.parentNode?.insertBefore(fragmentWrapper, element)
-                    fragmentWrapper.appendChild(element)
-                }
-
-                // Use stored duration from server-side calculation
-                const duration = audioData.duration || 1000 // Fallback to 1 second if duration not available
-                fragmentWrapper.setAttribute('data-autoslide', String(duration))
-                fragmentWrapper.setAttribute('data-tts', audioData.ttsText || '')
-                if (fragmentIndex > 0) {
-                    fragmentWrapper.setAttribute('data-fragment-index', String(fragmentIndex))
-                }
-
-                // Add audio element
-                const audio = doc.createElement('audio')
-                audio.setAttribute('data-autoplay', '')
-                const source = doc.createElement('source')
-                source.src = audioData.audioDataUrl
-                source.type = 'audio/mpeg'
-                audio.appendChild(source)
-                fragmentWrapper.appendChild(audio)
+    // Calculate audio duration using HTML5 Audio API
+    const getAudioDuration = (dataUrl: string): Promise<number> => {
+        return new Promise((resolve) => {
+            const audio = new Audio()
+            audio.addEventListener('loadedmetadata', () => {
+                const durationMs = Math.round(audio.duration * 1000)
+                resolve(durationMs || 1000) // Fallback to 1 second if duration is invalid
             })
-
-            // Serialize back to HTML
-            const processedHtml = doc.body.innerHTML
-
-            return { ...slide, html: processedHtml }
+            audio.addEventListener('error', () => {
+                resolve(1000) // Fallback to 1 second on error
+            })
+            audio.src = dataUrl
         })
+    }
+
+    // Process slides to inject audio elements and timing
+    useEffect(() => {
+        if (!slides.length || Object.keys(audioCache).length === 0) {
+            setProcessedSlidesState(slides)
+            return
+        }
+
+        const processSlides = async () => {
+            const processed = await Promise.all(slides.map(async (slide, slideIndex) => {
+                const slideAudio = audioCache[slideIndex]
+                if (!slideAudio || !Array.isArray(slideAudio)) return slide
+
+                // Parse the HTML to inject audio elements
+                const parser = new DOMParser()
+                const doc = parser.parseFromString(slide.html, 'text/html')
+
+                // Add empty fragment at beginning of non-first slides
+                if (slideIndex > 0) {
+                    const emptyFragment = doc.createElement('div')
+                    emptyFragment.className = 'fragment'
+                    emptyFragment.setAttribute('data-autoslide', '10')
+                    doc.body.insertBefore(emptyFragment, doc.body.firstChild)
+                }
+
+                // Find all elements with data-tts attribute
+                const ttsElements = doc.querySelectorAll('[data-tts]')
+
+                // Process each TTS element and calculate durations
+                await Promise.all(Array.from(ttsElements).map(async (element, fragmentIndex) => {
+                    const audioData = slideAudio[fragmentIndex]
+                    if (!audioData) return
+
+                    // Wrap element in fragment if not already
+                    let fragmentWrapper = element.closest('.fragment')
+                    if (!fragmentWrapper) {
+                        fragmentWrapper = doc.createElement('div')
+                        fragmentWrapper.className = 'fragment'
+                        element.parentNode?.insertBefore(fragmentWrapper, element)
+                        fragmentWrapper.appendChild(element)
+                    }
+
+                    // Calculate actual duration using HTML5 Audio API
+                    let duration = 1000 // Default fallback
+                    if (audioData.audioDataUrl) {
+                        try {
+                            duration = await getAudioDuration(audioData.audioDataUrl)
+                        } catch (e) {
+                            console.warn('Failed to get audio duration:', e)
+                            duration = audioData.duration || 1000
+                        }
+                    } else {
+                        duration = audioData.duration || 1000
+                    }
+
+                    fragmentWrapper.setAttribute('data-autoslide', String(duration))
+                    fragmentWrapper.setAttribute('data-tts', audioData.ttsText || '')
+
+                    // Proper fragment indexing - account for empty fragment at start of non-first slides
+                    const adjustedIndex = slideIndex > 0 ? fragmentIndex + 1 : fragmentIndex
+                    if (adjustedIndex > 0) {
+                        fragmentWrapper.setAttribute('data-fragment-index', String(adjustedIndex))
+                    }
+
+                    // Add audio element
+                    const audio = doc.createElement('audio')
+                    audio.setAttribute('data-autoplay', '')
+                    const source = doc.createElement('source')
+                    source.src = audioData.audioDataUrl
+                    source.type = 'audio/mpeg'
+                    audio.appendChild(source)
+                    fragmentWrapper.appendChild(audio)
+                }))
+
+                // Serialize back to HTML
+                const processedHtml = doc.body.innerHTML
+
+                return { ...slide, html: processedHtml }
+            }))
+
+            setProcessedSlidesState(processed)
+        }
+
+        processSlides()
     }, [slides, audioCache])
+
+    // Use the processed slides
+    const processedSlides = processedSlidesState
 
     // Load audio cache from localStorage or server
     useEffect(() => {
@@ -346,10 +399,6 @@ export default function PresentVoicePage({ params }: PageProps) {
                             data-slide-scope={`s${i}`}
                             data-autoslide={i === 0 ? "0" : "100"}
                         >
-                            {/* Add empty fragment at beginning of non-first slides */}
-                            {i > 0 && (
-                                <div className="fragment" data-autoslide="10"></div>
-                            )}
                             <div
                                 className="ct-slide"
                                 style={s.containerStyle ? (() => {
