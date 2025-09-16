@@ -407,7 +407,7 @@ export default function SlideThumbnailPanel({ }: SlideThumbnailPanelProps) {
     };
 
     return (
-        <div className="h-32 bg-background border-t border-border z-40 shadow-lg">
+        <div className="h-32 bg-background dark:bg-gray-600 border-t border-border z-40 shadow-lg">
             <div className="flex h-full px-4 py-2 overflow-x-auto overflow-y-hidden">
                 <div className="flex gap-3 items-center min-w-0">
                     <div className="flex-shrink-0 flex items-center pr-4 border-r border-border">

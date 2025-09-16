@@ -9,6 +9,7 @@ export const SaveTTSBatch = mutation({
       elementIndex: v.number(),
       ttsText: v.string(),
       audioDataUrl: v.string(),
+      duration: v.number(),
     }))
   },
   handler: async (ctx, { projectId, items }) => {
@@ -24,6 +25,7 @@ export const SaveTTSBatch = mutation({
         elementIndex: it.elementIndex,
         ttsText: it.ttsText,
         audioDataUrl: it.audioDataUrl,
+        duration: it.duration,
         createdAt: now,
       })
     }
@@ -36,10 +38,10 @@ export const GetForProject = query({
   handler: async (ctx, { projectId }) => {
     const rows = await ctx.db.query('TTSAudioTable').withIndex('by_project', q => q.eq('projectId', projectId)).collect()
     // Group by slide index
-    const grouped: Record<number, { elementIndex: number; ttsText: string; audioDataUrl: string }[]> = {}
+    const grouped: Record<number, { elementIndex: number; ttsText: string; audioDataUrl: string; duration: number }[]> = {}
     for (const r of rows) {
       const arr = (grouped[r.slideIndex] ||= [])
-      arr.push({ elementIndex: r.elementIndex, ttsText: r.ttsText, audioDataUrl: r.audioDataUrl })
+      arr.push({ elementIndex: r.elementIndex, ttsText: r.ttsText, audioDataUrl: r.audioDataUrl, duration: r.duration })
     }
     // Sort by elementIndex
     const entries = Object.entries(grouped).map(([k, arr]) => [Number(k), arr.sort((a, b) => a.elementIndex - b.elementIndex)])

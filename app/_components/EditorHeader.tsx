@@ -247,8 +247,9 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
         if (typeof window !== 'undefined') window.open(`/present/${projectId}`, '_blank')
     }
 
-    const handleVideo = () => {
-        if (typeof window !== 'undefined') window.open(`/present/${projectId}?autoplay=1`, '_blank')
+
+    const handlePresentWithVoice = () => {
+        if (typeof window !== 'undefined') window.open(`/present-voice/${projectId}`, '_blank')
     }
 
     const handleGenerateAudio = async () => {
@@ -324,10 +325,10 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
     }
 
     return (
-        <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shadow-sm">
+        <div className="h-14 bg-background dark:bg-gray-600 border-b border-border flex items-center justify-between px-4 shadow-sm">
             {/* Left side - Logo and title */}
             <div className="flex items-center space-x-4">
-                <div className="text-xl font-bold text-blue-600">ChalkTalk</div>
+                <div className="text-xl font-bold text-blue-700 dark:text-blue-400">ChalkTalk</div>
 
                 <div className="flex items-center space-x-2">
                     {isEditing ? (
@@ -343,7 +344,7 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                     ) : (
                         <button
                             onClick={handleTitleEdit}
-                            className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                            className="text-sm font-medium text-foreground hover:text-foreground hover:bg-muted px-2 py-1 rounded transition-colors"
                         >
                             {title}
                         </button>
@@ -448,11 +449,12 @@ export default function EditorHeader({ projectId, deckId, initialTitle, userDeta
                             <Eye className="mr-2 h-4 w-4" />
                             Present
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handlePresentWithVoice}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Present with AI Voice
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleGenerateAudio}>
                             Generate Audio (cache)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleVideo}>
-                            Video (auto TTS)
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleZoomIn}>

@@ -14,20 +14,22 @@ const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSide
 
 export const useSidebarAvailable = () => useContext(SidebarAvailableContext);
 
-type PanelControls = {
+export const PanelControlsContext = createContext<{
     isSignedIn: boolean;
     isAIChatOpen: boolean;
     isTestPanelOpen: boolean;
     toggleAIChat: () => void;
     toggleTestPanel: () => void;
-};
-
-const PanelControlsContext = createContext<PanelControls>({
+    isThumbnailPanelOpen: boolean;
+    toggleThumbnailPanel: () => void;
+}>({
     isSignedIn: false,
     isAIChatOpen: false,
     isTestPanelOpen: false,
     toggleAIChat: () => { },
     toggleTestPanel: () => { },
+    isThumbnailPanelOpen: true,
+    toggleThumbnailPanel: () => { },
 });
 
 export const usePanelControls = () => useContext(PanelControlsContext);
@@ -47,13 +49,20 @@ export default function LayoutWrapper({
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+    const [isThumbnailPanelOpen, setIsThumbnailPanelOpen] = useState(true);
 
     const toggleTestPanel = () => {
-        setIsTestPanelOpen(!isTestPanelOpen);
+        setIsTestPanelOpen(prev => !prev);
+        if (!isTestPanelOpen) setIsAIChatOpen(false);
     };
 
     const toggleAIChat = () => {
-        setIsAIChatOpen(!isAIChatOpen);
+        setIsAIChatOpen(prev => !prev);
+        if (!isAIChatOpen) setIsTestPanelOpen(false);
+    };
+
+    const toggleThumbnailPanel = () => {
+        setIsThumbnailPanelOpen(prev => !prev);
     };
 
     // If in present mode, render without any layout wrapper
@@ -66,6 +75,8 @@ export default function LayoutWrapper({
                     isTestPanelOpen: false,
                     toggleAIChat: () => { },
                     toggleTestPanel: () => { },
+                    isThumbnailPanelOpen: true,
+                    toggleThumbnailPanel: () => { },
                 }}>
                     {children}
                 </PanelControlsContext.Provider>
@@ -82,6 +93,8 @@ export default function LayoutWrapper({
                     isTestPanelOpen,
                     toggleAIChat,
                     toggleTestPanel,
+                    isThumbnailPanelOpen: true,
+                    toggleThumbnailPanel: () => { },
                 }}>
                     <div className="min-h-screen">
                         <Header
@@ -114,8 +127,10 @@ export default function LayoutWrapper({
                     isTestPanelOpen,
                     toggleAIChat,
                     toggleTestPanel,
+                    isThumbnailPanelOpen,
+                    toggleThumbnailPanel,
                 }}>
-                    <SidebarProvider>
+                    <SidebarProvider defaultOpen={false}>
                         <AppSidebar />
                         <SidebarInset className="overflow-hidden flex flex-col">
                             <div className="flex-1 relative">
@@ -131,7 +146,7 @@ export default function LayoutWrapper({
                             </div>
 
                             <div className="flex-shrink-0">
-                                {projectId && (
+                                {projectId && isThumbnailPanelOpen && (
                                     <SlideThumbnailPanel />
                                 )}
                             </div>
@@ -160,6 +175,8 @@ export default function LayoutWrapper({
                 isTestPanelOpen,
                 toggleAIChat,
                 toggleTestPanel,
+                isThumbnailPanelOpen: true, // Default value for non-sidebar layout
+                toggleThumbnailPanel: () => { }, // No-op for non-sidebar layout
             }}>
                 <div className="min-h-screen flex flex-col">
                     <Header
