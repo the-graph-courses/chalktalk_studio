@@ -3,7 +3,6 @@ import { fetchQuery, fetchMutation } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { extractRevealSlides } from '@/lib/reveal-export'
 import { extractTTSFromSlideHtml } from '@/lib/tts-extract'
-import { parseBuffer } from 'music-metadata'
 
 const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABSAPIKEY
 const DEFAULT_VOICE = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'
@@ -25,6 +24,7 @@ async function ttsBuffer(text: string, voiceId: string) {
 
 async function calculateAudioDuration(audioBuffer: ArrayBuffer): Promise<number> {
   try {
+    const { parseBuffer } = await import('music-metadata')
     const metadata = await parseBuffer(Buffer.from(audioBuffer))
     return Math.round((metadata.format.duration || 0) * 1000) // Convert to milliseconds
   } catch (error) {
