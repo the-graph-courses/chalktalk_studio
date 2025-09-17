@@ -1,103 +1,77 @@
 # ChalkTalk Studio
 
-A modern presentation creation tool built with Next.js 15.5, featuring AI-powered slide generation and real-time collaboration.
+A modern presentation creation tool built with Next.js, featuring AI-powered slide generation and real-time collaboration.
 
-## Features
-
-- 🤖 **AI-Powered Slide Creation** - Generate slides using OpenAI and OpenRouter
-- 🎨 **Modern UI** - Built with Tailwind CSS v4 and Radix UI components  
-- 🔄 **Real-time Collaboration** - Powered by Convex backend
-- 🔐 **Secure Authentication** - Clerk integration for user management
-- 💬 **AI Chat Assistant** - Ephemeral chat for slide editing help
-- 📱 **Responsive Design** - Works on desktop and mobile devices
-
-## Tech Stack
+## Core Technologies
 
 - **Framework**: Next.js 15.5 with React 19.1 and TurboPack
-- **Language**: TypeScript with strict mode
-- **Styling**: Tailwind CSS v4 with custom animations
-- **Database**: Convex for real-time backend
+- **Language**: TypeScript
+- **Backend & Database**: Convex
 - **Authentication**: Clerk
-- **AI**: OpenAI API and OpenRouter
-- **UI Components**: Radix UI primitives with shadcn/ui
+- **AI**: OpenAI, OpenRouter, Cerebras, ElevenLabs for TTS
+- **Styling**: Tailwind CSS v4
+- **UI Components**: Radix UI & shadcn/ui
+- **Rate Limiting**: Arcjet
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
+- Node.js 18+
+- npm, yarn, or pnpm
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd chalktalk-studio
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-repo/chalktalk-studio.git
+    cd chalktalk-studio
+    ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-3. Set up environment variables:
-```bash
-cp .env.example .env.local
-```
+3.  **Set up environment variables:**
 
-4. Start the development server:
-```bash
-npm run dev
-```
+    Create a `.env.local` file in the root of the project and add the required environment variables.
+
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-## Context7 MCP Integration
+## Configuration
 
-This project includes Context7 MCP for enhanced AI assistance. AI assistants can access up-to-date documentation by appending `use context7` to prompts.
-
-See [docs/context7-setup.md](./docs/context7-setup.md) for detailed setup instructions.
-
-## Project Structure
+The following environment variables are required to run the application. You can get them from the respective services.
 
 ```
-app/
-├── _components/          # Shared components
-├── (auth)/              # Authentication pages  
-├── editor/[projectId]/  # Main slide editor
-├── decks/              # Deck management
-└── api/                # API routes
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
 
-convex/                 # Backend functions and schema
-components/ui/          # Reusable UI components
-docs/                  # Documentation
-lib/                   # Utilities and tools
+# Convex Backend
+NEXT_PUBLIC_CONVEX_URL=
+
+# AI & TTS Services
+OPENROUTER_API_KEY=
+CEREBRAS_CODE_KEY=
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID= # Optional, has a default
+
+# GrapesJS Studio SDK
+NEXT_PUBLIC_GRAPES_SDK_LICENSE_KEY=
+
+# Arcjet Rate Limiting
+ARCJET_KEY=
 ```
 
-## Documentation
+## Available Scripts
 
-- [API Reference](./docs/api-reference.md)
-- [Component Documentation](./docs/components.md)
-- [Context7 MCP Setup](./docs/context7-setup.md)
-
-## Scripts
-
-```bash
-npm run dev          # Start development server with TurboPack
-npm run build        # Build for production  
-npm run start        # Start production server
-npm run test:e2e     # Run Playwright tests
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if needed
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
+-   `npm run dev`: Start the development server.
+-   `npm run build`: Build the application for production.
+-   `npm run start`: Start the production server.
+-   `npm run test:e2e`: Run Playwright end-to-end tests.

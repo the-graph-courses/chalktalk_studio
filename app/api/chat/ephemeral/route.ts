@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   if (!userId) {
     return new Response('Unauthorized', { status: 401 });
   }
-  const { messages, projectId, preferences, model = 'claude-sonnet-4' }: {
+  const { messages, projectId, preferences, model = 'cerebras' }: {
     messages: UIMessage[];
     projectId: string;
     preferences?: { preferAbsolutePositioning?: boolean };
