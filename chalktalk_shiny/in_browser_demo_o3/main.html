@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Slide Generator Demo</title>
+
+    <!-- GrapesJS -->
+    <link rel="stylesheet" href="https://unpkg.com/grapesjs/dist/css/grapes.min.css">
+    <script src="https://unpkg.com/grapesjs" onload="onScriptLoad()"
+        onerror="console.error('Failed to load GrapesJS')"></script>
+
+    <!-- Reveal.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/theme/white.css">
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4/dist/reveal.js" onload="onScriptLoad()"
+        onerror="console.error('Failed to load Reveal.js')"></script>
+
+    <!-- PptxGenJS for PowerPoint export -->
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" onload="onScriptLoad()"
+        onerror="console.error('Failed to load PptxGenJS')"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .tab-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tab-nav {
+            display: flex;
+            background: #fff;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: #f8f8f8;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .tab-btn:last-child {
+            border-right: none;
+        }
+
+        .tab-btn.active {
+            background: #4285f4;
+            color: white;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #e8e8e8;
+        }
+
+        .tab-content {
+            flex: 1;
+            display: none;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Tab 1 - HTML Input */
+        .slide-input-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .slide-input {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .slide-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slide-textarea {
+            width: 100%;
+            height: 200px;
+            border: none;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #4285f4;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3367d6;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+
+        /* Tab 2 - GrapesJS Editor */
+        #gjs-editor {
+            height: calc(100vh - 120px);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        /* Tab 3 - Reveal.js Presentation */
+        #reveal-container {
+            height: calc(100vh - 120px);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            overflow: hidden;
+        }
+
+        .reveal-wrapper {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Tab 4 - Export */
+        .export-container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .export-info {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+
+        .sample-prompt {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #4285f4;
+            margin: 20px 0;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tab-container">
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab(0)">1. LLM HTML Input</button>
+            <button class="tab-btn" onclick="switchTab(1)">2. Edit Slides</button>
+            <button class="tab-btn" onclick="switchTab(2)">3. Present</button>
+            <button class="tab-btn" onclick="switchTab(3)">4. Export PPT</button>
+        </div>
+
+        <!-- Tab 1: HTML Input -->
+        <div class="tab-content active">
+            <div class="slide-input-container">
+                <h2>Step 1: Paste LLM-Generated HTML</h2>
+                <p>Add your slide HTML below. Each slide should be 1280×720px with absolutely positioned elements.</p>
+
+                <div class="sample-prompt">
+                    <strong>Sample LLM Prompt:</strong><br>
+                    Generate HTML for a slide presentation. Requirements:<br>
+                    - Container: 1280px × 720px with position:relative<br>
+                    - All elements absolutely positioned with inline styles<br>
+                    - Add class="draggable" to moveable elements<br>
+                    - Include: title, 2-3 bullet points, image placeholder<br>
+                    - Use readable fonts and good contrast<br>
+                    - No external CSS dependencies
+                </div>
+
+                <div id="slides-container">
+                    <div class="slide-input">
+                        <div class="slide-header">
+                            <h4>Slide 1</h4>
+                            <button class="btn btn-danger" onclick="removeSlide(this)">Remove</button>
+                        </div>
+                        <textarea class="slide-textarea" placeholder="Paste your LLM-generated HTML here..."></textarea>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="addSlide()">+ Add New Slide</button>
+                <button class="btn btn-primary" onclick="processSlides()" style="margin-left: 10px;">Process Slides
+                    →</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: GrapesJS Editor -->
+        <div class="tab-content">
+            <div style="margin-bottom: 15px;">
+                <h2 style="display: inline-block; margin-right: 20px;">Step 2: Edit Your Slides</h2>
+                <select id="slide-selector" onchange="switchEditSlide()" style="padding: 8px; margin-right: 10px;">
+                    <option value="0">Slide 1</option>
+                </select>
+                <button class="btn btn-primary" onclick="saveEdits()">Save Edits</button>
+            </div>
+            <div id="gjs-editor"></div>
+        </div>
+
+        <!-- Tab 3: Reveal.js Presentation -->
+        <div class="tab-content">
+            <div style="margin-bottom: 15px;">
+                <h2 style="display: inline-block; margin-right: 20px;">Step 3: Present Your Slides</h2>
+                <button class="btn btn-primary" onclick="startPresentation()">Start Presentation</button>
+                <button class="btn btn-secondary" onclick="exitPresentation()" style="margin-left: 10px;">Exit
+                    Fullscreen</button>
+            </div>
+            <div id="reveal-container">
+                <div class="reveal reveal-wrapper">
+                    <div class="slides" id="reveal-slides">
+                        <section>
+                            <h2>Your slides will appear here</h2>
+                            <p>Go back to Tab 1 and add some HTML content!</p>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: PowerPoint Export -->
+        <div class="tab-content">
+            <div class="export-container">
+                <h2>Step 4: Export to PowerPoint</h2>
+                <div class="export-info">
+                    <h3>PowerPoint Export Ready!</h3>
+                    <p>This will convert your edited slides to a downloadable .pptx file with editable text boxes and
+                        shapes.</p>
+                    <button class="btn btn-success" onclick="exportToPowerPoint()"
+                        style="font-size: 16px; padding: 15px 30px;">
+                        📥 Download PowerPoint
+                    </button>
+                </div>
+                <div
+                    style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; text-align: left;">
+                    <h4>Export Features:</h4>
+                    <ul>
+                        <li>✅ Text boxes converted to editable PowerPoint text</li>
+                        <li>✅ Absolute positioning preserved</li>
+                        <li>✅ Basic shapes and backgrounds</li>
+                        <li>⚠️ Complex CSS styling simplified</li>
+                        <li>⚠️ Images need manual re-insertion</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 0;
+        let slides = [];
+        let editor = null;
+        let currentEditSlide = 0;
+        let reveal = null;
+
+        // Add error handling and debugging
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            console.error('Script error:', msg, 'at', url, ':', lineNo);
+            return false;
+        };
+
+        // Check if libraries loaded properly
+        function checkLibraries() {
+            const libs = [
+                { name: 'GrapesJS', check: () => typeof grapesjs !== 'undefined' },
+                { name: 'Reveal.js', check: () => typeof Reveal !== 'undefined' },
+                { name: 'PptxGenJS', check: () => typeof PptxGenJS !== 'undefined' }
+            ];
+
+            libs.forEach(lib => {
+                const status = lib.check() ? '✅' : '❌';
+                console.log(`${status} ${lib.name}: ${lib.check() ? 'loaded' : 'missing'}`);
+            });
+        }
+
+        // Wait for all scripts to load
+        let scriptsLoaded = 0;
+        const totalScripts = 3;
+
+        function onScriptLoad() {
+            scriptsLoaded++;
+            console.log(`Script ${scriptsLoaded}/${totalScripts} loaded`);
+            if (scriptsLoaded === totalScripts) {
+                console.log('All scripts loaded, checking libraries...');
+                setTimeout(checkLibraries, 100);
+            }
+        }
+
+        // Tab switching
+        function switchTab(tabIndex) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.querySelectorAll('.tab-content')[tabIndex].classList.add('active');
+            document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
+
+            currentTab = tabIndex;
+
+            // Initialize tab-specific functionality
+            if (tabIndex === 1 && !editor) {
+                initGrapesJS();
+            } else if (tabIndex === 2) {
+                updateRevealSlides();
+            }
+        }
+
+        // Slide management (Tab 1)
+        function addSlide() {
+            const container = document.getElementById('slides-container');
+            const slideCount = container.children.length + 1;
+
+            const slideDiv = document.createElement('div');
+            slideDiv.className = 'slide-input';
+            slideDiv.innerHTML = `
+                <div class="slide-header">
+                    <h4>Slide ${slideCount}</h4>
+                    <button class="btn btn-danger" onclick="removeSlide(this)">Remove</button>
+                </div>
+                <textarea class="slide-textarea" placeholder="Paste your LLM-generated HTML here..."></textarea>
+            `;
+
+            container.appendChild(slideDiv);
+        }
+
+        function removeSlide(button) {
+            const slideDiv = button.closest('.slide-input');
+            slideDiv.remove();
+
+            // Renumber slides
+            document.querySelectorAll('.slide-input').forEach((slide, index) => {
+                slide.querySelector('h4').textContent = `Slide ${index + 1}`;
+            });
+        }
+
+        function processSlides() {
+            slides = [];
+            const textareas = document.querySelectorAll('.slide-textarea');
+
+            textareas.forEach(textarea => {
+                if (textarea.value.trim()) {
+                    slides.push({
+                        originalHtml: textarea.value.trim(),
+                        editedHtml: textarea.value.trim()
+                    });
+                }
+            });
+
+            if (slides.length === 0) {
+                alert('Please add at least one slide with HTML content!');
+                return;
+            }
+
+            // Update slide selector
+            updateSlideSelector();
+
+            alert(`Processed ${slides.length} slide(s)! You can now edit them in Tab 2.`);
+        }
+
+        function updateSlideSelector() {
+            const selector = document.getElementById('slide-selector');
+            selector.innerHTML = '';
+
+            slides.forEach((slide, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `Slide ${index + 1}`;
+                selector.appendChild(option);
+            });
+        }
+
+        // GrapesJS Editor (Tab 2)
+        function initGrapesJS() {
+            if (typeof grapesjs === 'undefined') {
+                console.error('GrapesJS not loaded');
+                alert('GrapesJS library failed to load. Please check your internet connection and refresh the page.');
+                return;
+            }
+
+            if (editor) {
+                console.log('GrapesJS already initialized');
+                return;
+            }
+
+            console.log('Initializing GrapesJS...');
+
+            try {
+                editor = grapesjs.init({
+                    container: '#gjs-editor',
+                    height: '100%',
+                    width: 'auto',
+                    storageManager: false,
+                    dragMode: 'absolute',
+                    canvas: {
+                        customSpots: { spacing: true }
+                    },
+                    panels: {
+                        defaults: [
+                            {
+                                id: 'basic-actions',
+                                el: '.panel__basic-actions',
+                                buttons: [
+                                    {
+                                        id: 'visibility',
+                                        active: true,
+                                        className: 'btn-toggle-borders',
+                                        label: '<i class="fa fa-clone"></i>',
+                                        command: 'sw-visibility',
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                });
+
+                // Enable absolute positioning and resizing
+                editor.on('component:add', makeComponentDraggable);
+
+                // Load first slide if available
+                if (slides.length > 0) {
+                    loadSlideInEditor(0);
+                }
+
+                console.log('GrapesJS initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize GrapesJS:', error);
+                alert('Failed to initialize the slide editor. Please refresh the page and try again.');
+            }
+        }
+
+        function makeComponentDraggable(component) {
+            component.set({
+                resizable: {
+                    tl: 1, tc: 1, tr: 1,
+                    cl: 1, cr: 1,
+                    bl: 1, bc: 1, br: 1,
+                    minDimension: 20,
+                    maxDimension: 2000,
+                }
+            });
+        }
+
+        function switchEditSlide() {
+            const selector = document.getElementById('slide-selector');
+            const slideIndex = parseInt(selector.value);
+
+            // Save current slide before switching
+            if (editor && slides[currentEditSlide]) {
+                slides[currentEditSlide].editedHtml = editor.getHtml();
+            }
+
+            currentEditSlide = slideIndex;
+            loadSlideInEditor(slideIndex);
+        }
+
+        function loadSlideInEditor(slideIndex) {
+            if (!editor || !slides[slideIndex]) return;
+
+            // Clear editor and load slide content
+            editor.setComponents('');
+            editor.setComponents(slides[slideIndex].editedHtml);
+
+            // Apply absolute drag mode to all components
+            editor.getWrapper().find('*').forEach(makeComponentDraggable);
+        }
+
+        function saveEdits() {
+            if (!editor || !slides[currentEditSlide]) return;
+
+            slides[currentEditSlide].editedHtml = editor.getHtml();
+            alert('Slide edits saved! You can now view them in Tab 3.');
+        }
+
+        // Reveal.js Presentation (Tab 3)  
+        function updateRevealSlides() {
+            if (typeof Reveal === 'undefined') {
+                console.error('Reveal.js not loaded');
+                alert('Reveal.js library failed to load. Please check your internet connection and refresh the page.');
+                return;
+            }
+
+            console.log('Updating Reveal.js slides...');
+
+            const slidesContainer = document.getElementById('reveal-slides');
+            slidesContainer.innerHTML = '';
+
+            if (slides.length === 0) {
+                slidesContainer.innerHTML = '<section><h2>No slides to show</h2><p>Go back to Tab 1 and add some content!</p></section>';
+                return;
+            }
+
+            slides.forEach((slide, index) => {
+                const section = document.createElement('section');
+                section.innerHTML = slide.editedHtml;
+                slidesContainer.appendChild(section);
+                console.log(`Added slide ${index + 1} to presentation`);
+            });
+
+            // Reinitialize Reveal.js
+            try {
+                if (reveal) {
+                    reveal.destroy();
+                    console.log('Destroyed previous Reveal.js instance');
+                }
+
+                reveal = new Reveal(document.querySelector('.reveal'), {
+                    hash: true,
+                    controls: true,
+                    progress: true,
+                    center: false,
+                    transition: 'slide'
+                });
+
+                reveal.initialize();
+                console.log('Reveal.js initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize Reveal.js:', error);
+                alert('Failed to initialize the presentation. Please refresh the page and try again.');
+            }
+        }
+
+        function startPresentation() {
+            const container = document.getElementById('reveal-container');
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
+        }
+
+        function exitPresentation() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        // PowerPoint Export (Tab 4)
+        function exportToPowerPoint() {
+            if (typeof PptxGenJS === 'undefined') {
+                console.error('PptxGenJS not loaded');
+                alert('PptxGenJS library failed to load. Please check your internet connection and refresh the page.');
+                return;
+            }
+
+            if (slides.length === 0) {
+                alert('No slides to export! Please add and edit slides first.');
+                return;
+            }
+
+            console.log('Starting PowerPoint export...');
+
+            try {
+                const pptx = new PptxGenJS();
+                pptx.layout = 'LAYOUT_16x9';
+
+                slides.forEach((slide, index) => {
+                    const pptxSlide = pptx.addSlide();
+
+                    // Parse the HTML and extract text elements
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = slide.editedHtml;
+
+                    // Find all text elements and add them as text boxes
+                    const textElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, p, div, li, span');
+
+                    textElements.forEach(element => {
+                        const style = element.style;
+                        const text = element.textContent.trim();
+
+                        if (!text) return;
+
+                        // Extract position and size
+                        const left = parseFloat(style.left) || 0;
+                        const top = parseFloat(style.top) || 0;
+                        const width = parseFloat(style.width) || 200;
+                        const height = parseFloat(style.height) || 50;
+
+                        // Convert pixels to inches (approximate)
+                        const leftInch = left / 96;
+                        const topInch = top / 96;
+                        const widthInch = width / 96;
+                        const heightInch = height / 96;
+
+                        // Determine font size
+                        let fontSize = 14;
+                        if (element.tagName === 'H1') fontSize = 24;
+                        else if (element.tagName === 'H2') fontSize = 20;
+                        else if (element.tagName === 'H3') fontSize = 18;
+
+                        pptxSlide.addText(text, {
+                            x: leftInch,
+                            y: topInch,
+                            w: widthInch,
+                            h: heightInch,
+                            fontSize: fontSize,
+                            color: '000000',
+                            fill: { color: 'FFFFFF' },
+                            align: 'left'
+                        });
+                    });
+                });
+
+                // Save the PowerPoint file
+                pptx.writeFile({ fileName: 'AI_Generated_Slides.pptx' })
+                    .then(() => {
+                        console.log('PowerPoint export successful');
+                        alert('PowerPoint file downloaded successfully!');
+                    })
+                    .catch(err => {
+                        console.error('Export error:', err);
+                        alert('Error exporting to PowerPoint. Check console for details.');
+                    });
+            } catch (error) {
+                console.error('PowerPoint export error:', error);
+                alert('Error exporting to PowerPoint. Check console for details.');
+            }
+        }
+
+        // Initialize first tab
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add sample slide content for demo
+            const firstTextarea = document.querySelector('.slide-textarea');
+            firstTextarea.value = `<div style="position:relative;width:1280px;height:720px;background:#fff;">
+  <h1 class="draggable" style="position:absolute;left:80px;top:60px;font-size:36px;color:#333;">Quarterly Results Q4 2024</h1>
+  <ul class="draggable" style="position:absolute;left:80px;top:180px;font-size:18px;line-height:1.6;">
+    <li>Revenue increased by 14% year-over-year</li>
+    <li>Customer churn decreased to 1.3%</li>
+    <li>New product launches exceeded targets</li>
+  </ul>
+  <div class="draggable" style="position:absolute;left:680px;top:120px;width:480px;height:360px;background:#f0f0f0;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:16px;color:#666;">
+    Chart Placeholder<br>680×360px
+  </div>
+</div>`;
+        });
+    </script>
+</body>
+
+</html>

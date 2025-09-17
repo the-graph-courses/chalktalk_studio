@@ -1,0 +1,479 @@
+---
+title: "chalktalk Demo"
+format: 
+    revealjs:
+        theme: moon
+---
+
+# History of LLMs
+## From n-grams to ChatGPT: A Very Brief History of Language Modeling
+
+---
+
+## Why the Past Matters (1/3)
+
+::: {.fragment tts="Why delve into the history of language models, especially for life scientists? Because understanding the past helps us understand the present and anticipate the future."}
+:::
+
+::: {.fragment tts="First, technical capabilities are compounding rapidly. Progress isn't linear; it's accelerating. Think about Moore's Law, but for language AI."}
+*   Technical capabilities are **compounding** → forecasting requires a historical lens
+:::
+
+::: {.fragment tts="Consider this: GPT-1 is only about seven years old as of this writing. The pace is truly picking up. Forecasting even the next two years is incredibly challenging without this historical context."}
+:::
+::: notes
+Note that GPT-1 is only *seven* years old; the pace is **accelerating**.
+
+Forecasting the next two years is challenging without this backstory.
+:::
+
+---
+
+## Why the Past Matters (2/3)
+
+::: {.fragment tts="Second, the pitfalls we encounter today – things like bias in the model's responses, the tendency to 'hallucinate' or make things up, and the sheer cost of training and running these models – aren't random bugs."}
+:::
+
+::: {.fragment tts="They often trace straight back to specific decisions made during the model's training process, the data it was fed, and the objectives it was optimized for."}
+*   Pitfalls (bias, hallucination, cost) trace straight back to each training step
+:::
+
+---
+
+## Why the Past Matters (3/3)
+
+::: {.fragment tts="So, our goal today isn't just to give you a recipe for using these tools."}
+:::
+
+::: {.fragment tts="It's to provide a mental model – a foundational understanding of how these models evolved, why they work the way they do, and what their inherent strengths and limitations are."}
+*   Goal today: give life-science graduates a **mental model**, not just a recipe
+:::
+
+---
+
+## What is a language model?
+
+::: {.fragment tts="Before we dive into history, let's define our terms. What *is* a language model at its core?"}
+*   **Definition:** A language model is a type of AI that has been trained to understand and generate human language.
+:::
+
+::: {.fragment tts="Fundamentally, it learns the probability of sequences of words occurring. Given some text, its basic task is often to predict the *next* word or token."}
+*   It learns patterns, grammar, and even some degree of 'knowledge' from the vast amounts of text data it's trained on.
+:::
+
+::: {.fragment tts="Think of it like a super-powered autocomplete, but one that can handle much more complex tasks like translation, summarization, and answering questions."}
+:::
+
+---
+
+## One-page lineage table (Roadmap)
+
+::: {.fragment tts="Here's a summary table outlining the key steps in model evolution we'll discuss today. Think of this as our roadmap."}
+*A summary of the key steps in model evolution we'll discuss.*
+:::
+
+::: {.fragment tts="We'll start with simple N-grams from the 1960s and walk through the major innovations leading up to today's sophisticated models like GPT-4o1."}
+| Model (year)                     | Incremental training steps                                       | Corpus size (tokens ≈ "Bibles"*)       | Max context (tokens) | Rough train compute           | Typical answer to "Who is the current pope? (3 May 2025)"                                | Typical inference HW |
+| -------------------------------- | ---------------------------------------------------------------- | -------------------------------------- | -------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| **4-gram (Brown, 1960s)**      | Count 4-grams, MLE                                               | 1 M ≈ 1.3 Bibles                       | 3 (last three words) | < 1 CPU-h                     | "the pope is the ..." (nonsense)                                                         | any laptop CPU         |
+| **GPT-1 → GPT-3 (2018-20)**    | Same next-token objective, **massive scale-up** of params & data | 0.8 B → 500 B ≈ 1 K → 640 K Bibles ↑ | 512 → 2 048 ↑        | ≈3 × 10²³ FLOP ≈ 355 V100-years ↑ | "Read our new article on the pope here." (fluent but ignores the question's intent)        | single GPU → multi-GPU |
+| **GPT-3.5 / ChatGPT (2022)**   | + Supervised instruction fine-tune + RLHF                        | ≈ 500 B + few × 10⁵ labelled prompts | 4 096 ↑              | + a few V100-days ↑           | "Pope Francis." (Model follows instruction but is **stale**; unaware of April 2025 death.) | cloud GPU              |
+| **GPT-4o / GPT-4 Turbo (23-24)** | + Tool-use fine-tune (plugins: Browse, Code Interpreter)       | ≈ 1 T ≈ 1.6 M Bibles ↑                 | 8 K / 128 K ↑        | ≈ 2.5 M A100-days ↑           | "Pope Francis died on 14 Apr 2025; Pope John XXIV was elected on 28 Apr 2025." (cites news) | cloud GPU + API calls  |
+| **GPT-4o1 (reasoning, 24-25)**   | + Chain-of-thought reinforcement (post-training)                 | same ≈ 1 T                             | 8 K – 128 K          | + ≈ 10–20 k A100-days ↑       | Gives same facts **and** step-by-step justification (citing sources).                    | cloud GPU + tools      |
+:::
+
+::: {.fragment tts="We'll examine each row, explaining the incremental changes and their consequences, focusing on how each step built upon the last. Then we'll return here for a final summary."}
+*Bible rough equivalence uses ≈ 780,000 words per King James Bible. Pope example is hypothetical.*
+:::
+::: notes
+Introduce this as the roadmap. We'll walk through each row, explaining the *incremental* changes and their consequences, then return here for a summary.
+:::
+
+---
+
+## Baseline: N-gram Language Models (1/2)
+
+::: {.fragment tts="Let's begin at the beginning, with N-gram models, which were foundational in computational linguistics."}
+:::
+
+::: {.fragment tts="The core idea is simple: Predict the next word based *only* on the previous 'N minus one' words. For a 4-gram model, that means looking at just the last three words."}
+*   **Core Idea:** Predict the next word based *only* on the previous N-1 words.
+:::
+
+::: {.fragment tts="Training these models involves simply counting sequences of N words in a text corpus. This statistical approach is called Maximum Likelihood Estimation, or MLE."}
+*   **Training:** Simply count sequences of N words in a text corpus (Maximum Likelihood Estimation - MLE).
+:::
+
+---
+
+## Baseline: N-gram Language Models (2/2)
+
+::: {.fragment tts="The major limitation is obvious: N-grams understand only very local word patterns. They have no concept of grammar beyond the N-word window, no broader context, no world knowledge, and certainly no understanding of user instructions or questions."}
+*   **Limitation:** Understands local word patterns but has no broader context, world knowledge, or concept of instructions/questions.
+:::
+
+::: {.fragment tts="Here's the N-gram row from our table. Notice the tiny context, minimal compute, and nonsensical output for our test question."}
+| Model (year)               | Incremental training steps | Corpus size (tokens ≈ "Bibles"*) | Max context (tokens) | Rough train compute | Typical answer to "Who is the current pope? (3 May 2025)" | Typical inference HW |
+| -------------------------- | -------------------------- | -------------------------------- | -------------------- | ------------------- | ---------------------------------------------------------- | -------------------- |
+| **4-gram (Brown, 1960s)** | Count 4-grams, MLE       | 1 M ≈ 1.3 Bibles                 | 3 (last three words) | < 1 CPU-h           | "the pope is the ..." (nonsense)                           | any laptop CPU       |
+:::
+
+---
+
+## N-grams: Small but kinda useful
+
+::: {.fragment tts="Now, I'll switch to a quick demo to show what typical output from a trigram or four-gram model looks like. Expect statistical word salad!"}
+*(Note: We'll switch to a live demo here to show trigram/4-gram output.)*
+:::
+
+::: {.fragment tts="Despite their limitations, N-grams weren't useless! Their underlying principle powers simple applications we still see."}
+:::
+
+::: {.fragment tts="Think about the predictive text on your phone or the query suggestions in Google search. These often use N-gram-like techniques to guess the next few characters or words you're likely to type based on frequency."}
+*   Examples: Early machine translation, spell checkers, mobile keyboard prediction, search query suggestion.
+:::
+
+::: {.fragment tts="But for complex understanding or generation, we needed something much smarter."}
+*(Image of Google search prediction could go here)*
+:::
+
+---
+
+## Need a Smarter Way: Enter the Transformer (1/2)
+
+::: {.fragment tts="The big leap forward came with the Transformer architecture, introduced in the 2017 paper 'Attention Is All You Need'."}
+*   **Key Innovation:** The Transformer Architecture (Vaswani et al., 2017)
+:::
+
+::: {.fragment tts="The Transformer provided a much more sophisticated way to model language, particularly dependencies between words far apart in a sentence or document. It still aimed to predict the next token, but used a mechanism called 'attention' to weigh the importance of different input words."}
+*   A more intelligent... and **much more parallelizable**... way to do next token prediction.
+:::
+
+::: {.fragment tts="Crucially, its design was highly parallelizable, meaning it could be trained efficiently on massive datasets using modern GPUs."}
+*   **Approach:** Keep the same core objective (predict the next token) but use a better architecture.
+:::
+
+---
+
+## Need a Smarter Way: Enter the Transformer (2/2)
+
+::: {.fragment tts="Here's a very high-level schematic. The key idea is that 'attention mechanisms' allow the model to look at all parts of the input sequence simultaneously and decide which parts are most relevant for predicting the next word, unlike older recurrent models that processed words one by one."}
+[IMAGE showing simplified Transformer architecture with attention]
+:::
+
+::: {.fragment tts="This ability to handle long-range dependencies and its parallelizability were game-changers."}
+:::
+
+---
+
+## What does GPT stand for?
+
+::: {.fragment tts="This brings us to the GPT series from OpenAI. GPT stands for Generative Pre-trained Transformer."}
+*   **G**enerative: It can generate new text.
+*   **P**re-trained: It's trained on a massive dataset *before* being fine-tuned for specific tasks.
+*   **T**ransformer: It uses the Transformer architecture.
+:::
+
+::: {.fragment tts="The core idea of GPT models, especially early ones, was to take the Transformer architecture and scale it up dramatically."}
+:::
+
+---
+
+## The Training Data: Fuel for the Transformer
+
+::: {.fragment tts="Because the Transformer architecture is so effective at learning patterns and parallelizable for training, researchers realized they could train these 'Generative Pre-trained' models on truly enormous amounts of text data."}
+*   Transformer's effectiveness + parallelizability ⇒ Train on **massive** datasets.
+:::
+
+::: {.fragment tts="Where does this data come from? Essentially, large swathes of the public internet: websites, books, articles, code repositories, and more. Common Crawl, a publicly available web scrape, is a major source."}
+*   Source: Web scrapes (like Common Crawl), books, articles, code, etc.
+:::
+
+::: {.fragment tts="This reliance on vast, unfiltered internet data is powerful but also introduces challenges, like inheriting biases present online. You might have seen news about lawsuits, like the one from the New York Times, concerning the use of copyrighted material in training data."}
+*   Implications: Scale enables powerful models, but also ingests bias and raises copyright questions (e.g., NYT lawsuit).
+:::
+
+---
+
+## GPT-1 → GPT-3: Scaling the Transformer (1/2)
+
+::: {.fragment tts="The period from 2018 to 2020 saw the rapid evolution from GPT-1 to GPT-3. The core recipe didn't change drastically: it was still about predicting the next token using the Transformer architecture."}
+:::
+
+::: {.fragment tts="The key difference was **scale**: massively increasing the number of parameters in the model (from ~117M in GPT-1 to 175B in GPT-3) and the size of the training dataset."}
+*   **Incremental Step:** Same next-token objective, **massive scale-up** of parameters & data.
+:::
+
+::: {.fragment tts="Let's look at the table row for this era."}
+| Model (year)                | Incremental training steps                                       | Corpus size (tokens ≈ "Bibles"*)       | Max context (tokens) | Rough train compute           | Typical answer to "Who is the current pope? (3 May 2025)"             | Typical inference HW |
+| --------------------------- | ---------------------------------------------------------------- | -------------------------------------- | -------------------- | ----------------------------- | --------------------------------------------------------------------- | ---------------------- |
+| **GPT-1 → GPT-3 (2018-20)** | Same next-token objective, **massive scale-up** of params & data | 0.8 B → 500 B ≈ 1 K → 640 K Bibles ↑ | 512 → 2 048 ↑        | ≈3 × 10²³ FLOP ≈ 355 V100-years ↑ | "Read our new article on the pope here." (fluent but ignores intent) | single GPU → multi-GPU |
+:::
+
+---
+
+## GPT-1 → GPT-3: Scaling the Transformer (2/2)
+
+::: {.fragment tts="Notice the dramatic increase in corpus size, context length, and especially training compute. The 'Bible equivalence' jumps from around a thousand to over half a million!"}
+*   Corpus size: 0.8 B → ~500 B tokens (↑ 600x)
+*   Context length: 512 → 2048 tokens (↑ 4x)
+*   Compute: Significant increase (measured in GPU-years)
+:::
+
+::: {.fragment tts="What did this scaling achieve? These 'base models' became incredibly fluent and knowledgeable, capable of generating remarkably human-like text. However, they weren't necessarily helpful or aligned with user intent."}
+:::
+
+::: {.fragment tts="If you asked GPT-3 our pope question, it might give a fluent but evasive answer, like suggesting an article, essentially completing the prompt based on patterns in its training data rather than directly answering the question."}
+*   Result: Fluent, knowledgeable base models, but not inherently conversational or instruction-following.
+:::
+
+::: {.fragment tts="Let me show you an example of how a base GPT model might respond... something like 'The current pope is discussed in several recent theological journals. One article explores...'. Notice the fluency, but it doesn't answer the question."}
+*(Note: Live demo of a GPT-2/3 base model answer: *"The current pope is discussed in several recent theological journals. One article explores..."* – shows fluency but avoidance.)*
+:::
+
+---
+
+## But can the model chat? Aligning Models
+
+::: {.fragment tts="So, these large base models were powerful text predictors, but they weren't chatbots. They didn't inherently understand the *intent* behind a question or instruction."}
+*   Problem: Base models predict text, don't necessarily follow instructions or converse helpfully.
+:::
+
+::: {.fragment tts="How do you teach a model to be helpful, honest, and harmless? The key was 'alignment' – fine-tuning the pre-trained model to behave in desired ways."}
+*   Solution: Post-training "Alignment" phase.
+:::
+
+::: {.fragment tts="If we show the model examples of good conversations, like question-and-answer pairs, perhaps it can learn to respond more appropriately."}
+*   Idea: Fine-tune on chat Q&As and preferred responses.
+:::
+
+---
+
+## GPT-3.5 / ChatGPT: Aligning with User Intent (1/2)
+
+::: {.fragment tts="This alignment process became the hallmark of models like InstructGPT and, most famously, ChatGPT (often referred to as GPT-3.5). It involved two main steps after the initial pre-training."}
+*   **Key Innovation:** Post-training "Alignment" to make the base model more helpful and follow instructions.
+:::
+
+::: {.fragment tts="First, Supervised Fine-Tuning or SFT. Human labelers wrote examples of prompts and ideal answers, essentially showing the model how it *should* respond to various instructions and questions."}
+    *   **Supervised Fine-Tuning (SFT):** Train on examples of desired input/output pairs (e.g., Q&A format).
+:::
+
+::: {.fragment tts="Second, Reinforcement Learning from Human Feedback or RLHF. Here, the model generated multiple responses to a prompt, and human labelers ranked them from best to worst. This preference data was used to train a 'reward model', which then guided the main LLM (via reinforcement learning) to produce outputs similar to the highly-ranked ones."}
+    *   **Reinforcement Learning from Human Feedback (RLHF):** Use human preferences to rank model outputs, training a reward model to guide the LLM towards helpful, harmless, and honest responses.
+:::
+
+---
+
+## GPT-3.5 / ChatGPT: Aligning with User Intent (2/2)
+
+::: {.fragment tts="The result? A model that understands it should answer questions directly, engage in conversation, admit limitations, and generally adhere to safety guidelines against harmful content."}
+*   **Result:** Model now understands it should *answer* questions, be conversational, and adhere to safety guidelines.
+:::
+
+::: {.fragment tts="Here's the table entry for GPT-3.5/ChatGPT. Notice the alignment steps added, the relatively small amount of extra compute for fine-tuning, and the improved, direct answer to the pope question."}
+| Model (year)                 | Incremental training steps                   | Corpus size (tokens ≈ "Bibles"*)       | Max context (tokens) | Rough train compute | Typical answer to "Who is the current pope? (3 May 2025)"                           | Typical inference HW |
+| ---------------------------- | -------------------------------------------- | -------------------------------------- | -------------------- | ------------------- | --------------------------------------------------------------------------------- | -------------------- |
+| **GPT-3.5 / ChatGPT (2022)** | + Supervised instruction fine-tune + RLHF | ≈ 500 B + few × 10⁵ labelled prompts | 4 096 ↑              | + a few V100-days ↑ | "Pope Francis." (Model follows instruction but is **stale**; unaware of Apr 2025 death) | cloud GPU            |
+:::
+
+::: {.fragment tts="However, a crucial limitation emerged: the model's knowledge is frozen at the time its pre-training data was collected. It follows instructions well, but its information can be outdated. It wouldn't know about hypothetical events after its knowledge cutoff."}
+*   **Limitation:** Knowledge is frozen at its pre-training data cutoff date ⇒ **Stale** information.
+:::
+
+::: {.fragment tts="Let's see this in action. A GPT-3.5 model would likely correctly identify Pope Francis based on its training data, but be unaware of any hypothetical later events."}
+*(Note: Live demo of GPT-3.5 answer, highlighting helpfulness but staleness.)*
+:::
+
+---
+
+## GPT-4o / GPT-4 Turbo: Augmenting with Tools (1/2)
+
+::: {.fragment tts="We saw that the alignment step made models helpful, but their knowledge remained static. And the fine-tuning data itself was relatively small compared to pre-training."}
+*   Problem: Aligned models are helpful but have **stale** knowledge. Fine-tuning adds behavior, not much new knowledge.
+:::
+
+::: {.fragment tts="How can a model access up-to-date information or perform tasks beyond its internal knowledge, like calculations or running code? The next major innovation was enabling models to use external 'tools'."}
+*   **Key Innovation:** Fine-tuning the model to use external "tools" via function calling / plugins.
+:::
+
+::: {.fragment tts="Models like GPT-4, and later variants like Turbo and -o, were fine-tuned specifically to recognize when a user's request requires external help. This could be searching the web, running a piece of Python code in a sandbox, or calling other defined functions."}
+    *   Model learns to recognize when a task requires external info (web search) or computation (running code).
+:::
+
+---
+
+## GPT-4o / GPT-4 Turbo: Augmenting with Tools (2/2)
+
+::: {.fragment tts="When the model detects such a need, it doesn't try to hallucinate an answer. Instead, it generates a structured request to the appropriate tool – for example, formulating a search query like `search('current pope')`."}
+    *   It generates a structured request (e.g., `search("current pope")`), receives the tool's output, and synthesizes the final answer.
+:::
+
+::: {.fragment tts="The external tool (like a search engine API or a code execution environment) runs the request, returns the result, and the LLM incorporates this external information into its final response to the user."}
+*   **Result:** Overcomes stale knowledge; improves capabilities (calculation, real-time data). Introduces new failure modes (choosing wrong tool, tool returning bad data).
+:::
+
+::: {.fragment tts="Let's look at the table row. Note the further scaling in data and context, the massive increase in estimated training compute for the base GPT-4 model, and the crucial addition of 'Tool-use fine-tune'. The answer to our pope question is now potentially up-to-date, citing external sources."}
+| Model (year)                     | Incremental training steps                                 | Corpus size (tokens ≈ "Bibles"*) | Max context (tokens) | Rough train compute | Typical answer to "Who is the current pope? (3 May 2025)"             | Typical inference HW    |
+| -------------------------------- | ---------------------------------------------------------- | -------------------------------- | -------------------- | ------------------- | -------------------------------------------------------------------- | ----------------------- |
+| **GPT-4o / GPT-4 Turbo (23-24)** | + Tool-use fine-tune (plugins: Browse, Code Interpreter) | ≈ 1 T ≈ 1.6 M Bibles ↑           | 8 K / 128 K ↑        | ≈ 2.5 M A100-days ↑ | "Pope Francis died ... Pope John XXIV was elected..." (cites news) | cloud GPU + API calls |
+:::
+
+::: {.fragment tts="Now, if we try our pope question with a tool-enabled model like GPT-4o, it should ideally use its browsing tool to find the latest information."}
+*(Note: Live demo of GPT-4o with browsing for the pope question.)*
+:::
+
+---
+
+## GPT-4o1: Optimizing for Reasoning (1/2)
+
+::: {.fragment tts="Even with tools, complex problems requiring multiple steps of logical deduction remained challenging. Models could sometimes 'guess' the right answer for the wrong reasons, or fail on intricate tasks."}
+*   Problem: Models still struggle with multi-step reasoning and complex problem-solving.
+:::
+
+::: {.fragment tts="The next step, exemplified by models like GPT-4o1 (o for omni, 1 for reasoning focus), was to explicitly optimize the model's *reasoning process* itself, often post-training."}
+*   **Key Innovation:** Explicitly training the model (post-training) to perform and verify step-by-step reasoning ("Chain of Thought" - CoT).
+:::
+
+::: {.fragment tts="This often involves techniques related to 'Chain of Thought' prompting, where the model is encouraged or directly trained (using reinforcement learning) to generate intermediate reasoning steps *before* arriving at the final answer."}
+    *   Uses RL to reward models that generate a logical intermediate thought process before giving the final answer.
+    *   Focuses on improving performance on complex tasks requiring multi-step logic (math, coding, science).
+:::
+
+---
+
+## GPT-4o1: Optimizing for Reasoning (2/2)
+
+::: {.fragment tts="Think of it like forcing students to 'show their work' on a math problem. Rewarding the correct logical steps, not just the final answer, helps the model develop more robust reasoning pathways."}
+:::
+::: notes
+Analogy: Forcing students to "show their work". Reduces likelihood of confident guessing on complex problems. Not foolproof - the reasoning chain can be flawed but internally consistent.
+:::
+
+::: {.fragment tts="The result is significantly better performance on benchmarks measuring reasoning abilities. While not foolproof – the reasoning chain itself can sometimes be flawed – it tends to reduce confident errors on complex tasks."}
+*   **Result:** Significantly better benchmark scores on reasoning tasks. Reduced hallucination *on the reasoning path itself*, though errors can still occur. Slower inference due to generating intermediate steps.
+:::
+
+::: {.fragment tts="Looking at our table, GPT-4o1 builds on GPT-4o, using roughly the same massive dataset but adding a specific post-training phase focused on reasoning reinforcement. The compute for this phase is significant, though less than the initial pre-training. The hypothetical output now includes not just the facts but the justification."}
+| Model (year)                   | Incremental training steps                       | Corpus size (tokens ≈ "Bibles"*) | Max context (tokens) | Rough train compute     | Typical answer to "Who is the current pope? (3 May 2025)"                    | Typical inference HW |
+| ------------------------------ | ------------------------------------------------ | -------------------------------- | -------------------- | ----------------------- | ---------------------------------------------------------------------------- | -------------------- |
+| **GPT-4o1 (reasoning, 24-25)** | + Chain-of-thought reinforcement (post-training) | same ≈ 1 T                       | 8 K – 128 K          | + ≈ 10–20 k A100-days ↑ | Gives same facts **and** step-by-step justification (citing sources).        | cloud GPU + tools    |
+:::
+
+::: {.fragment tts="If available, a demo of GPT-4o1 on the pope question might show it explicitly stating: 'Searching for current pope...' then 'Information indicates Pope Francis died...' then 'Confirming successor选举...' leading to the final answer."}
+*(Note: Live demo of GPT-4o1 showing reasoning steps for the pope question, assuming available.)*
+:::
+
+---
+
+## Analogy: Learning like a model
+
+::: {.fragment tts="Let's try an analogy to summarize the GPT evolution in terms of learning:"}
+:::
+
+::: {.fragment tts="**GPT-3 (Base Model):** Imagine reading HUNDREDS OF THOUSANDS of textbooks and websites. You become incredibly fluent and knowledgeable about the text you've seen."}
+*   **GPT-3:** Read the textbook (a massive one!).
+:::
+
+::: {.fragment tts="**GPT-3.5 / ChatGPT:** Now, on top of that, you focus intensely on textbook examples that have *solutions* provided. You learn the *format* of answering questions correctly and following instructions."}
+*   **GPT-3.5:** Read more textbooks + focus on examples with solutions ⇒ know how to answer questions.
+:::
+
+::: {.fragment tts="**GPT-4o / Turbo:** You read even *more* textbooks, and crucially, you learn how to use tools like a calculator, the internet, and maybe a programming environment to help you answer questions you couldn't solve just from memory."}
+*   **GPT-4:** Read a LOT more! + Learn to use a calculator, the internet etc. to improve answers.
+:::
+
+::: {.fragment tts="**GPT-4o1:** Finally, you specifically practice solving complex problems, step-by-step. You get feedback not just on your final answer, but on whether your *reasoning path* was logical. You update how you think based on which lines of reasoning lead to correct solutions."}
+*   **o1:** Read practice questions, try solving them step-by-step, get feedback on the *reasoning*, update thinking based on successful paths.
+:::
+
+---
+
+## One-page lineage table (Summary)
+
+::: {.fragment tts="Let's revisit our roadmap, the lineage table, now that we've walked through each step."}
+*Let's revisit the full progression.*
+:::
+
+::: {.fragment tts="We started with N-grams, simple statistical models with tiny context. Then came the Transformer, enabling massive scaling in data and parameters (GPT-1 to 3), leading to fluent but unaligned models. Alignment (SFT + RLHF) made them conversational but stale (GPT-3.5). Adding tools overcame staleness (GPT-4o/Turbo). And finally, optimizing the reasoning process improved reliability on complex tasks (GPT-4o1)."}
+| Model (year)                     | Incremental training steps                                       | Corpus size (tokens ≈ "Bibles"*)       | Max context (tokens) | Rough train compute           | Typical answer to "Who is the current pope? (3 May 2025)"                                | Typical inference HW |
+| -------------------------------- | ---------------------------------------------------------------- | -------------------------------------- | -------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| **4-gram (Brown, 1960s)**      | Count 4-grams, MLE                                               | 1 M ≈ 1.3 Bibles                       | 3 (last three words) | < 1 CPU-h                     | "the pope is the ..." (nonsense)                                                         | any laptop CPU         |
+| **GPT-1 → GPT-3 (2018-20)**    | Same next-token objective, **massive scale-up** of params & data | 0.8 B → 500 B ≈ 1 K → 640 K Bibles ↑ | 512 → 2 048 ↑        | ≈3 × 10²³ FLOP ≈ 355 V100-years ↑ | "Read our new article on the pope here." (fluent but ignores the question's intent)        | single GPU → multi-GPU |
+| **GPT-3.5 / ChatGPT (2022)**   | + Supervised instruction fine-tune + RLHF                        | ≈ 500 B + few × 10⁵ labelled prompts | 4 096 ↑              | + a few V100-days ↑           | "Pope Francis." (Model follows instruction but is **stale**; unaware of April 2025 death.) | cloud GPU              |
+| **GPT-4o / GPT-4 Turbo (23-24)** | + Tool-use fine-tune (plugins: Browse, Code Interpreter)       | ≈ 1 T ≈ 1.6 M Bibles ↑                 | 8 K / 128 K ↑        | ≈ 2.5 M A100-days ↑           | "Pope Francis died on 14 Apr 2025; Pope John XXIV was elected on 28 Apr 2025." (cites news) | cloud GPU + API calls  |
+| **GPT-4o1 (reasoning, 24-25)**   | + Chain-of-thought reinforcement (post-training)                 | same ≈ 1 T                             | 8 K – 128 K          | + ≈ 10–20 k A100-days ↑       | Gives same facts **and** step-by-step justification (citing sources).                    | cloud GPU + tools      |
+:::
+
+::: {.fragment tts="Each incremental step built upon the previous ones, adding new capabilities but also inheriting or modifying existing limitations."}
+*Bible rough equivalence uses ≈ 780,000 words per King James Bible. Pope example is hypothetical.*
+:::
+
+---
+
+## Where are things going? (Trends)
+
+::: {.fragment tts="Based on this history, what future trends might we expect?"}
+:::
+
+::: {.fragment tts="First, continued rapid evolution seems likely. The pace from GPT-1 in 2018 to GPT-4o1 in 2024 is breathtaking. Expect significant, possibly unpredictable, advances. This could involve true multi-modality beyond text and images, more autonomous 'agentic' systems, or even entirely new AI architectures moving beyond the Transformer."}
+*   **Continued Rapid Evolution:** Pace suggests increasing capability... significant, perhaps unpredictable, changes ahead (true multi-modality, agentic systems, new architectures?).
+:::
+
+::: {.fragment tts="Second, context windows will likely keep expanding. We saw the trend from 512 tokens to 128,000 or more. Expect models capable of natively handling much larger documents, entire codebases, or very long conversations without needing complex summarization tricks."}
+*   **Context Windows Expanding:** Following the trend... Expect models handling larger documents/conversations natively.
+:::
+
+---
+
+## Where are things going? (Limitations)
+
+::: {.fragment tts="However, some fundamental limitations rooted in the current paradigm will likely persist, at least partially."}
+:::
+
+::: {.fragment tts="Bias remains a challenge. Since models are trained on vast internet datasets, they inevitably reflect the biases present in that data. Alignment helps mitigate harmful outputs, but subtle biases are hard to eliminate entirely."}
+*   **Bias**: Trained on the internet. Reflects whatever it is trained on. Alignment helps, but doesn't fully solve.
+:::
+
+::: {.fragment tts="Stale Knowledge is inherent to pre-training. Even with tools like web search, the model's *core understanding* is based on its cutoff date. You need to ensure tools are being used appropriately if real-time info is critical."}
+*   **Stale Knowledge**: Core knowledge is fixed at pre-training. Tools (like search) are essential Band-Aids for current info. Need to verify tool use.
+:::
+
+::: {.fragment tts="Compute Cost and Energy use are direct results of the 'scale is all you need' approach. Training and running state-of-the-art models requires massive data centers. This makes powerful AI difficult to run locally, raising privacy and access concerns tied to cloud dependence."}
+*   **Compute Cost / Energy**: Scaling requires huge resources. Hard to run locally ⇒ privacy/access issues persist.
+:::
+
+::: {.fragment tts="Context Window Limits, while expanding, still exist. A model processing 128k tokens is impressive, but human experience involves vastly more context accumulated over years. True human-like reasoning or long-term memory in agents remains a distant goal."}
+*   **Context Window Limits**: Expanding, but still finite. How much context does a human process in a year? Models are far from that level of integrated experience.
+:::
+
+---
+
+## References (1/2)
+
+::: {.fragment tts="Here are some key references mentioned throughout the presentation for further reading."}
+*   **Brown Corpus:** [Wikipedia](https://en.wikipedia.org/wiki/Brown_Corpus) (Example N-gram corpus)
+*   **Transformer:** Vaswani, A., et al. (2017). Attention is All You Need. [arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
+*   **GPT-3 Scale/Compute:** [Lambda Labs Blog (GPT-3 Demystified)](https://lambdalabs.com/blog/demystifying-gpt-3) (Good overview of scale)
+*   **Instruction-tuning / RLHF:** Ouyang, L., et al. (2022). Training language models to follow instructions with human feedback. [arXiv:2203.02155](https://arxiv.org/abs/2203.02155) (The InstructGPT paper, key to ChatGPT)
+:::
+
+---
+
+## References (2/2)
+
+::: {.fragment tts="And continuing with the references..."}
+*   **Tool Use (Plugins/Functions):** [OpenAI Blog (Plugins)](https://openai.com/index/chatgpt-plugins/), [OpenAI Blog (DevDay - Functions/Tools)](https://openai.com/index/new-models-and-developer-products-announced-at-devday/)
+*   **GPT-4 Compute Estimates:** Patel, A. B., et al. (2025). SpecInF... [arXiv:2503.02550v3](https://arxiv.org/html/2503.02550v3) (Note: Real compute figures are often secret; estimates vary widely)
+*   **GPT-4o1 Reasoning:** [OpenAI Blog (o1-preview)](https://openai.com/index/introducing-openai-o1-preview/)
+*   **(Optional) Chain of Thought Concept:** Wei, J., et al. (2022). Chain-of-Thought Prompting Elicits Reasoning in Large Language Models. [arXiv:2201.11903](https://arxiv.org/abs/2201.11903) (Influential paper on the reasoning technique)
+*   **Hypothetical News Examples:** [Reuters (Example)](https://www.reuters.com/world/pope-francis-has-died-vatican-says-video-statement-2025-04-21/), [Vatican News (Example)](https://www.vaticannews.va/en/vatican-city/news/2025-04/conclave-elect-new-pope-cardinals-beginning-date-may-2025.html) (Used for the pope scenario)
+:::
+
+---
+
+## Thank You
+
+::: {.fragment tts="That concludes our brief history of language models. I hope this provides a useful mental model for understanding these powerful and rapidly evolving tools. Any questions?"}
+Questions?
+:::

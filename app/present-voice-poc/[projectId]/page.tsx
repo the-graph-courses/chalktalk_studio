@@ -34,7 +34,6 @@ export default function PresentVoicePage({ params }: PageProps) {
     const [hasStarted, setHasStarted] = useState(false)
     const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map())
     const currentAudioRef = useRef<HTMLAudioElement | null>(null)
-    const handledFragmentsRef = useRef(new WeakSet<HTMLElement>())
 
     const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
 
@@ -291,7 +290,6 @@ export default function PresentVoicePage({ params }: PageProps) {
         if (!deckEl) return
 
         const r = new (Reveal as any)(deckEl)
-        handledFragmentsRef.current = new WeakSet()
         r.initialize({
             hash: true,
             width: 1280,
@@ -325,30 +323,11 @@ export default function PresentVoicePage({ params }: PageProps) {
             const slideIndex = Array.from(document.querySelectorAll('.reveal .slides section')).indexOf(slide as HTMLElement)
             const fragmentIndex = fragment.getAttribute('data-fragment-index')
 
-            logEvent('fragmentshown', {
-                slideIndex,
-                fragmentIndex,
-                fragmentClassList: Array.from(fragment.classList),
-                fragmentDataset: { ...fragment.dataset },
-                handledAlready: handledFragmentsRef.current.has(fragment)
-            })
-
-            if (handledFragmentsRef.current.has(fragment)) {
-                logEvent('Skipping audio - fragment already handled for current reveal', { slideIndex, fragmentIndex })
-                return
-            }
-            handledFragmentsRef.current.add(fragment)
-            logEvent('Registered fragment for playback', { slideIndex, fragmentIndex })
+            logEvent('fragmentshown', { slideIndex, fragmentIndex, element: fragment })
 
             const audio = fragment.querySelector('audio[data-fragment-audio]') as HTMLAudioElement
             if (audio) {
-                logEvent('Audio element found', {
-                    slideIndex,
-                    fragmentIndex,
-                    currentSrc: audio.currentSrc,
-                    hasSourceChild: !!audio.querySelector('source'),
-                    readyState: audio.readyState
-                })
+                logEvent('Audio element found', { slideIndex, fragmentIndex })
 
                 // Stop any currently playing audio
                 if (currentAudioRef.current) {
@@ -368,69 +347,20 @@ export default function PresentVoicePage({ params }: PageProps) {
                     audio.load() // Important: load the new source
                 }
 
-                const startPlayback = () => {
-                    logEvent('Preparing to start playback', {
-                        slideIndex,
-                        fragmentIndex,
-                        playbackRate,
-                        volume,
-                        currentTime: audio.currentTime,
-                        readyState: audio.readyState
-                    })
-                    currentAudioRef.current = audio
-                    audio.currentTime = 0 // Reset audio to the beginning before playing
-                    audio.playbackRate = playbackRate
-                    audio.volume = volume
+                // Play the audio
+                currentAudioRef.current = audio
+                audio.currentTime = 0 // Reset audio to the beginning before playing
+                audio.playbackRate = playbackRate
+                audio.volume = volume
 
-                    logEvent('Playing audio', { slideIndex, fragmentIndex, src: audio.currentSrc })
-                    audio.play().then(() => {
-                        logEvent('Audio playback started successfully', { slideIndex, fragmentIndex })
-                    }).catch((e: any) => {
-                        logEvent('Audio playback failed', { slideIndex, fragmentIndex, error: e.message })
-                    })
-                }
-
-                // Wait for the fragment to render before starting playback to avoid early audio
-                requestAnimationFrame(() => {
-                    logEvent('Post-animation-frame fragment check', {
-                        slideIndex,
-                        fragmentIndex,
-                        classList: Array.from(fragment.classList),
-                        boundingRect: fragment.getBoundingClientRect(),
-                        isVisibleClass: fragment.classList.contains('visible'),
-                        styleDisplay: (fragment as HTMLElement).style.display
-                    })
-                    if (!fragment.classList.contains('visible')) {
-                        handledFragmentsRef.current.delete(fragment)
-                        logEvent('Fragment no longer visible, skipping audio playback', { slideIndex, fragmentIndex })
-                        return
-                    }
-                    startPlayback()
+                logEvent('Playing audio', { slideIndex, fragmentIndex, src: audio.currentSrc })
+                audio.play().then(() => {
+                    logEvent('Audio playback started successfully', { slideIndex, fragmentIndex })
+                }).catch((e: any) => {
+                    logEvent('Audio playback failed', { slideIndex, fragmentIndex, error: e.message })
                 })
             } else {
                 logEvent('No audio element found in fragment', { slideIndex, fragmentIndex })
-            }
-        })
-
-        r.on('fragmenthidden', (event: any) => {
-            const fragment = event.fragment as HTMLElement
-            const slide = fragment.closest('section')
-            const slideIndex = Array.from(document.querySelectorAll('.reveal .slides section')).indexOf(slide as HTMLElement)
-            const fragmentIndex = fragment.getAttribute('data-fragment-index')
-
-            handledFragmentsRef.current.delete(fragment)
-            logEvent('fragmenthidden', {
-                slideIndex,
-                fragmentIndex,
-                fragmentClassList: Array.from(fragment.classList)
-            })
-
-            const audio = fragment.querySelector('audio[data-fragment-audio]') as HTMLAudioElement | null
-            if (audio && currentAudioRef.current === audio) {
-                logEvent('Stopping audio on fragmenthidden', { slideIndex, fragmentIndex, src: audio.currentSrc })
-                audio.pause()
-                audio.currentTime = 0
-                currentAudioRef.current = null
             }
         })
 

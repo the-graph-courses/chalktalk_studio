@@ -1,0 +1,135 @@
+---
+title: "chalktalk Demo"
+format: 
+    revealjs:
+        theme: moon
+---
+
+## Chalktalk Demo
+
+::: {.fragment tts="Welcome to this demonstration on creating line graphs, scales, and labels in R using ggplot2. We'll learn how to visualize relationships between numerical variables."}
+:::
+
+## Learning Objectives
+
+::: {.fragment tts="By the end of this lesson, you'll master several key skills for data visualization."}
+You will learn to:
+:::
+
+::: {.fragment tts="Create line graphs to visualize relationships between two numerical variables using geom_line"}
+- Create line graphs with `geom_line()`
+:::
+
+::: {.fragment tts="Add points to line graphs and use aesthetics like color, linewidth, and linetype"}
+- Add points and customize with aesthetics
+:::
+
+::: {.fragment tts="Manipulate axis scales and add informative labels to your plots"}
+- Manipulate scales and add labels
+:::
+
+## Introduction to Line Graphs
+
+::: {.fragment tts="Line graphs show relationships between two numerical variables, similar to scatterplots."}
+Line graphs visualize relationships between numerical variables
+:::
+
+::: {.fragment tts="They are especially useful when the x-axis variable has a sequential nature, like time."}
+- Best for sequential data (time series)
+:::
+
+::: {.fragment tts="Common examples include hours, days, weeks, or years on the x-axis, where we connect consecutive observations with lines."}
+- Connect consecutive observations
+- Time series plots are most common
+:::
+
+## Loading Packages and Data
+
+::: {.fragment tts="First, let's load the necessary packages for our analysis."}
+```{r}
+#| echo: true
+#| eval: false
+pacman::p_load(tidyverse,
+               gapminder,
+               here)
+```
+:::
+
+::: {.fragment tts="We'll use the famous gapminder dataset, which contains global economic and health data made famous by Hans Rosling's TED talk."}
+```{r}
+#| echo: true
+#| eval: false
+data(gapminder, package="gapminder")
+```
+:::
+
+## Exploring the Gapminder Data
+
+::: {.fragment tts="The gapminder dataset contains information about countries over time."}
+```{r}
+#| echo: true
+#| eval: false
+gapminder
+```
+:::
+
+::: {.fragment tts="Each row represents a country-year combination with six variables: country, continent, year, life expectancy, population, and GDP per capita."}
+Key variables:
+- `country`, `continent`, `year`
+- `lifeExp`, `pop`, `gdpPercap`
+:::
+
+## Filtering Data for Analysis
+
+::: {.fragment tts="Let's focus on one country first. We'll filter the data to show only United States records."}
+```{r}
+#| echo: true
+#| eval: false
+gap_US <- dplyr::filter(gapminder,
+                        country == "United States")
+```
+:::
+
+::: {.fragment tts="This creates a new data frame with only US data spanning from 1952 to 2007."}
+- Creates subset with US data only
+- Spans 1952 to 2007 (12 observations)
+:::
+
+## Creating Basic Line Graphs
+
+::: {.fragment tts="Now we can create our first line graph using geom_line to show life expectancy over time."}
+```{r}
+#| echo: true
+#| eval: false
+ggplot(data = gap_US,
+       mapping = aes(x = year,
+                     y = lifeExp)) +
+  geom_line()
+```
+:::
+
+::: {.fragment tts="This follows the grammar of graphics: we specify data, aesthetic mappings, and add the geometric object."}
+- Data: gap_US
+- Aesthetics: year and lifeExp
+- Geometry: geom_line()
+:::
+
+## Customizing Line Appearance
+
+::: {.fragment tts="We can customize our line graphs using fixed aesthetics like color, linewidth, and linetype."}
+```{r}
+#| echo: true
+#| eval: false
+ggplot(data = gap_US,
+       mapping = aes(x = year,
+                     y = lifeExp)) +
+  geom_line(color = "thistle3",
+            linewidth = 1.5,
+            linetype = "twodash")
+```
+:::
+
+::: {.fragment tts="Note that we use linewidth instead of size, as this was recently updated in ggplot2. Line types can be specified with names like solid, dashed, dotted, or twodash."}
+- Use `linewidth` (not size)
+- Linetype options: "solid", "dashed", "dotted"
+:::

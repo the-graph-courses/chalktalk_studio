@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="presentation_files/libs/clipboard/clipboard.min.js"></script>
+  <script src="presentation_files/libs/quarto-html/tabby.min.js"></script>
+  <script src="presentation_files/libs/quarto-html/popper.min.js"></script>
+  <script src="presentation_files/libs/quarto-html/tippy.umd.min.js"></script>
+  <link href="presentation_files/libs/quarto-html/tippy.css" rel="stylesheet">
+  <link href="presentation_files/libs/quarto-html/light-border.css" rel="stylesheet">
+  <link href="presentation_files/libs/quarto-html/quarto-html.min.css" rel="stylesheet" data-mode="light">
+  <link href="presentation_files/libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="stylesheet"
+    id="quarto-text-highlighting-styles">
+  <meta charset="utf-8">
+  <meta name="generator" content="quarto-1.5.56">
+
+  <title>chalktalk Demo</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="presentation_files/libs/revealjs/dist/reset.css">
+  <link rel="stylesheet" href="presentation_files/libs/revealjs/dist/reveal.css">
+  <style>
+    code {
+      white-space: pre-wrap;
+    }
+
+    span.smallcaps {
+      font-variant: small-caps;
+    }
+
+    div.columns {
+      display: flex;
+      gap: min(4vw, 1.5em);
+    }
+
+    div.column {
+      flex: auto;
+      overflow-x: auto;
+    }
+
+    div.hanging-indent {
+      margin-left: 1.5em;
+      text-indent: -1.5em;
+    }
+
+    ul.task-list {
+      list-style: none;
+    }
+
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em;
+      /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */
+      vertical-align: middle;
+    }
+  </style>
+  <link rel="stylesheet" href="presentation_files/libs/revealjs/dist/theme/quarto.css">
+  <link href="presentation_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
+  <link href="presentation_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
+  <link href="presentation_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
+  <link href="presentation_files/libs/revealjs/plugin/quarto-support/footer.css" rel="stylesheet">
+  <style type="text/css">
+    .callout {
+      margin-top: 1em;
+      margin-bottom: 1em;
+      border-radius: .25rem;
+    }
+
+    .callout.callout-style-simple {
+      padding: 0em 0.5em;
+      border-left: solid #acacac .3rem;
+      border-right: solid 1px silver;
+      border-top: solid 1px silver;
+      border-bottom: solid 1px silver;
+      display: flex;
+    }
+
+    .callout.callout-style-default {
+      border-left: solid #acacac .3rem;
+      border-right: solid 1px silver;
+      border-top: solid 1px silver;
+      border-bottom: solid 1px silver;
+    }
+
+    .callout .callout-body-container {
+      flex-grow: 1;
+    }
+
+    .callout.callout-style-simple .callout-body {
+      font-size: 1rem;
+      font-weight: 400;
+    }
+
+    .callout.callout-style-default .callout-body {
+      font-size: 0.9rem;
+      font-weight: 400;
+    }
+
+    .callout.callout-titled.callout-style-simple .callout-body {
+      margin-top: 0.2em;
+    }
+
+    .callout:not(.callout-titled) .callout-body {
+      display: flex;
+    }
+
+    .callout:not(.no-icon).callout-titled.callout-style-simple .callout-content {
+      padding-left: 1.6em;
+    }
+
+    .callout.callout-titled .callout-header {
+      padding-top: 0.2em;
+      margin-bottom: -0.2em;
+    }
+
+    .callout.callout-titled .callout-title p {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .callout.callout-titled.callout-style-simple .callout-content p {
+      margin-top: 0;
+    }
+
+    .callout.callout-titled.callout-style-default .callout-content p {
+      margin-top: 0.7em;
+    }
+
+    .callout.callout-style-simple div.callout-title {
+      border-bottom: none;
+      font-size: .9rem;
+      font-weight: 600;
+      opacity: 75%;
+    }
+
+    .callout.callout-style-default div.callout-title {
+      border-bottom: none;
+      font-weight: 600;
+      opacity: 85%;
+      font-size: 0.9rem;
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+    }
+
+    .callout.callout-style-default div.callout-content {
+      padding-left: 0.5em;
+      padding-right: 0.5em;
+    }
+
+    .callout.callout-style-simple .callout-icon::before {
+      height: 1rem;
+      width: 1rem;
+      display: inline-block;
+      content: "";
+      background-repeat: no-repeat;
+      background-size: 1rem 1rem;
+    }
+
+    .callout.callout-style-default .callout-icon::before {
+      height: 0.9rem;
+      width: 0.9rem;
+      display: inline-block;
+      content: "";
+      background-repeat: no-repeat;
+      background-size: 0.9rem 0.9rem;
+    }
+
+    .callout-title {
+      display: flex
+    }
+
+    .callout-icon::before {
+      margin-top: 1rem;
+      padding-right: .5rem;
+    }
+
+    .callout.no-icon::before {
+      display: none !important;
+    }
+
+    .callout.callout-titled .callout-body>.callout-content> :last-child {
+      padding-bottom: 0.5rem;
+      margin-bottom: 0;
+    }
+
+    .callout.callout-titled .callout-icon::before {
+      margin-top: .5rem;
+      padding-right: .5rem;
+    }
+
+    .callout:not(.callout-titled) .callout-icon::before {
+      margin-top: 1rem;
+      padding-right: .5rem;
+    }
+
+    /* Callout Types */
+
+    div.callout-note {
+      border-left-color: #4582ec !important;
+    }
+
+    div.callout-note .callout-icon::before {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAEU0lEQVRYCcVXTWhcVRQ+586kSUMMxkyaElstCto2SIhitS5Ek8xUKV2poatCcVHtUlFQk8mbaaziwpWgglJwVaquitBOfhQXFlqlzSJpFSpIYyXNjBNiTCck7x2/8/LeNDOZxDuEkgOXe++553zfefee+/OYLOXFk3+1LLrRdiO81yNqZ6K9cG0P3MeFaMIQjXssE8Z1JzLO9ls20MBZX7oG8w9GxB0goaPrW5aNMp1yOZIa7Wv6o2ykpLtmAPs/vrG14Z+6d4jpbSKuhdcSyq9wGMPXjonwmESXrriLzFGOdDBLB8Y6MNYBu0dRokSygMA/mrun8MGFN3behm6VVAwg4WR3i6FvYK1T7MHo9BK7ydH+1uurECoouk5MPRyVSBrBHMYwVobG2aOXM07sWrn5qgB60rc6mcwIDJtQrnrEr44kmy+UO9r0u9O5/YbkS9juQckLed3DyW2XV/qWBBB3ptvI8EUY3I9p/67OW+g967TNr3Sotn3IuVlfMLVnsBwH4fsnebJvyGm5GeIUA3jljERmrv49SizPYuq+z7c2H/jlGC+Ghhupn/hcapqmcudB9jwJ/3jvnvu6vu5lVzF1fXyZuZZ7U8nRmVzytvT+H3kilYvH09mLWrQdwFSsFEsxFVs5fK7A0g8gMZjbif4ACpKbjv7gNGaD8bUrlk8x+KRflttr22JEMRUbTUwwDQScyzPgedQHZT0xnx7ujw2jfVfExwYHwOsDTjLdJ2ebmeQIlJ7neo41s/DrsL3kl+W2lWvAga0tR3zueGr6GL78M3ifH0rGXrBC2aAR8uYcIA5gwV8zIE8onoh8u0Fca/ciF7j1uOzEnqcIm59sEXoGc0+z6+H45V1CvAvHcD7THztu669cnp+L0okAeIc6zjbM/24LgGM1gZk7jnRu1aQWoU9sfUOuhrmtaPIO3YY1KLLWZaEO5TKUbMY5zx8W9UJ6elpLwKXbsaZ4EFl7B4bMtDv0iRipKoDQT2sNQI9b1utXFdYisi+wzZ/ri/1m7QfDgEuvgUUEIJPq3DhX/5DWNqIXDOweC2wvIR90Oq3lDpdMIgD2r0dXvGdsEW5H6x6HLRJYU7C69VefO1x8Gde1ZFSJLfWS1jbCnhtOPxmpfv2LXOA2Xk2tvnwKKPFuZ/oRmwBwqRQDcKNeVQkYcOjtWVBuM/JuYw5b6isojIkYxyYAFn5K7ZBF10fea52y8QltAg6jnMqNHFBmGkQ1j+U43HMi2xMar1Nv0zGsf1s8nUsmUtPOOrbFIR8bHFDMB5zL13Gmr/kGlCkUzedTzzmzsaJXhYawnA3UmARpiYj5ooJZiUoxFRtK3X6pgNPv+IZVPcnwbOl6f+aBaO1CNvPW9n9LmCp01nuSaTRF2YxHqZ8DYQT6WsXT+RD6eUztwYLZ8rM+rcPxamv1VQzFUkzFXvkiVrySGQgJNvXHJAxiU3/NwiC03rSf05VBaPtu/Z7/B8Yn/w7eguloAAAAAElFTkSuQmCC');
+    }
+
+    div.callout-note.callout-style-default .callout-title {
+      background-color: #dae6fb
+    }
+
+    div.callout-important {
+      border-left-color: #d9534f !important;
+    }
+
+    div.callout-important .callout-icon::before {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAEKklEQVRYCcVXTWhcVRS+575MJym48A+hSRFr00ySRQhURRfd2HYjk2SSTokuBCkU2o0LoSKKraKIBTcuFCoidGFD08nkBzdREbpQ1EDNIv8qSGMFUboImMSZd4/f9zJv8ibJMC8xJQfO3HPPPef7zrvvvnvviIkpC9nsw0UttFunbUhpFzFtarSd6WJkStVMw5xyVqYTvkwfzuf/5FgtkVoB0729j1rjXwThS7Vio+Mo6DNnvLfahoZ+i/o32lULuJ3NNiz7q6+pyAUkJaFF6JwaM2lUJlV0MlnQn5aTRbEu0SEqHUa0A4AdiGuB1kFXRfVyg5d87+Dg4DL6m2TLAub60ilj7A1Ec4odSAc8X95sHh7+ZRPCFo6Fnp7HfU/fBng/hi10CjCnWnJjsxvDNxWw0NfV6Rv5GgP3I3jGWXumdTD/3cbEOP2ZbOZp69yniG3FQ9z1jD7bnBu9Fc2tKGC2q+uAJOQHBDRiZX1x36o7fWBs7J9ownbtO+n0/qWkvW7UPIfc37WgT6ZGR++EOJyeQDSb9UB+DZ1G6DdLDzyS+b/kBCYGsYgJbSQHuThGKRcw5xdeQf8YdNHsc6ePXrlSYMBuSIAFTGAtQo+VuALo4BX83N190NWZWbynBjhOHsmNfFWLeL6v+ynsA58zDvvAC8j5PkbOcXCMg2PZFk3q8MjI7WAG/Dp9AwP7jdGBOOQkAvlFUB+irtm16I1Zw9YBcpGTGXYmk3kQIC/Cds55l+iMI3jqhjAuaoe+am2Jw5GT3Nbz3CkE12NavmzN5+erJW7046n/CH1RO/RVa8lBLozXk9uqykkGAyRXLWlLv5jyp4RFsG5vGVzpDLnIjTWgnRy2Rr+tDKvRc7Y8AyZq10jj8DqXdnIRNtFZb+t/ZRtXcDiVnzpqx8mPcDWxgARUqx0W1QB9MeUZiNrV4qP+Ehc+BpNgATsTX8ozYKL2NtFYAHc84fG7ndxUPr+AR/iQSns7uSUufAymwDOb2+NjK27lEFocm/EE2WpyIy/Hi66MWuMKJn8RvxIcj87IM5Vh9663ziW36kR0HNenXuxmfaD8JC7tfKbrhFr7LiZCrMjrzTeGx+PmkosrkNzW94ObzwocJ7A1HokLolY+AvkTiD/q1H0cN48c5EL8Crkttsa/AXQVDmutfyku0E7jShx49XqV3MFK8IryDhYVbj7Sj2P2eBxwcXoe8T8idsKKPRcnZw1b+slFTubwUwhktrfnAt7J++jwQtLZcm3sr9LQrjRzz6cfMv9aLvgmnAGvpoaGLxM4mAEaLV7iAzQ3oU0IvD5x9ix3yF2RAAuYAOO2f7PEFWCXZ4C9Pb2UsgDeVnFSpbFK7/IWu7TPTvBqzbGdCHOJQSxiEjt6IyZmxQyEJHv6xyQsYk//moVFsN2zP6fRImjfq7/n/wFDguUQFNEwugAAAABJRU5ErkJggg==');
+    }
+
+    div.callout-important.callout-style-default .callout-title {
+      background-color: #f7dddc
+    }
+
+    div.callout-warning {
+      border-left-color: #f0ad4e !important;
+    }
+
+    div.callout-warning .callout-icon::before {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAAETklEQVRYCeVWW2gcVRg+58yaTUnizqbipZeX4uWhBEniBaoUX1Ioze52t7sRq6APio9V9MEaoWlVsFasRq0gltaAPuxms8lu0gcviE/FFOstVbSIxgcv6SU7EZqmdc7v9+9mJtNks51NTUH84ed889/PP+cmxP+d5FIbMJmNbpREu4WUkiTtCicKny0l1pIKmBzovF2S+hIJHX8iEu3hZJ5lNZGqyRrGSIQpq15AzF28jgpeY6yk6GVdrfFqdrD6Iw+QlB8g0YS2g7dyQmXM/IDhBhT0UCiRf59lfqmmDvzRt6kByV/m4JjtzuaujMUM2c5Z2d6JdKrRb3K2q6mA+oYVz8JnDdKPmmNthzkAk/lN63sYPgevrguc72aZX/L9C6x09GYyxBgCX4NlvyGUHOKELlm5rXeR1kchuChJt4SSwyddZRXgvwMGvYo4QSlk3/zkHD8UHxwVJA6zjZZqP8v8kK8OWLnIZtLyCAJagYC4rTGW/9Pqj92N/c+LUaAj27movwbi19tk/whRCIE7Q9vyI6yvRpftAKVTdUjOW40X3h5OXsKCdmFcx0xlLJoSuQngnrJe7Kcjm4OMq9FlC7CMmScQANuNvjfP3PjGXDBaUQmbp296S5L4DrpbrHN1T87ZVEZVCzg1FF0Ft+dKrlLukI+/c9ENo+TvlTDbYFvuKPtQ9+l052rXrgKoWkDAFnvh0wTOmYn8R5f4k/jN/fZiCM1tQx9jQQ4ANhqG4hiL0qIFTGViG9DKB7GYzgubnpofgYRwO+DFjh0Zin2m4b/97EDkXkc+f6xYAPX0KK2I/7fUQuwzuwo/L3AkcjugPNixC8cHf0FyPjWlItmLxWw4Ou9YsQCr5fijMGoD/zpdRy95HRysyXA74MWOnscpO4j2y3HAVisw85hX5+AFBRSHt4ShfLFkIMXTqyKFc46xdzQM6XbAi702a7sy04J0+feReMFKp5q9esYLCqAZYw/k14E/xcLLsFElaornTuJB0svMuJINy8xkIYuL+xPAlWRceH6+HX7THJ0djLUom46zREu7tTkxwmf/FdOZ/sh6Q8qvEAiHpm4PJ4a/doJe0gH1t+aHRgCzOvBvJedEK5OFE5jpm4AGP2a8Dxe3gGJ/pAutug9Gp6he92CsSsWBaEcxGx0FHytmIpuqGkOpldqNYQK8cSoXvd+xLxXADw0kf6UkJNFtdo5MOgaLjiQOQHcn+A6h5NuL2s0qsC2LOM75PcF3yr5STuBSAcGG+meA14K/CI21HcS4LBT6tv0QAh8Dr5l93AhZzG5ZJ4VxAqdZUEl9z7WJ4aN+svMvwHHL21UKTd1mqvChH7/Za5xzXBBKrUcB0TQ+Ulgkfbi/H/YT5EptrGzsEK7tR1B7ln9BBwckYfMiuSqklSznIuoIIOM42MQO+QnduCoFCI0bpkzjCjddHPN/F+2Yu+sd9bKNpVwHhbS3LluK/0zgfwD0xYI5dXuzlQAAAABJRU5ErkJggg==');
+    }
+
+    div.callout-warning.callout-style-default .callout-title {
+      background-color: #fcefdc
+    }
+
+    div.callout-tip {
+      border-left-color: #02b875 !important;
+    }
+
+    div.callout-tip .callout-icon::before {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAADr0lEQVRYCe1XTWgTQRj9ZjZV8a9SPIkKgj8I1bMHsUWrqYLVg4Ue6v9BwZOxSYsIerFao7UiUryIqJcqgtpimhbBXoSCVxUFe9CTiogUrUp2Pt+3aUI2u5vdNh4dmMzOzHvvezuz8xNFM0mjnbXaNu1MvFWRXkXEyE6aYOYJpdW4IXuA4r0fo8qqSMDBU0v1HJUgVieAXxzCsdE/YJTdFcVIZQNMyhruOMJKXYFoLfIfIvVIMWdsrd+Rpd86ZmyzzjJmLStqRn0v8lzkb4rVIXvnpScOJuAn2ACC65FkPzEdEy4TPWRLJ2h7z4cArXzzaOdKlbOvKKX25Wl00jSnrwVxAg3o4dRxhO13RBSdNvH0xSARv3adTXbBdTf64IWO2vH0LT+cv4GR1DJt+DUItaQogeBX/chhbTBxEiZ6gftlDNXTrvT7co4ub5A6gp9HIcHvzTa46OS5fBeP87Qm0fQkr4FsYgVQ7Qg+ZayaDg9jhg1GkWj8RG6lkeSacrrHgDaxdoBiZPg+NXV/KifMuB6//JmYH4CntVEHy/keA6x4h4CU5oFy8GzrBS18cLJMXcljAKB6INjWsRcuZBWVaS3GDrqB7rdapVIeA+isQ57Eev9eCqzqOa81CY05VLd6SamW2wA2H3SiTbnbSxmzfp7WtKZkqy4mdyAlGx7ennghYf8voqp9cLSgKdqNfa6RdRsAAkPwRuJZNbpByn+RrJi1RXTwdi8RQF6ymDwGMAtZ6TVE+4uoKh+MYkcLsT0Hk8eAienbiGdjJHZTpmNjlbFJNKDVAp2fJlYju6IreQxQ08UJDNYdoLSl6AadO+fFuCQqVMB1NJwPm69T04Wv5WhfcWyfXQB+wXRs1pt+nCknRa0LVzSA/2B+a9+zQJadb7IyyV24YAxKp2Jqs3emZTuNnKxsah+uabKbMk7CbTgJx/zIgQYErIeTKRQ9yD9wxVof5YolPHqaWo7TD6tJlh7jQnK5z2n3+fGdggIOx2kaa2YI9QWarc5Ce1ipNWMKeSG4DysFF52KBmTNMmn5HqCFkwy34rDg05gDwgH3bBi+sgFhN/e8QvRn8kbamCOhgrZ9GJhFDgfcMHzFb6BAtjKpFhzTjwv1KCVuxHvCbsSiEz4CANnj84cwHdFXAbAOJ4LTSAawGWFn5tDhLMYz6nWeU2wJfIhmIJBefcd/A5FWQWGgrWzyORZ3Q6HuV+Jf0Bj+BTX69fm1zWgK7By1YTXchFDORywnfQ7GpzOo6S+qECrsx2ifVQAAAABJRU5ErkJggg==');
+    }
+
+    div.callout-tip.callout-style-default .callout-title {
+      background-color: #ccf1e3
+    }
+
+    div.callout-caution {
+      border-left-color: #fd7e14 !important;
+    }
+
+    div.callout-caution .callout-icon::before {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAIKADAAQAAAABAAAAIAAAAACshmLzAAACV0lEQVRYCdVWzWoUQRCuqp2ICBLJXgITZL1EfQDBW/bkzUMUD7klD+ATSHBEfAIfQO+iXsWDxJsHL96EHAwhgzlkg8nBg25XWb0zIb0zs9muYYWkoKeru+vn664fBqElyZNuyh167NXJ8Ut8McjbmEraKHkd7uAnAFku+VWdb3reSmRV8PKSLfZ0Gjn3a6Xlcq9YGb6tADjn+lUfTXtVmaZ1KwBIvFI11rRXlWlatwIAAv2asaa9mlB9wwygiDX26qaw1yYPzFXg2N1GgG0FMF8Oj+VIx7E/03lHx8UhvYyNZLN7BwSPgekXXLribw7w5/c8EF+DBK5idvDVYtEEwMeYefjjLAdEyQ3M9nfOkgnPTEkYU+sxMq0BxNR6jExrAI31H1rzvLEfRIdgcv1XEdj6QTQAS2wtstEALLG1yEZ3QhH6oDX7ExBSFEkFINXH98NTrme5IOaaA7kIfiu2L8A3qhH9zRbukdCqdsA98TdElyeMe5BI8Rs2xHRIsoTSSVFfCFCWGPn9XHb4cdobRIWABNf0add9jakDjQJpJ1bTXOJXnnRXHRf+dNL1ZV1MBRCXhMbaHqGI1JkKIL7+i8uffuP6wVQAzO7+qVEbF6NbS0LJureYcWXUUhH66nLR5rYmva+2tjRFtojkM2aD76HEGAD3tPtKM309FJg5j/K682ywcWJ3PASCcycH/22u+Bh7Aa0ehM2Fu4z0SAE81HF9RkB21c5bEn4Dzw+/qNOyXr3DCTQDMBOdhi4nAgiFDGCinIa2owCEChUwD8qzd03PG+qdW/4fDzjUMcE1ZpIAAAAASUVORK5CYII=');
+    }
+
+    div.callout-caution.callout-style-default .callout-title {
+      background-color: #ffe5d0
+    }
+  </style>
+  <style type="text/css">
+    .reveal div.sourceCode {
+      margin: 0;
+      overflow: auto;
+    }
+
+    .reveal div.hanging-indent {
+      margin-left: 1em;
+      text-indent: -1em;
+    }
+
+    .reveal .slide:not(.center) {
+      height: 100%;
+    }
+
+    .reveal .slide.scrollable {
+      overflow-y: auto;
+    }
+
+    .reveal .footnotes {
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .reveal .slide .absolute {
+      position: absolute;
+      display: block;
+    }
+
+    .reveal .footnotes ol {
+      counter-reset: ol;
+      list-style-type: none;
+      margin-left: 0;
+    }
+
+    .reveal .footnotes ol li:before {
+      counter-increment: ol;
+      content: counter(ol) ". ";
+    }
+
+    .reveal .footnotes ol li>p:first-child {
+      display: inline-block;
+    }
+
+    .reveal .slide ul,
+    .reveal .slide ol {
+      margin-bottom: 0.5em;
+    }
+
+    .reveal .slide ul li,
+    .reveal .slide ol li {
+      margin-top: 0.4em;
+      margin-bottom: 0.2em;
+    }
+
+    .reveal .slide ul[role="tablist"] li {
+      margin-bottom: 0;
+    }
+
+    .reveal .slide ul li>*:first-child,
+    .reveal .slide ol li>*:first-child {
+      margin-block-start: 0;
+    }
+
+    .reveal .slide ul li>*:last-child,
+    .reveal .slide ol li>*:last-child {
+      margin-block-end: 0;
+    }
+
+    .reveal .slide .columns:nth-child(3) {
+      margin-block-start: 0.8em;
+    }
+
+    .reveal blockquote {
+      box-shadow: none;
+    }
+
+    .reveal .tippy-content>* {
+      margin-top: 0.2em;
+      margin-bottom: 0.7em;
+    }
+
+    .reveal .tippy-content>*:last-child {
+      margin-bottom: 0.2em;
+    }
+
+    .reveal .slide>img.stretch.quarto-figure-center,
+    .reveal .slide>img.r-stretch.quarto-figure-center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .reveal .slide>img.stretch.quarto-figure-left,
+    .reveal .slide>img.r-stretch.quarto-figure-left {
+      display: block;
+      margin-left: 0;
+      margin-right: auto;
+    }
+
+    .reveal .slide>img.stretch.quarto-figure-right,
+    .reveal .slide>img.r-stretch.quarto-figure-right {
+      display: block;
+      margin-left: auto;
+      margin-right: 0;
+    }
+  </style>
+</head>
+
+<body class="quarto-dark">
+  <div class="reveal">
+    <div class="slides">
+
+      <section id="title-slide" class="quarto-title-block center">
+        <h1 class="title">chalktalk Demo</h1>
+
+        <div class="quarto-title-authors">
+        </div>
+
+      </section>
+      <section>
+        <section id="history-of-llms" class="title-slide slide level1 center">
+          <h1>History of LLMs</h1>
+
+        </section>
+        <section id="from-n-grams-to-chatgpt-a-very-brief-history-of-language-modeling" class="slide level2">
+          <h2>From n-grams to ChatGPT: A Very Brief History of Language Modeling</h2>
+        </section>
+        <section id="why-the-past-matters" class="slide level2">
+          <h2>Why the Past Matters</h2>
+          <div class="columns">
+            <div class="column" style="width:50%;">
+              <div class="fragment"
+                data-tts="Why delve into the history of language models, especially for life scientists? Because understanding the past helps us understand the present and anticipate the future.">
+
+              </div>
+              <div class="fragment"
+                data-tts="First, technical capabilities are compounding rapidly. Progress isn't linear; it's accelerating. Think about Moore's Law, but for language AI.">
+                <ul>
+                  <li>Technical capabilities are <strong>compounding</strong> → forecasting requires a historical lens
+                  </li>
+                </ul>
+              </div>
+              <div class="fragment"
+                data-tts="Consider this: GPT-1 is only about seven years old as of this writing. The pace is truly picking up. Forecasting even the next two years is incredibly challenging without this historical context.">
+
+              </div>
+              <aside class="notes">
+                <p>Note that GPT-1 is only <em>seven</em> years old; the pace is <strong>accelerating</strong>.</p>
+                <p>Forecasting the next two years is challenging without this backstory.</p>
+                <style type="text/css">
+                  span.MJX_Assistive_MathML {
+                    position: absolute !important;
+                    clip: rect(1px, 1px, 1px, 1px);
+                    padding: 1px 0 0 0 !important;
+                    border: 0 !important;
+                    height: 1px !important;
+                    width: 1px !important;
+                    overflow: hidden !important;
+                    display: block !important;
+                  }
+                </style>
+              </aside>
+            </div>
+            <div class="column" style="width:50%;">
+              <div class="fragment"
+                data-tts="Second, the pitfalls we encounter today – things like bias in the model's responses, the tendency to 'hallucinate' or make things up, and the sheer cost of training and running these models – aren't random bugs.">
+
+              </div>
+              <div class="fragment"
+                data-tts="They often trace straight back to specific decisions made during the model's training process, the data it was fed, and the objectives it was optimized for.">
+                <ul>
+                  <li>Pitfalls (bias, hallucination, cost) trace straight back to each training step</li>
+                </ul>
+              </div>
+              <div class="fragment"
+                data-tts="So, our goal today isn't just to give you a recipe for using these tools.">
+
+              </div>
+              <div class="fragment"
+                data-tts="It's to provide a mental model – a foundational understanding of how these models evolved, why they work the way they do, and what their inherent strengths and limitations are.">
+                <ul>
+                  <li>Goal today: give life-science graduates a <strong>mental model</strong>, not just a recipe</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top: 2em; text-align: center;">
+            <p>[Placeholder for Image 1] &nbsp;&nbsp;&nbsp;&nbsp; [Placeholder for Image 2]</p>
+          </div>
+        </section>
+        <section id="what-is-a-language-model" class="slide level2">
+          <h2>What is a language model?</h2>
+          <div class="fragment"
+            data-tts="Before we dive into history, let's define our terms. What *is* a language model at its core?">
+            <ul>
+              <li><strong>Definition:</strong> A language model is a type of AI that has been trained to understand and
+                generate human language.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Fundamentally, it learns the probability of sequences of words occurring. Given some text, its basic task is often to predict the *next* word or token.">
+            <ul>
+              <li>It learns patterns, grammar, and even some degree of 'knowledge' from the vast amounts of text data
+                it's trained on.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Think of it like a super-powered autocomplete, but one that can handle much more complex tasks like translation, summarization, and answering questions.">
+
+          </div>
+        </section>
+        <section id="one-page-lineage-table-roadmap" class="slide level2">
+          <h2>One-page lineage table (Roadmap)</h2>
+          <div class="fragment"
+            data-tts="Here's a summary table outlining the key steps in model evolution we'll discuss today. Think of this as our roadmap.">
+            <p><em>A summary of the key steps in model evolution we'll discuss.</em></p>
+          </div>
+          <div class="fragment"
+            data-tts="We'll start with simple N-grams from the 1960s and walk through the major innovations leading up to today's sophisticated models like GPT-4o1.">
+            <table class="caption-top">
+              <colgroup>
+                <col style="width: 10%">
+                <col style="width: 21%">
+                <col style="width: 12%">
+                <col style="width: 6%">
+                <col style="width: 9%">
+                <col style="width: 30%">
+                <col style="width: 7%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>4-gram (Brown, 1960s)</strong></td>
+                  <td>Count 4-grams, MLE</td>
+                  <td>1 M ≈ 1.3 Bibles</td>
+                  <td>3 (last three words)</td>
+                  <td>&lt; 1 CPU-h</td>
+                  <td>"the pope is the ..." (nonsense)</td>
+                  <td>any laptop CPU</td>
+                </tr>
+                <tr class="even">
+                  <td><strong>GPT-1 → GPT-3 (2018-20)</strong></td>
+                  <td>Same next-token objective, <strong>massive scale-up</strong> of params &amp; data</td>
+                  <td>0.8 B → 500 B ≈ 1 K → 640 K Bibles ↑</td>
+                  <td>512 → 2 048 ↑</td>
+                  <td>≈3 × 10²³ FLOP ≈ 355 V100-years ↑</td>
+                  <td>"Read our new article on the pope here." (fluent but ignores the question's intent)</td>
+                  <td>single GPU → multi-GPU</td>
+                </tr>
+                <tr class="odd">
+                  <td><strong>GPT-3.5 / ChatGPT (2022)</strong></td>
+                  <td>+ Supervised instruction fine-tune + RLHF</td>
+                  <td>≈ 500 B + few × 10⁵ labelled prompts</td>
+                  <td>4 096 ↑</td>
+                  <td>+ a few V100-days ↑</td>
+                  <td>"Pope Francis." (Model follows instruction but is <strong>stale</strong>; unaware of April 2025
+                    death.)</td>
+                  <td>cloud GPU</td>
+                </tr>
+                <tr class="even">
+                  <td><strong>GPT-4o / GPT-4 Turbo (23-24)</strong></td>
+                  <td>+ Tool-use fine-tune (plugins: Browse, Code Interpreter)</td>
+                  <td>≈ 1 T ≈ 1.6 M Bibles ↑</td>
+                  <td>8 K / 128 K ↑</td>
+                  <td>≈ 2.5 M A100-days ↑</td>
+                  <td>"Pope Francis died on 14 Apr 2025; Pope John XXIV was elected on 28 Apr 2025." (cites news)</td>
+                  <td>cloud GPU + API calls</td>
+                </tr>
+                <tr class="odd">
+                  <td><strong>GPT-4o1 (reasoning, 24-25)</strong></td>
+                  <td>+ Chain-of-thought reinforcement (post-training)</td>
+                  <td>same ≈ 1 T</td>
+                  <td>8 K – 128 K</td>
+                  <td>+ ≈ 10–20 k A100-days ↑</td>
+                  <td>Gives same facts <strong>and</strong> step-by-step justification (citing sources).</td>
+                  <td>cloud GPU + tools</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fragment"
+            data-tts="We'll examine each row, explaining the incremental changes and their consequences, focusing on how each step built upon the last. Then we'll return here for a final summary.">
+            <p><em>Bible rough equivalence uses ≈ 780,000 words per King James Bible. Pope example is hypothetical.</em>
+            </p>
+          </div>
+          <aside class="notes">
+            <p>Introduce this as the roadmap. We'll walk through each row, explaining the <em>incremental</em> changes
+              and their consequences, then return here for a summary.</p>
+            <style type="text/css">
+              span.MJX_Assistive_MathML {
+                position: absolute !important;
+                clip: rect(1px, 1px, 1px, 1px);
+                padding: 1px 0 0 0 !important;
+                border: 0 !important;
+                height: 1px !important;
+                width: 1px !important;
+                overflow: hidden !important;
+                display: block !important;
+              }
+            </style>
+          </aside>
+        </section>
+        <section id="baseline-n-gram-language-models-12" class="slide level2">
+          <h2>Baseline: N-gram Language Models (1/2)</h2>
+          <div class="fragment"
+            data-tts="Let's begin at the beginning, with N-gram models, which were foundational in computational linguistics.">
+
+          </div>
+          <div class="fragment"
+            data-tts="The core idea is simple: Predict the next word based *only* on the previous 'N minus one' words. For a 4-gram model, that means looking at just the last three words.">
+            <ul>
+              <li><strong>Core Idea:</strong> Predict the next word based <em>only</em> on the previous N-1 words.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Training these models involves simply counting sequences of N words in a text corpus. This statistical approach is called Maximum Likelihood Estimation, or MLE.">
+            <ul>
+              <li><strong>Training:</strong> Simply count sequences of N words in a text corpus (Maximum Likelihood
+                Estimation - MLE).</li>
+            </ul>
+          </div>
+        </section>
+        <section id="baseline-n-gram-language-models-22" class="slide level2">
+          <h2>Baseline: N-gram Language Models (2/2)</h2>
+          <div class="fragment"
+            data-tts="The major limitation is obvious: N-grams understand only very local word patterns. They have no concept of grammar beyond the N-word window, no broader context, no world knowledge, and certainly no understanding of user instructions or questions.">
+            <ul>
+              <li><strong>Limitation:</strong> Understands local word patterns but has no broader context, world
+                knowledge, or concept of instructions/questions.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Here's the N-gram row from our table. Notice the tiny context, minimal compute, and nonsensical output for our test question.">
+            <table class="caption-top">
+              <colgroup>
+                <col style="width: 12%">
+                <col style="width: 12%">
+                <col style="width: 15%">
+                <col style="width: 9%">
+                <col style="width: 9%">
+                <col style="width: 28%">
+                <col style="width: 9%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>4-gram (Brown, 1960s)</strong></td>
+                  <td>Count 4-grams, MLE</td>
+                  <td>1 M ≈ 1.3 Bibles</td>
+                  <td>3 (last three words)</td>
+                  <td>&lt; 1 CPU-h</td>
+                  <td>"the pope is the ..." (nonsense)</td>
+                  <td>any laptop CPU</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section id="n-grams-small-but-kinda-useful" class="slide level2">
+          <h2>N-grams: Small but kinda useful</h2>
+          <div class="fragment"
+            data-tts="Now, I'll switch to a quick demo to show what typical output from a trigram or four-gram model looks like. Expect statistical word salad!">
+            <p><em>(Note: We'll switch to a live demo here to show trigram/4-gram output.)</em></p>
+          </div>
+          <div class="fragment"
+            data-tts="Despite their limitations, N-grams weren't useless! Their underlying principle powers simple applications we still see.">
+
+          </div>
+          <div class="fragment"
+            data-tts="Think about the predictive text on your phone or the query suggestions in Google search. These often use N-gram-like techniques to guess the next few characters or words you're likely to type based on frequency.">
+            <ul>
+              <li>Examples: Early machine translation, spell checkers, mobile keyboard prediction, search query
+                suggestion.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="But for complex understanding or generation, we needed something much smarter.">
+            <p><em>(Image of Google search prediction could go here)</em></p>
+          </div>
+        </section>
+        <section id="need-a-smarter-way-enter-the-transformer-12" class="slide level2">
+          <h2>Need a Smarter Way: Enter the Transformer (1/2)</h2>
+          <div class="fragment"
+            data-tts="The big leap forward came with the Transformer architecture, introduced in the 2017 paper 'Attention Is All You Need'.">
+            <ul>
+              <li><strong>Key Innovation:</strong> The Transformer Architecture (Vaswani et al., 2017)</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="The Transformer provided a much more sophisticated way to model language, particularly dependencies between words far apart in a sentence or document. It still aimed to predict the next token, but used a mechanism called 'attention' to weigh the importance of different input words.">
+            <ul>
+              <li>A more intelligent… and <strong>much more parallelizable</strong>… way to do next token prediction.
+              </li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Crucially, its design was highly parallelizable, meaning it could be trained efficiently on massive datasets using modern GPUs.">
+            <ul>
+              <li><strong>Approach:</strong> Keep the same core objective (predict the next token) but use a better
+                architecture.</li>
+            </ul>
+          </div>
+        </section>
+        <section id="need-a-smarter-way-enter-the-transformer-22" class="slide level2">
+          <h2>Need a Smarter Way: Enter the Transformer (2/2)</h2>
+          <div class="fragment"
+            data-tts="Here's a very high-level schematic. The key idea is that 'attention mechanisms' allow the model to look at all parts of the input sequence simultaneously and decide which parts are most relevant for predicting the next word, unlike older recurrent models that processed words one by one.">
+            <p>[IMAGE showing simplified Transformer architecture with attention]</p>
+          </div>
+          <div class="fragment"
+            data-tts="This ability to handle long-range dependencies and its parallelizability were game-changers.">
+
+          </div>
+        </section>
+        <section id="what-does-gpt-stand-for" class="slide level2">
+          <h2>What does GPT stand for?</h2>
+          <div class="fragment"
+            data-tts="This brings us to the GPT series from OpenAI. GPT stands for Generative Pre-trained Transformer.">
+            <ul>
+              <li><strong>G</strong>enerative: It can generate new text.</li>
+              <li><strong>P</strong>re-trained: It's trained on a massive dataset <em>before</em> being fine-tuned for
+                specific tasks.</li>
+              <li><strong>T</strong>ransformer: It uses the Transformer architecture.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="The core idea of GPT models, especially early ones, was to take the Transformer architecture and scale it up dramatically.">
+
+          </div>
+        </section>
+        <section id="the-training-data-fuel-for-the-transformer" class="slide level2">
+          <h2>The Training Data: Fuel for the Transformer</h2>
+          <div class="fragment"
+            data-tts="Because the Transformer architecture is so effective at learning patterns and parallelizable for training, researchers realized they could train these 'Generative Pre-trained' models on truly enormous amounts of text data.">
+            <ul>
+              <li>Transformer's effectiveness + parallelizability ⇒ Train on <strong>massive</strong> datasets.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Where does this data come from? Essentially, large swathes of the public internet: websites, books, articles, code repositories, and more. Common Crawl, a publicly available web scrape, is a major source.">
+            <ul>
+              <li>Source: Web scrapes (like Common Crawl), books, articles, code, etc.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="This reliance on vast, unfiltered internet data is powerful but also introduces challenges, like inheriting biases present online. You might have seen news about lawsuits, like the one from the New York Times, concerning the use of copyrighted material in training data.">
+            <ul>
+              <li>Implications: Scale enables powerful models, but also ingests bias and raises copyright questions
+                (e.g., NYT lawsuit).</li>
+            </ul>
+          </div>
+        </section>
+        <section id="gpt-1-gpt-3-scaling-the-transformer-12" class="slide level2">
+          <h2>GPT-1 → GPT-3: Scaling the Transformer (1/2)</h2>
+          <div class="fragment"
+            data-tts="The period from 2018 to 2020 saw the rapid evolution from GPT-1 to GPT-3. The core recipe didn't change drastically: it was still about predicting the next token using the Transformer architecture.">
+
+          </div>
+          <div class="fragment"
+            data-tts="The key difference was **scale**: massively increasing the number of parameters in the model (from ~117M in GPT-1 to 175B in GPT-3) and the size of the training dataset.">
+            <ul>
+              <li><strong>Incremental Step:</strong> Same next-token objective, <strong>massive scale-up</strong> of
+                parameters &amp; data.</li>
+            </ul>
+          </div>
+          <div class="fragment" data-tts="Let's look at the table row for this era.">
+            <table class="caption-top">
+              <colgroup>
+                <col style="width: 10%">
+                <col style="width: 23%">
+                <col style="width: 14%">
+                <col style="width: 7%">
+                <col style="width: 10%">
+                <col style="width: 25%">
+                <col style="width: 8%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>GPT-1 → GPT-3 (2018-20)</strong></td>
+                  <td>Same next-token objective, <strong>massive scale-up</strong> of params &amp; data</td>
+                  <td>0.8 B → 500 B ≈ 1 K → 640 K Bibles ↑</td>
+                  <td>512 → 2 048 ↑</td>
+                  <td>≈3 × 10²³ FLOP ≈ 355 V100-years ↑</td>
+                  <td>"Read our new article on the pope here." (fluent but ignores intent)</td>
+                  <td>single GPU → multi-GPU</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section id="gpt-1-gpt-3-scaling-the-transformer-22" class="slide level2">
+          <h2>GPT-1 → GPT-3: Scaling the Transformer (2/2)</h2>
+          <div class="fragment"
+            data-tts="Notice the dramatic increase in corpus size, context length, and especially training compute. The 'Bible equivalence' jumps from around a thousand to over half a million!">
+            <ul>
+              <li>Corpus size: 0.8 B → ~500 B tokens (↑ 600x)</li>
+              <li>Context length: 512 → 2048 tokens (↑ 4x)</li>
+              <li>Compute: Significant increase (measured in GPU-years)</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="What did this scaling achieve? These 'base models' became incredibly fluent and knowledgeable, capable of generating remarkably human-like text. However, they weren't necessarily helpful or aligned with user intent.">
+
+          </div>
+          <div class="fragment"
+            data-tts="If you asked GPT-3 our pope question, it might give a fluent but evasive answer, like suggesting an article, essentially completing the prompt based on patterns in its training data rather than directly answering the question.">
+            <ul>
+              <li>Result: Fluent, knowledgeable base models, but not inherently conversational or instruction-following.
+              </li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Let me show you an example of how a base GPT model might respond... something like 'The current pope is discussed in several recent theological journals. One article explores...'. Notice the fluency, but it doesn't answer the question.">
+            <p><em>(Note: Live demo of a GPT-2/3 base model answer: "The current pope is discussed in several recent
+                theological journals. One article explores…"* – shows fluency but avoidance.)*</p>
+          </div>
+        </section>
+        <section id="but-can-the-model-chat-aligning-models" class="slide level2">
+          <h2>But can the model chat? Aligning Models</h2>
+          <div class="fragment"
+            data-tts="So, these large base models were powerful text predictors, but they weren't chatbots. They didn't inherently understand the *intent* behind a question or instruction.">
+            <ul>
+              <li>Problem: Base models predict text, don't necessarily follow instructions or converse helpfully.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="How do you teach a model to be helpful, honest, and harmless? The key was 'alignment' – fine-tuning the pre-trained model to behave in desired ways.">
+            <ul>
+              <li>Solution: Post-training "Alignment" phase.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="If we show the model examples of good conversations, like question-and-answer pairs, perhaps it can learn to respond more appropriately.">
+            <ul>
+              <li>Idea: Fine-tune on chat Q&amp;As and preferred responses.</li>
+            </ul>
+          </div>
+        </section>
+        <section id="gpt-3.5-chatgpt-aligning-with-user-intent-12" class="slide level2">
+          <h2>GPT-3.5 / ChatGPT: Aligning with User Intent (1/2)</h2>
+          <div class="fragment"
+            data-tts="This alignment process became the hallmark of models like InstructGPT and, most famously, ChatGPT (often referred to as GPT-3.5). It involved two main steps after the initial pre-training.">
+            <ul>
+              <li><strong>Key Innovation:</strong> Post-training "Alignment" to make the base model more helpful and
+                follow instructions.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="First, Supervised Fine-Tuning or SFT. Human labelers wrote examples of prompts and ideal answers, essentially showing the model how it *should* respond to various instructions and questions.">
+            <pre><code>*   **Supervised Fine-Tuning (SFT):** Train on examples of desired input/output pairs (e.g., Q&amp;A format).</code></pre>
+          </div>
+          <div class="fragment"
+            data-tts="Second, Reinforcement Learning from Human Feedback or RLHF. Here, the model generated multiple responses to a prompt, and human labelers ranked them from best to worst. This preference data was used to train a 'reward model', which then guided the main LLM (via reinforcement learning) to produce outputs similar to the highly-ranked ones.">
+            <pre><code>*   **Reinforcement Learning from Human Feedback (RLHF):** Use human preferences to rank model outputs, training a reward model to guide the LLM towards helpful, harmless, and honest responses.</code></pre>
+          </div>
+        </section>
+        <section id="gpt-3.5-chatgpt-aligning-with-user-intent-22" class="slide level2">
+          <h2>GPT-3.5 / ChatGPT: Aligning with User Intent (2/2)</h2>
+          <div class="fragment"
+            data-tts="The result? A model that understands it should answer questions directly, engage in conversation, admit limitations, and generally adhere to safety guidelines against harmful content.">
+            <ul>
+              <li><strong>Result:</strong> Model now understands it should <em>answer</em> questions, be conversational,
+                and adhere to safety guidelines.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Here's the table entry for GPT-3.5/ChatGPT. Notice the alignment steps added, the relatively small amount of extra compute for fine-tuning, and the improved, direct answer to the pope question.">
+            <table class="caption-top" style="width:100%;">
+              <colgroup>
+                <col style="width: 11%">
+                <col style="width: 17%">
+                <col style="width: 15%">
+                <col style="width: 8%">
+                <col style="width: 7%">
+                <col style="width: 32%">
+                <col style="width: 8%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>GPT-3.5 / ChatGPT (2022)</strong></td>
+                  <td>+ Supervised instruction fine-tune + RLHF</td>
+                  <td>≈ 500 B + few × 10⁵ labelled prompts</td>
+                  <td>4 096 ↑</td>
+                  <td>+ a few V100-days ↑</td>
+                  <td>"Pope Francis." (Model follows instruction but is <strong>stale</strong>; unaware of Apr 2025
+                    death)</td>
+                  <td>cloud GPU</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fragment"
+            data-tts="However, a crucial limitation emerged: the model's knowledge is frozen at the time its pre-training data was collected. It follows instructions well, but its information can be outdated. It wouldn't know about hypothetical events after its knowledge cutoff.">
+            <ul>
+              <li><strong>Limitation:</strong> Knowledge is frozen at its pre-training data cutoff date ⇒
+                <strong>Stale</strong> information.
+              </li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Let's see this in action. A GPT-3.5 model would likely correctly identify Pope Francis based on its training data, but be unaware of any hypothetical later events.">
+            <p><em>(Note: Live demo of GPT-3.5 answer, highlighting helpfulness but staleness.)</em></p>
+          </div>
+        </section>
+        <section id="gpt-4o-gpt-4-turbo-augmenting-with-tools-12" class="slide level2">
+          <h2>GPT-4o / GPT-4 Turbo: Augmenting with Tools (1/2)</h2>
+          <div class="fragment"
+            data-tts="We saw that the alignment step made models helpful, but their knowledge remained static. And the fine-tuning data itself was relatively small compared to pre-training.">
+            <ul>
+              <li>Problem: Aligned models are helpful but have <strong>stale</strong> knowledge. Fine-tuning adds
+                behavior, not much new knowledge.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="How can a model access up-to-date information or perform tasks beyond its internal knowledge, like calculations or running code? The next major innovation was enabling models to use external 'tools'.">
+            <ul>
+              <li><strong>Key Innovation:</strong> Fine-tuning the model to use external "tools" via function calling /
+                plugins.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Models like GPT-4, and later variants like Turbo and -o, were fine-tuned specifically to recognize when a user's request requires external help. This could be searching the web, running a piece of Python code in a sandbox, or calling other defined functions.">
+            <pre><code>*   Model learns to recognize when a task requires external info (web search) or computation (running code).</code></pre>
+          </div>
+        </section>
+        <section id="gpt-4o-gpt-4-turbo-augmenting-with-tools-22" class="slide level2">
+          <h2>GPT-4o / GPT-4 Turbo: Augmenting with Tools (2/2)</h2>
+          <div class="fragment"
+            data-tts="When the model detects such a need, it doesn't try to hallucinate an answer. Instead, it generates a structured request to the appropriate tool – for example, formulating a search query like `search('current pope')`.">
+            <pre><code>*   It generates a structured request (e.g., `search("current pope")`), receives the tool's output, and synthesizes the final answer.</code></pre>
+          </div>
+          <div class="fragment"
+            data-tts="The external tool (like a search engine API or a code execution environment) runs the request, returns the result, and the LLM incorporates this external information into its final response to the user.">
+            <ul>
+              <li><strong>Result:</strong> Overcomes stale knowledge; improves capabilities (calculation, real-time
+                data). Introduces new failure modes (choosing wrong tool, tool returning bad data).</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Let's look at the table row. Note the further scaling in data and context, the massive increase in estimated training compute for the base GPT-4 model, and the crucial addition of 'Tool-use fine-tune'. The answer to our pope question is now potentially up-to-date, citing external sources.">
+            <table class="caption-top" style="width:100%;">
+              <colgroup>
+                <col style="width: 12%">
+                <col style="width: 23%">
+                <col style="width: 12%">
+                <col style="width: 7%">
+                <col style="width: 7%">
+                <col style="width: 26%">
+                <col style="width: 9%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>GPT-4o / GPT-4 Turbo (23-24)</strong></td>
+                  <td>+ Tool-use fine-tune (plugins: Browse, Code Interpreter)</td>
+                  <td>≈ 1 T ≈ 1.6 M Bibles ↑</td>
+                  <td>8 K / 128 K ↑</td>
+                  <td>≈ 2.5 M A100-days ↑</td>
+                  <td>"Pope Francis died … Pope John XXIV was elected…" (cites news)</td>
+                  <td>cloud GPU + API calls</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fragment"
+            data-tts="Now, if we try our pope question with a tool-enabled model like GPT-4o, it should ideally use its browsing tool to find the latest information.">
+            <p><em>(Note: Live demo of GPT-4o with browsing for the pope question.)</em></p>
+          </div>
+        </section>
+        <section id="gpt-4o1-optimizing-for-reasoning-12" class="slide level2">
+          <h2>GPT-4o1: Optimizing for Reasoning (1/2)</h2>
+          <div class="fragment"
+            data-tts="Even with tools, complex problems requiring multiple steps of logical deduction remained challenging. Models could sometimes 'guess' the right answer for the wrong reasons, or fail on intricate tasks.">
+            <ul>
+              <li>Problem: Models still struggle with multi-step reasoning and complex problem-solving.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="The next step, exemplified by models like GPT-4o1 (o for omni, 1 for reasoning focus), was to explicitly optimize the model's *reasoning process* itself, often post-training.">
+            <ul>
+              <li><strong>Key Innovation:</strong> Explicitly training the model (post-training) to perform and verify
+                step-by-step reasoning ("Chain of Thought" - CoT).</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="This often involves techniques related to 'Chain of Thought' prompting, where the model is encouraged or directly trained (using reinforcement learning) to generate intermediate reasoning steps *before* arriving at the final answer.">
+            <pre><code>*   Uses RL to reward models that generate a logical intermediate thought process before giving the final answer.
+*   Focuses on improving performance on complex tasks requiring multi-step logic (math, coding, science).</code></pre>
+          </div>
+        </section>
+        <section id="gpt-4o1-optimizing-for-reasoning-22" class="slide level2">
+          <h2>GPT-4o1: Optimizing for Reasoning (2/2)</h2>
+          <div class="fragment"
+            data-tts="Think of it like forcing students to 'show their work' on a math problem. Rewarding the correct logical steps, not just the final answer, helps the model develop more robust reasoning pathways.">
+
+          </div>
+          <aside class="notes">
+            <p>Analogy: Forcing students to "show their work". Reduces likelihood of confident guessing on complex
+              problems. Not foolproof - the reasoning chain can be flawed but internally consistent.</p>
+            <style type="text/css">
+              span.MJX_Assistive_MathML {
+                position: absolute !important;
+                clip: rect(1px, 1px, 1px, 1px);
+                padding: 1px 0 0 0 !important;
+                border: 0 !important;
+                height: 1px !important;
+                width: 1px !important;
+                overflow: hidden !important;
+                display: block !important;
+              }
+            </style>
+          </aside>
+          <div class="fragment"
+            data-tts="The result is significantly better performance on benchmarks measuring reasoning abilities. While not foolproof – the reasoning chain itself can sometimes be flawed – it tends to reduce confident errors on complex tasks.">
+            <ul>
+              <li><strong>Result:</strong> Significantly better benchmark scores on reasoning tasks. Reduced
+                hallucination <em>on the reasoning path itself</em>, though errors can still occur. Slower inference due
+                to generating intermediate steps.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Looking at our table, GPT-4o1 builds on GPT-4o, using roughly the same massive dataset but adding a specific post-training phase focused on reasoning reinforcement. The compute for this phase is significant, though less than the initial pre-training. The hypothetical output now includes not just the facts but the justification.">
+            <table class="caption-top">
+              <colgroup>
+                <col style="width: 12%">
+                <col style="width: 19%">
+                <col style="width: 12%">
+                <col style="width: 8%">
+                <col style="width: 9%">
+                <col style="width: 30%">
+                <col style="width: 8%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>GPT-4o1 (reasoning, 24-25)</strong></td>
+                  <td>+ Chain-of-thought reinforcement (post-training)</td>
+                  <td>same ≈ 1 T</td>
+                  <td>8 K – 128 K</td>
+                  <td>+ ≈ 10–20 k A100-days ↑</td>
+                  <td>Gives same facts <strong>and</strong> step-by-step justification (citing sources).</td>
+                  <td>cloud GPU + tools</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fragment"
+            data-tts="If available, a demo of GPT-4o1 on the pope question might show it explicitly stating: 'Searching for current pope...' then 'Information indicates Pope Francis died...' then 'Confirming successor选举...' leading to the final answer.">
+            <p><em>(Note: Live demo of GPT-4o1 showing reasoning steps for the pope question, assuming available.)</em>
+            </p>
+          </div>
+        </section>
+        <section id="analogy-learning-like-a-model" class="slide level2">
+          <h2>Analogy: Learning like a model</h2>
+          <div class="fragment" data-tts="Let's try an analogy to summarize the GPT evolution in terms of learning:">
+
+          </div>
+          <div class="fragment"
+            data-tts="**GPT-3 (Base Model):** Imagine reading HUNDREDS OF THOUSANDS of textbooks and websites. You become incredibly fluent and knowledgeable about the text you've seen.">
+            <ul>
+              <li><strong>GPT-3:</strong> Read the textbook (a massive one!).</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="**GPT-3.5 / ChatGPT:** Now, on top of that, you focus intensely on textbook examples that have *solutions* provided. You learn the *format* of answering questions correctly and following instructions.">
+            <ul>
+              <li><strong>GPT-3.5:</strong> Read more textbooks + focus on examples with solutions ⇒ know how to answer
+                questions.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="**GPT-4o / Turbo:** You read even *more* textbooks, and crucially, you learn how to use tools like a calculator, the internet, and maybe a programming environment to help you answer questions you couldn't solve just from memory.">
+            <ul>
+              <li><strong>GPT-4:</strong> Read a LOT more! + Learn to use a calculator, the internet etc. to improve
+                answers.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="**GPT-4o1:** Finally, you specifically practice solving complex problems, step-by-step. You get feedback not just on your final answer, but on whether your *reasoning path* was logical. You update how you think based on which lines of reasoning lead to correct solutions.">
+            <ul>
+              <li><strong>o1:</strong> Read practice questions, try solving them step-by-step, get feedback on the
+                <em>reasoning</em>, update thinking based on successful paths.
+              </li>
+            </ul>
+          </div>
+        </section>
+        <section id="one-page-lineage-table-summary" class="slide level2">
+          <h2>One-page lineage table (Summary)</h2>
+          <div class="fragment"
+            data-tts="Let's revisit our roadmap, the lineage table, now that we've walked through each step.">
+            <p><em>Let's revisit the full progression.</em></p>
+          </div>
+          <div class="fragment"
+            data-tts="We started with N-grams, simple statistical models with tiny context. Then came the Transformer, enabling massive scaling in data and parameters (GPT-1 to 3), leading to fluent but unaligned models. Alignment (SFT + RLHF) made them conversational but stale (GPT-3.5). Adding tools overcame staleness (GPT-4o/Turbo). And finally, optimizing the reasoning process improved reliability on complex tasks (GPT-4o1).">
+            <table class="caption-top">
+              <colgroup>
+                <col style="width: 10%">
+                <col style="width: 21%">
+                <col style="width: 12%">
+                <col style="width: 6%">
+                <col style="width: 9%">
+                <col style="width: 30%">
+                <col style="width: 7%">
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Model (year)</th>
+                  <th>Incremental training steps</th>
+                  <th>Corpus size (tokens ≈ "Bibles")*</th>
+                  <th>Max context (tokens)</th>
+                  <th>Rough train compute</th>
+                  <th>Typical answer to "Who is the current pope? (3 May 2025)"</th>
+                  <th>Typical inference HW</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><strong>4-gram (Brown, 1960s)</strong></td>
+                  <td>Count 4-grams, MLE</td>
+                  <td>1 M ≈ 1.3 Bibles</td>
+                  <td>3 (last three words)</td>
+                  <td>&lt; 1 CPU-h</td>
+                  <td>"the pope is the ..." (nonsense)</td>
+                  <td>any laptop CPU</td>
+                </tr>
+                <tr class="even">
+                  <td><strong>GPT-1 → GPT-3 (2018-20)</strong></td>
+                  <td>Same next-token objective, <strong>massive scale-up</strong> of params &amp; data</td>
+                  <td>0.8 B → 500 B ≈ 1 K → 640 K Bibles ↑</td>
+                  <td>512 → 2 048 ↑</td>
+                  <td>≈3 × 10²³ FLOP ≈ 355 V100-years ↑</td>
+                  <td>"Read our new article on the pope here." (fluent but ignores the question's intent)</td>
+                  <td>single GPU → multi-GPU</td>
+                </tr>
+                <tr class="odd">
+                  <td><strong>GPT-3.5 / ChatGPT (2022)</strong></td>
+                  <td>+ Supervised instruction fine-tune + RLHF</td>
+                  <td>≈ 500 B + few × 10⁵ labelled prompts</td>
+                  <td>4 096 ↑</td>
+                  <td>+ a few V100-days ↑</td>
+                  <td>"Pope Francis." (Model follows instruction but is <strong>stale</strong>; unaware of April 2025
+                    death.)</td>
+                  <td>cloud GPU</td>
+                </tr>
+                <tr class="even">
+                  <td><strong>GPT-4o / GPT-4 Turbo (23-24)</strong></td>
+                  <td>+ Tool-use fine-tune (plugins: Browse, Code Interpreter)</td>
+                  <td>≈ 1 T ≈ 1.6 M Bibles ↑</td>
+                  <td>8 K / 128 K ↑</td>
+                  <td>≈ 2.5 M A100-days ↑</td>
+                  <td>"Pope Francis died on 14 Apr 2025; Pope John XXIV was elected on 28 Apr 2025." (cites news)</td>
+                  <td>cloud GPU + API calls</td>
+                </tr>
+                <tr class="odd">
+                  <td><strong>GPT-4o1 (reasoning, 24-25)</strong></td>
+                  <td>+ Chain-of-thought reinforcement (post-training)</td>
+                  <td>same ≈ 1 T</td>
+                  <td>8 K – 128 K</td>
+                  <td>+ ≈ 10–20 k A100-days ↑</td>
+                  <td>Gives same facts <strong>and</strong> step-by-step justification (citing sources).</td>
+                  <td>cloud GPU + tools</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="fragment"
+            data-tts="Each incremental step built upon the previous ones, adding new capabilities but also inheriting or modifying existing limitations.">
+            <p><em>Bible rough equivalence uses ≈ 780,000 words per King James Bible. Pope example is hypothetical.</em>
+            </p>
+          </div>
+        </section>
+        <section id="where-are-things-going-trends" class="slide level2">
+          <h2>Where are things going? (Trends)</h2>
+          <div class="fragment" data-tts="Based on this history, what future trends might we expect?">
+
+          </div>
+          <div class="fragment"
+            data-tts="First, continued rapid evolution seems likely. The pace from GPT-1 in 2018 to GPT-4o1 in 2024 is breathtaking. Expect significant, possibly unpredictable, advances. This could involve true multi-modality beyond text and images, more autonomous 'agentic' systems, or even entirely new AI architectures moving beyond the Transformer.">
+            <ul>
+              <li><strong>Continued Rapid Evolution:</strong> Pace suggests increasing capability… significant, perhaps
+                unpredictable, changes ahead (true multi-modality, agentic systems, new architectures?).</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Second, context windows will likely keep expanding. We saw the trend from 512 tokens to 128,000 or more. Expect models capable of natively handling much larger documents, entire codebases, or very long conversations without needing complex summarization tricks.">
+            <ul>
+              <li><strong>Context Windows Expanding:</strong> Following the trend… Expect models handling larger
+                documents/conversations natively.</li>
+            </ul>
+          </div>
+        </section>
+        <section id="where-are-things-going-limitations" class="slide level2">
+          <h2>Where are things going? (Limitations)</h2>
+          <div class="fragment"
+            data-tts="However, some fundamental limitations rooted in the current paradigm will likely persist, at least partially.">
+
+          </div>
+          <div class="fragment"
+            data-tts="Bias remains a challenge. Since models are trained on vast internet datasets, they inevitably reflect the biases present in that data. Alignment helps mitigate harmful outputs, but subtle biases are hard to eliminate entirely.">
+            <ul>
+              <li><strong>Bias</strong>: Trained on the internet. Reflects whatever it is trained on. Alignment helps,
+                but doesn't fully solve.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Stale Knowledge is inherent to pre-training. Even with tools like web search, the model's *core understanding* is based on its cutoff date. You need to ensure tools are being used appropriately if real-time info is critical.">
+            <ul>
+              <li><strong>Stale Knowledge</strong>: Core knowledge is fixed at pre-training. Tools (like search) are
+                essential Band-Aids for current info. Need to verify tool use.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Compute Cost and Energy use are direct results of the 'scale is all you need' approach. Training and running state-of-the-art models requires massive data centers. This makes powerful AI difficult to run locally, raising privacy and access concerns tied to cloud dependence.">
+            <ul>
+              <li><strong>Compute Cost / Energy</strong>: Scaling requires huge resources. Hard to run locally ⇒
+                privacy/access issues persist.</li>
+            </ul>
+          </div>
+          <div class="fragment"
+            data-tts="Context Window Limits, while expanding, still exist. A model processing 128k tokens is impressive, but human experience involves vastly more context accumulated over years. True human-like reasoning or long-term memory in agents remains a distant goal.">
+            <ul>
+              <li><strong>Context Window Limits</strong>: Expanding, but still finite. How much context does a human
+                process in a year? Models are far from that level of integrated experience.</li>
+            </ul>
+          </div>
+        </section>
+        <section id="references-12" class="slide level2">
+          <h2>References (1/2)</h2>
+          <div class="fragment"
+            data-tts="Here are some key references mentioned throughout the presentation for further reading.">
+            <ul>
+              <li><strong>Brown Corpus:</strong> <a href="https://en.wikipedia.org/wiki/Brown_Corpus">Wikipedia</a>
+                (Example N-gram corpus)</li>
+              <li><strong>Transformer:</strong> Vaswani, A., et al.&nbsp;(2017). Attention is All You Need. <a
+                  href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a></li>
+              <li><strong>GPT-3 Scale/Compute:</strong> <a href="https://lambdalabs.com/blog/demystifying-gpt-3">Lambda
+                  Labs Blog (GPT-3 Demystified)</a> (Good overview of scale)</li>
+              <li><strong>Instruction-tuning / RLHF:</strong> Ouyang, L., et al.&nbsp;(2022). Training language models
+                to follow instructions with human feedback. <a
+                  href="https://arxiv.org/abs/2203.02155">arXiv:2203.02155</a> (The InstructGPT paper, key to ChatGPT)
+              </li>
+            </ul>
+          </div>
+        </section>
+        <section id="references-22" class="slide level2">
+          <h2>References (2/2)</h2>
+          <div class="fragment" data-tts="And continuing with the references...">
+            <ul>
+              <li><strong>Tool Use (Plugins/Functions):</strong> <a
+                  href="https://openai.com/index/chatgpt-plugins/">OpenAI Blog (Plugins)</a>, <a
+                  href="https://openai.com/index/new-models-and-developer-products-announced-at-devday/">OpenAI Blog
+                  (DevDay - Functions/Tools)</a></li>
+              <li><strong>GPT-4 Compute Estimates:</strong> Patel, A. B., et al.&nbsp;(2025). SpecInF… <a
+                  href="https://arxiv.org/html/2503.02550v3">arXiv:2503.02550v3</a> (Note: Real compute figures are
+                often secret; estimates vary widely)</li>
+              <li><strong>GPT-4o1 Reasoning:</strong> <a
+                  href="https://openai.com/index/introducing-openai-o1-preview/">OpenAI Blog (o1-preview)</a></li>
+              <li><strong>(Optional) Chain of Thought Concept:</strong> Wei, J., et al.&nbsp;(2022). Chain-of-Thought
+                Prompting Elicits Reasoning in Large Language Models. <a
+                  href="https://arxiv.org/abs/2201.11903">arXiv:2201.11903</a> (Influential paper on the reasoning
+                technique)</li>
+              <li><strong>Hypothetical News Examples:</strong> <a
+                  href="https://www.reuters.com/world/pope-francis-has-died-vatican-says-video-statement-2025-04-21/">Reuters
+                  (Example)</a>, <a
+                  href="https://www.vaticannews.va/en/vatican-city/news/2025-04/conclave-elect-new-pope-cardinals-beginning-date-may-2025.html">Vatican
+                  News (Example)</a> (Used for the pope scenario)</li>
+            </ul>
+          </div>
+        </section>
+        <section id="thank-you" class="slide level2">
+          <h2>Thank You</h2>
+          <div class="fragment"
+            data-tts="That concludes our brief history of language models. I hope this provides a useful mental model for understanding these powerful and rapidly evolving tools. Any questions?">
+            <p>Questions?</p>
+          </div>
+          <div class="quarto-auto-generated-content">
+            <div class="footer footer-default">
+
+            </div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </div>
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script>
+  <script src="presentation_files/libs/revealjs/dist/reveal.js"></script>
+  <!-- reveal.js plugins -->
+  <script src="presentation_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/quarto-support/support.js"></script>
+
+
+  <script src="presentation_files/libs/revealjs/plugin/notes/notes.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/search/search.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/zoom/zoom.js"></script>
+  <script src="presentation_files/libs/revealjs/plugin/math/math.js"></script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
+
+  <script>
+
+    // Full list of configuration options available at:
+    // https://revealjs.com/config/
+    Reveal.initialize({
+      'controlsAuto': true,
+      'previewLinksAuto': false,
+      'pdfSeparateFragments': false,
+      'autoAnimateEasing': "ease",
+      'autoAnimateDuration': 1,
+      'autoAnimateUnmatched': true,
+      'menu': { "side": "left", "useTextContentForMissingTitles": true, "markers": false, "loadIcons": false, "custom": [{ "title": "Tools", "icon": "<i class=\"fas fa-gear\"></i>", "content": "<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.togglePdfExport(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>" }], "openButton": true },
+      'smaller': false,
+
+      // Display controls in the bottom right corner
+      controls: false,
+
+      // Help the user learn the controls by providing hints, for example by
+      // bouncing the down arrow when they first encounter a vertical slide
+      controlsTutorial: false,
+
+      // Determines where controls appear, "edges" or "bottom-right"
+      controlsLayout: 'edges',
+
+      // Visibility rule for backwards navigation arrows; "faded", "hidden"
+      // or "visible"
+      controlsBackArrows: 'faded',
+
+      // Display a presentation progress bar
+      progress: true,
+
+      // Display the page number of the current slide
+      slideNumber: false,
+
+      // 'all', 'print', or 'speaker'
+      showSlideNumber: 'all',
+
+      // Add the current slide number to the URL hash so that reloading the
+      // page/copying the URL will return you to the same slide
+      hash: true,
+
+      // Start with 1 for the hash rather than 0
+      hashOneBasedIndex: false,
+
+      // Flags if we should monitor the hash and change slides accordingly
+      respondToHashChanges: true,
+
+      // Push each slide change to the browser history
+      history: true,
+
+      // Enable keyboard shortcuts for navigation
+      keyboard: true,
+
+      // Enable the slide overview mode
+      overview: true,
+
+      // Disables the default reveal.js slide layout (scaling and centering)
+      // so that you can use custom CSS layout
+      disableLayout: false,
+
+      // Vertical centering of slides
+      center: false,
+
+      // Enables touch navigation on devices with touch input
+      touch: true,
+
+      // Loop the presentation
+      loop: false,
+
+      // Change the presentation direction to be RTL
+      rtl: false,
+
+      // see https://revealjs.com/vertical-slides/#navigation-mode
+      navigationMode: 'linear',
+
+      // Randomizes the order of slides each time the presentation loads
+      shuffle: false,
+
+      // Turns fragments on and off globally
+      fragments: true,
+
+      // Flags whether to include the current fragment in the URL,
+      // so that reloading brings you to the same fragment position
+      fragmentInURL: false,
+
+      // Flags if the presentation is running in an embedded mode,
+      // i.e. contained within a limited portion of the screen
+      embedded: false,
+
+      // Flags if we should show a help overlay when the questionmark
+      // key is pressed
+      help: true,
+
+      // Flags if it should be possible to pause the presentation (blackout)
+      pause: true,
+
+      // Flags if speaker notes should be visible to all viewers
+      showNotes: false,
+
+      // Global override for autoplaying embedded media (null/true/false)
+      autoPlayMedia: null,
+
+      // Global override for preloading lazy-loaded iframes (null/true/false)
+      preloadIframes: null,
+
+      // Number of milliseconds between automatically proceeding to the
+      // next slide, disabled when set to 0, this value can be overwritten
+      // by using a data-autoslide attribute on your slides
+      autoSlide: 0,
+
+      // Stop auto-sliding after user input
+      autoSlideStoppable: true,
+
+      // Use this method for navigation when auto-sliding
+      autoSlideMethod: null,
+
+      // Specify the average time in seconds that you think you will spend
+      // presenting each slide. This is used to show a pacing timer in the
+      // speaker view
+      defaultTiming: null,
+
+      // Enable slide navigation via mouse wheel
+      mouseWheel: false,
+
+      // The display mode that will be used to show slides
+      display: 'block',
+
+      // Hide cursor if inactive
+      hideInactiveCursor: true,
+
+      // Time before the cursor is hidden (in ms)
+      hideCursorTime: 5000,
+
+      // Opens links in an iframe preview overlay
+      previewLinks: false,
+
+      // Transition style (none/fade/slide/convex/concave/zoom)
+      transition: 'none',
+
+      // Transition speed (default/fast/slow)
+      transitionSpeed: 'default',
+
+      // Transition style for full page slide backgrounds
+      // (none/fade/slide/convex/concave/zoom)
+      backgroundTransition: 'none',
+
+      // Number of slides away from the current that are visible
+      viewDistance: 3,
+
+      // Number of slides away from the current that are visible on mobile
+      // devices. It is advisable to set this to a lower number than
+      // viewDistance in order to save resources.
+      mobileViewDistance: 2,
+
+      // The "normal" size of the presentation, aspect ratio will be preserved
+      // when the presentation is scaled to fit different resolutions. Can be
+      // specified using percentage units.
+      width: 1050,
+
+      height: 700,
+
+      // Factor of the display size that should remain empty around the content
+      margin: 0.1,
+
+      math: {
+        mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+        config: 'TeX-AMS_HTML-full',
+        tex2jax: {
+          inlineMath: [['\\(', '\\)']],
+          displayMath: [['\\[', '\\]']],
+          balanceBraces: true,
+          processEscapes: false,
+          processRefs: true,
+          processEnvironments: true,
+          preview: 'TeX',
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+          ignoreClass: 'tex2jax_ignore',
+          processClass: 'tex2jax_process'
+        },
+      },
+
+      // reveal.js plugins
+      plugins: [QuartoLineHighlight, PdfExport, RevealMenu, QuartoSupport,
+
+        RevealMath,
+        RevealNotes,
+        RevealSearch,
+        RevealZoom
+      ]
+    });
+  </script>
+  <script id="quarto-html-after-body" type="application/javascript">
+    window.document.addEventListener("DOMContentLoaded", function (event) {
+      const toggleBodyColorMode = (bsSheetEl) => {
+        const mode = bsSheetEl.getAttribute("data-mode");
+        const bodyEl = window.document.querySelector("body");
+        if (mode === "dark") {
+          bodyEl.classList.add("quarto-dark");
+          bodyEl.classList.remove("quarto-light");
+        } else {
+          bodyEl.classList.add("quarto-light");
+          bodyEl.classList.remove("quarto-dark");
+        }
+      }
+      const toggleBodyColorPrimary = () => {
+        const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+        if (bsSheetEl) {
+          toggleBodyColorMode(bsSheetEl);
+        }
+      }
+      toggleBodyColorPrimary();
+      const tabsets = window.document.querySelectorAll(".panel-tabset-tabby")
+      tabsets.forEach(function (tabset) {
+        const tabby = new Tabby('#' + tabset.id);
+      });
+      const isCodeAnnotation = (el) => {
+        for (const clz of el.classList) {
+          if (clz.startsWith('code-annotation-')) {
+            return true;
+          }
+        }
+        return false;
+      }
+      const onCopySuccess = function (e) {
+        // button target
+        const button = e.trigger;
+        // don't keep focus
+        button.blur();
+        // flash "checked"
+        button.classList.add('code-copy-button-checked');
+        var currentTitle = button.getAttribute("title");
+        button.setAttribute("title", "Copied!");
+        let tooltip;
+        if (window.bootstrap) {
+          button.setAttribute("data-bs-toggle", "tooltip");
+          button.setAttribute("data-bs-placement", "left");
+          button.setAttribute("data-bs-title", "Copied!");
+          tooltip = new bootstrap.Tooltip(button,
+            {
+              trigger: "manual",
+              customClass: "code-copy-button-tooltip",
+              offset: [0, -8]
+            });
+          tooltip.show();
+        }
+        setTimeout(function () {
+          if (tooltip) {
+            tooltip.hide();
+            button.removeAttribute("data-bs-title");
+            button.removeAttribute("data-bs-toggle");
+            button.removeAttribute("data-bs-placement");
+          }
+          button.setAttribute("title", currentTitle);
+          button.classList.remove('code-copy-button-checked');
+        }, 1000);
+        // clear code selection
+        e.clearSelection();
+      }
+      const getTextToCopy = function (trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+      }
+      const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+        text: getTextToCopy
+      });
+      clipboard.on('success', onCopySuccess);
+      if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+        // For code content inside modals, clipBoardJS needs to be initialized with a container option
+        // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+        const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+          text: getTextToCopy,
+          container: window.document.getElementById('quarto-embedded-source-code-modal')
+        });
+        clipboardModal.on('success', onCopySuccess);
+      }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i = 0; i < links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+      function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+        const config = {
+          allowHTML: true,
+          maxWidth: 500,
+          delay: 100,
+          arrow: false,
+          appendTo: function (el) {
+            return el.closest('section.slide') || el.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'light-border',
+          placement: 'bottom-start',
+        };
+        if (contentFn) {
+          config.content = contentFn;
+        }
+        if (onTriggerFn) {
+          config.onTrigger = onTriggerFn;
+        }
+        if (onUntriggerFn) {
+          config.onUntrigger = onUntriggerFn;
+        }
+        config['offset'] = [0, 0];
+        config['maxWidth'] = 700;
+        window.tippy(el, config);
+      }
+      const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+      for (var i = 0; i < noterefs.length; i++) {
+        const ref = noterefs[i];
+        tippyHover(ref, function () {
+          // use id or data attribute instead here
+          let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+          try { href = new URL(href).hash; } catch { }
+          const id = href.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note) {
+            return note.innerHTML;
+          } else {
+            return "";
+          }
+        });
+      }
+      const findCites = (el) => {
+        const parentEl = el.parentElement;
+        if (parentEl) {
+          const cites = parentEl.dataset.cites;
+          if (cites) {
+            return {
+              el,
+              cites: cites.split(' ')
+            };
+          } else {
+            return findCites(el.parentElement)
+          }
+        } else {
+          return undefined;
+        }
+      };
+      var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+      for (var i = 0; i < bibliorefs.length; i++) {
+        const ref = bibliorefs[i];
+        const citeInfo = findCites(ref);
+        if (citeInfo) {
+          tippyHover(citeInfo.el, function () {
+            var popup = window.document.createElement('div');
+            citeInfo.cites.forEach(function (cite) {
+              var citeDiv = window.document.createElement('div');
+              citeDiv.classList.add('hanging-indent');
+              citeDiv.classList.add('csl-entry');
+              var biblioDiv = window.document.getElementById('ref-' + cite);
+              if (biblioDiv) {
+                citeDiv.innerHTML = biblioDiv.innerHTML;
+              }
+              popup.appendChild(citeDiv);
+            });
+            return popup.innerHTML;
+          });
+        }
+      }
+    });
+  </script>
+
+
+</body>
+
+</html>

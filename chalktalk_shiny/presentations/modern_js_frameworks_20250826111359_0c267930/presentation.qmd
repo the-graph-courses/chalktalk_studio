@@ -1,0 +1,152 @@
+---
+title: "chalktalk Demo"
+format: 
+    revealjs:
+        theme: moon
+---
+
+# Modern JS Frameworks
+
+## Introduction to Modern JavaScript Frameworks
+
+::: {.fragment tts="Welcome to our presentation on Modern JavaScript Frameworks. JavaScript frameworks have revolutionized how we build web applications today."}
+Modern JavaScript frameworks have transformed web development
+:::
+
+::: {.fragment tts="These frameworks provide structure, reusability, and efficient ways to manage complex user interfaces."}
+- Provide structure and organization
+:::
+
+::: {.fragment tts="They enable component-based architecture for better code reusability"}
+- Enable component-based architecture
+:::
+
+::: {.fragment tts="And they offer efficient state management and data binding capabilities"}
+- Efficient state management and data binding
+:::
+
+## React - The Component Library
+
+::: {.fragment tts="React, developed by Facebook, is one of the most popular JavaScript libraries for building user interfaces."}
+React - Component-based UI library by Meta
+:::
+
+::: {.fragment tts="Here's a simple React component example. This shows how we create a functional component that renders a greeting message."}
+```{javascript}
+#| echo: true
+#| eval: false
+function Greeting({ name }) {
+  return (
+    <div>
+      <h1>Hello, {name}!</h1>
+      <p>Welcome to React</p>
+    </div>
+  );
+}
+```
+:::
+
+::: {.fragment tts="React uses JSX syntax, which allows you to write HTML-like code within JavaScript"}
+- Uses JSX syntax
+:::
+
+::: {.fragment tts="It features a virtual DOM for optimal performance"}
+- Virtual DOM for performance
+:::
+
+## Vue.js - The Progressive Framework
+
+::: {.fragment tts="Vue.js is known as the progressive framework because you can adopt it incrementally in existing projects."}
+Vue.js - The Progressive Framework
+:::
+
+::: {.fragment tts="Here's a Vue component example. Notice how Vue uses a template-based approach with clear separation of template, script, and style."}
+```{javascript}
+#| echo: true
+#| eval: false
+<template>
+  <div>
+    <h1>{{ message }}</h1>
+    <button @click="updateMessage">Click me</button>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      message: 'Hello Vue!'
+    }
+  },
+  methods: {
+    updateMessage() {
+      this.message = 'Vue is awesome!'
+    }
+  }
+}
+</script>
+```
+:::
+
+::: {.fragment tts="Vue offers gentle learning curve and excellent documentation"}
+- Gentle learning curve
+:::
+
+## Angular - The Full Framework
+
+::: {.fragment tts="Angular is a comprehensive framework developed by Google that provides everything you need for large-scale applications."}
+Angular - Full-featured framework by Google
+:::
+
+::: {.fragment tts="Here's an Angular component example. Angular uses TypeScript by default and follows a more structured approach with decorators and dependency injection."}
+```{javascript}
+#| echo: true
+#| eval: false
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-hello',
+  template: `
+    <h1>{{title}}</h1>
+    <button (click)="onClick()">Click me</button>
+  `
+})
+export class HelloComponent {
+  title = 'Hello Angular!';
+  
+  onClick() {
+    this.title = 'Angular rocks!';
+  }
+}
+```
+:::
+
+::: {.fragment tts="Angular includes built-in dependency injection and comprehensive tooling"}
+- Built-in dependency injection
+:::
+
+::: {.fragment tts="It's ideal for enterprise-level applications"}
+- Enterprise-ready architecture
+:::
+
+## Choosing the Right Framework
+
+::: {.fragment tts="When choosing a framework, consider your project requirements and team expertise."}
+Consider your project needs and team skills
+:::
+
+::: {.fragment tts="React is great for flexibility and has a huge ecosystem"}
+- **React**: Maximum flexibility, large ecosystem
+:::
+
+::: {.fragment tts="Vue is perfect for gradual adoption and developer experience"}
+- **Vue**: Gradual adoption, great developer experience
+:::
+
+::: {.fragment tts="Angular excels in large-scale applications with its opinionated structure"}
+- **Angular**: Large-scale apps, opinionated structure
+:::
+
+::: {.fragment tts="All three frameworks are actively maintained and have strong community support. The best choice depends on your specific use case and preferences."}
+All offer strong community support and active development
+:::

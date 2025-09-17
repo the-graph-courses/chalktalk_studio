@@ -1,0 +1,56 @@
+---
+title: "chalktalk Demo"
+format: 
+    revealjs:
+        theme: moon
+---
+
+## How to Make Crispy Butter Bean Tacos
+
+::: {.fragment tts="Welcome to this delicious guide on making crispy butter bean tacos! These plant-based tacos are packed with flavor and have an amazing crispy texture that will satisfy any taco craving."}
+Get ready to create amazing plant-based tacos with incredible texture and flavor!
+:::
+
+## Ingredients You'll Need
+
+::: {.fragment tts="First, let's gather our ingredients. You'll need two cans of butter beans, also known as lima beans."}
+- 2 cans butter beans (drained and rinsed)
+:::
+
+::: {.fragment tts="For seasoning, grab some cumin, paprika, garlic powder, and salt."}
+- 1 tsp cumin, 1 tsp paprika, 1 tsp garlic powder, salt to taste
+:::
+
+::: {.fragment tts="You'll also need corn tortillas, olive oil, and your favorite taco toppings like lettuce, tomatoes, and avocado."}
+- 8 corn tortillas
+- 2 tbsp olive oil
+- Toppings: lettuce, tomatoes, avocado, cilantro
+:::
+
+## Preparing the Crispy Butter Beans
+
+::: {.fragment tts="Start by heating olive oil in a large skillet over medium-high heat."}
+Heat olive oil in a large skillet over medium-high heat
+:::
+
+::: {.fragment tts="Add the drained butter beans to the hot skillet. Let them cook without stirring for about 3 minutes to develop a crispy bottom."}
+Add butter beans and cook undisturbed for 3 minutes
+:::
+
+::: {.fragment tts="Now sprinkle in your spices - cumin, paprika, garlic powder, and salt. Stir gently and continue cooking for another 4 to 5 minutes until the beans are golden and crispy on the outside."}
+Add spices and cook 4-5 minutes until golden and crispy
+:::
+
+## Assembly and Serving
+
+::: {.fragment tts="While the beans finish cooking, warm your corn tortillas in a dry skillet or directly over a gas flame for about 30 seconds per side."}
+Warm tortillas in a dry skillet for 30 seconds per side
+:::
+
+::: {.fragment tts="Now comes the fun part - assembly! Fill each warm tortilla with the crispy seasoned butter beans."}
+Fill tortillas with crispy seasoned butter beans
+:::
+
+::: {.fragment tts="Top with fresh lettuce, diced tomatoes, sliced avocado, and cilantro. Serve immediately while the beans are still warm and crispy. Enjoy your delicious homemade butter bean tacos!"}
+Add fresh toppings and serve immediately while warm
+:::

@@ -1,0 +1,67 @@
+---
+title: "chalktalk Demo"
+format: 
+    revealjs:
+        theme: moon
+---
+
+## Introduction
+
+::: {.fragment tts="Welcome to the presentation on uses of math models in public health. These models are essential for understanding and improving population health."}
+Math models help us understand disease spread, predict outcomes, and support decision-making.
+:::
+
+::: {.fragment tts="They provide insights by simulating scenarios and evaluating interventions in real time."}
+They are used for forecasting trends, assessing interventions, and planning resource allocation.
+:::
+
+## Epidemic Modeling
+
+::: {.fragment tts="Epidemic modeling is one of the core applications in public health. Models such as the SIR model simulate how diseases spread."}
+Epidemic models break down populations into susceptible, infected, and recovered groups.
+:::
+
+::: {.fragment tts="These models are critical for predicting outbreak peaks and informing public health strategies."}
+They help design strategies for quarantine, social distancing, and vaccination.
+:::
+
+## Resource Allocation
+
+::: {.fragment tts="Math models assist in optimizing the allocation of limited medical resources like beds, vaccines, and manpower."}
+They guide decision making on how to best distribute scarce resources.
+:::
+
+::: {.fragment tts="Let's look at a simple code snippet that models resource allocation using Python."}
+```{python}
+def allocate_resources(total_resources, population_needs):
+    allocation = {}
+    for area, need in population_needs.items():
+        allocation[area] = total_resources * (need / sum(population_needs.values()))
+    return allocation
+
+# Example usage:
+resources = 1000
+needs = {"Area1": 350, "Area2": 450, "Area3": 200}
+print(allocate_resources(resources, needs))
+```
+:::
+
+## Policy Simulation
+
+::: {.fragment tts="Policy simulation using math models allows public health officials to test intervention strategies before implementing them."}
+Simulate potential outcomes of policies like lockdowns, mask mandates, and vaccination drives.
+:::
+
+::: {.fragment tts="These simulations help in visualizing the impact of different strategies and making data-driven decisions."}
+They can forecast how different policies may curb the spread and reduce mortality.
+:::
+
+## Conclusion
+
+::: {.fragment tts="In conclusion, math models are indispensable tools in public health."}
+They support epidemic forecasting, optimal resource allocation, and policy evaluation.
+:::
+
+::: {.fragment tts="By leveraging these models, public health officials can make informed decisions that ultimately save lives."}
+Thank you for exploring the uses of math models in public health.
+:::

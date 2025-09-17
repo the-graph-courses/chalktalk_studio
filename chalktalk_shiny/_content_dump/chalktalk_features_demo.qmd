@@ -1,0 +1,116 @@
+---
+title: "ChalkTalk Demo"
+format: revealjs
+execute:
+    echo: true
+theme: moon
+---
+
+
+# ChalkTalk: Transforming Education with AI-Personalized Videos {background-image="https://images.unsplash.com/photo-1501876991173-f9c47cd28268?q=80&w=2019" background-size="contain"}
+
+::: {.fragment tts="Welcome to the ChalkTalk demo, where I'll show some key features of ChalkTalk."}
+:::
+
+::: {.fragment tts="ChalkTalk is an open source tool that combines the best features of Quarto, Reveal JS and text-to-speech into a tool that everyone, including AIs, can use."}
+🎯 The goal: combine Quarto, Reveal, TTS and AI assistance to create engaging presentations fast
+:::
+
+## Using Videos
+
+::: {.fragment ttv="ChalkTalk also lets you use video avatars like me! I'm just one of many possible narrators and voices. You can use multiple languages too! Par exemple, maintenant je parle français! Saviez-vous que la Tour Eiffel à Paris grandit de 15 centimètres en été?"}
+:::
+
+
+## Using Fragments and TTS
+
+::: {.fragment tts="Here's how to use fragments with text-to-speech in your presentations."}
+:::
+
+::: {.fragment tts="Start a section with the class 'fragment' and include your speech text in the tts attribute."}
+The basic syntax looks like this:
+
+```markdown
+::: {.fragment tts="Your speech text here"}
+Your visible content here
+:::
+```
+:::
+
+::: {.fragment tts="Remember, the speech text can be different from the displayed text, allowing you to provide additional context or explanations."}
+Text ≠ Speech
+:::
+
+## Layout Features
+
+::: {.columns}
+::: {.column width="40%"}
+::: {.fragment tts="ChalkTalk supports various layout options including multi-column layouts"}
+- Column 1
+- With bullets
+- And content
+:::
+:::
+
+::: {.column width="60%"}
+::: {.fragment tts="You can combine this with images and other elements"}
+![Penguin measurements](https://allisonhorst.github.io/palmerpenguins/reference/figures/culmen_depth.png)
+:::
+:::
+:::
+
+## Code Example
+
+::: {.fragment tts="Let's see how to add text-to-speech to a code block. The following Python code defines a dictionary with key-value pairs."}
+
+```{python}
+my_dict = {"name": "Alice", "age": 30}
+```
+:::
+
+::: {.fragment tts="We can access the value associated with a specific key like this."}
+
+```{python}
+print(my_dict["age"])  # Output: 30
+```
+:::
+
+## Plot Example
+
+::: {.fragment tts="Now, let's include a plot using data from the palmerpenguins dataset. We can actually run this code during the rendering process!"}
+
+```{r}
+#
+library(ggplot2)
+library(plotly)
+library(palmerpenguins)
+
+p <- ggplot(penguins, aes(x = flipper_length_mm, y = body_mass_g, color = species)) +
+    geom_point() +
+    theme_minimal() +
+    labs(title = "Penguin Size Comparison",
+         x = "Flipper Length (mm)",
+         y = "Body Mass (g)")
+
+```
+
+:::
+
+::: {.fragment tts="And here is the plot:"}
+
+```{r fig.width=3, fig.height=2}
+p
+```
+
+:::
+
+::: {.fragment tts="This is a famous plot in the data visualization community."}
+
+:::
+
+## Thank you!
+
+::: {.fragment tts="Thank you for exploring ChalkTalk with us. We hope this tool can help democratize access to personalized education."}
+👋
+:::
+

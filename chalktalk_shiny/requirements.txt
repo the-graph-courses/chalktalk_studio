@@ -1,0 +1,7 @@
+shiny
+beautifulsoup4
+requests
+librosa
+moviepy
+openai
+python-dotenv
