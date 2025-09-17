@@ -93,6 +93,7 @@ TTS SCRIPT REQUIREMENTS:
   - Flows naturally as if spoken by a presenter
   - Ranges from a short phrase to two sentences maximum
   - IMPORTANT: Write out all numbers, percentages, and symbols in words (e.g., "twenty-five percent" not "25%", "two thousand twenty-four" not "2024")
+  - CRITICAL: Avoid symbols in TTS scripts - no #, ->, •, *, -, +, =, etc. Use words instead (e.g., "arrow" for ->, "bullet point" for •, "hashtag" for #, "equals" for =)
 - Think of it as what a skilled presenter would say when revealing each element
 
 HEADING HIERARCHY: 
