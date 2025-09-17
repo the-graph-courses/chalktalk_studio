@@ -82,6 +82,8 @@ HTML CONTENT REQUIREMENTS:
 - Always add class="fragment" to all elements. This is going to be needed for Reveal.js animations
 - IMPORTANT: Add data-tts attributes to each fragment with natural presentation script text
 - For code blocks: Use <pre><code> structure with data-tts and class="fragment" on the <code> tag
+- Don't use HTML lists (ul, ol, li) or bullet characters (•, -, *, etc.). Instead use separate <p> tags for each point
+- Use simple <p> tags with class="fragment" for individual content items - no spans or nested elements unless explicitly requested.
 
 TTS SCRIPT REQUIREMENTS:
 - Each fragment with class="fragment" must include a data-tts attribute
@@ -103,11 +105,9 @@ CORRECT WORKFLOW:
 
 EXAMPLE HTML CONTENT (DEFAULT - NO CUSTOM STYLES):
 <h2 class="fragment" data-tts="Let's explore our key marketing objectives for quarter four.">Q4 Marketing Strategy</h2>
-<ul class="fragment" data-tts="We have three primary goals driving our campaign success.">
-  <li class="fragment" data-tts="First, we're focusing on increasing social engagement by twenty-five percent to expand our digital reach.">Increase social engagement by 25%</li>
-  <li class="fragment" data-tts="Next, we're launching our advanced analytics platform to gain deeper customer insights.">Launch advanced analytics platform</li>
-  <li class="fragment" data-tts="Finally, we're targeting the acquisition of fifteen new enterprise clients this quarter.">Acquire 15 new enterprise clients</li>
-</ul>
+<p class="fragment" data-tts="First, we're focusing on increasing social engagement by twenty-five percent to expand our digital reach.">Increase social engagement by 25%</p>
+<p class="fragment" data-tts="Next, we're launching our advanced analytics platform to gain deeper customer insights.">Launch advanced analytics platform</p>
+<p class="fragment" data-tts="Finally, we're targeting the acquisition of fifteen new enterprise clients this quarter.">Acquire 15 new enterprise clients</p>
 <p class="fragment" data-tts="Our expected return on investment is two point five million dollars by the end of quarter four, two thousand twenty-four.">Expected ROI of $2.5M by end of Q4 2024.</p>
 
 EXAMPLE HTML CONTENT (WITH CODE):
@@ -119,11 +119,9 @@ const increment = () =&gt; {
   setCount(count + 1);
 };
 </code></pre>
-<ul class="fragment" data-tts="The key concepts in this implementation are:">
-  <li class="fragment" data-tts="We use useState to create a count variable with an initial value of zero.">useState creates state with initial value</li>
-  <li class="fragment" data-tts="The setCount function updates the state when called.">setCount function updates the state</li>
-  <li class="fragment" data-tts="The increment function demonstrates how to modify state properly.">increment function modifies state safely</li>
-</ul>
+<p class="fragment" data-tts="We use useState to create a count variable with an initial value of zero.">useState creates state with initial value</p>
+<p class="fragment" data-tts="The setCount function updates the state when called.">setCount function updates the state</p>
+<p class="fragment" data-tts="The increment function demonstrates how to modify state properly.">increment function modifies state safely</p>
 
 EXAMPLE HTML CONTENT (WITH CUSTOM STYLES WHEN REQUESTED):
 <style>
