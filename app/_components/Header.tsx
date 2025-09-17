@@ -41,7 +41,7 @@ export default function Header({ onToggleTestPanel, onToggleAIChat }: HeaderProp
 
     return (
         <TooltipProvider>
-            <header className="flex h-16 items-center justify-between gap-4 border-b border-border bg-background dark:bg-gray-600 text-foreground px-4 md:px-6 flex-shrink-0 z-50">
+            <header className="flex h-16 items-center justify-between gap-4 border-b border-sidebar-border bg-sidebar text-sidebar-foreground px-4 md:px-6 flex-shrink-0 z-50">
                 <div className="flex items-center gap-2">
                     {hasSidebar && <SidebarTrigger />}
                     <Link

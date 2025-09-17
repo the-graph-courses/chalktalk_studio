@@ -45,8 +45,10 @@ export default function LayoutWrapper({
     const pathname = usePathname();
     const projectId = params.projectId;
 
-    // Check if we're in present mode
+    // Check if we're in present mode or editor mode
     const isPresentMode = pathname?.startsWith('/present/');
+    const isEditorMode = pathname?.startsWith('/editor/');
+    const isPresentVoiceMode = pathname?.startsWith('/present-voice/');
 
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
@@ -70,7 +72,7 @@ export default function LayoutWrapper({
     };
 
     // If in present mode, render without any layout wrapper
-    if (isPresentMode) {
+    if (isPresentMode || isPresentVoiceMode) {
         return (
             <SidebarAvailableContext.Provider value={{ hasSidebar: false }}>
                 <PanelControlsContext.Provider value={{
@@ -137,6 +139,13 @@ export default function LayoutWrapper({
                     <SidebarProvider defaultOpen={false}>
                         <AppSidebar />
                         <SidebarInset className="overflow-hidden flex flex-col">
+                            {/* Only show main Header when NOT in editor mode (editor has its own EditorHeader) */}
+                            {!isEditorMode && (
+                                <Header
+                                    onToggleTestPanel={toggleTestPanel}
+                                    onToggleAIChat={projectId ? toggleAIChat : undefined}
+                                />
+                            )}
                             <div className="flex-1 relative">
                                 <div className={`h-full transition-all duration-300 ${(() => {
                                     const openPanels = [isTestPanelOpen, isAIChatOpen].filter(Boolean).length;

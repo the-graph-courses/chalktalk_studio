@@ -11,19 +11,19 @@ import { useRouter } from 'next/navigation'
 
 export const suggestions = [
     {
-        title: 'Educational Lesson',
+        title: 'Programming Tutorial',
         icon: <Lightbulb className='text-green-400 h-5 w-5' />
     },
     {
-        title: 'Research Presentation',
+        title: 'Data Science Lesson',
         icon: <Presentation className='text-blue-400 h-5 w-5' />
     },
     {
-        title: 'Training Material',
+        title: 'Software Training',
         icon: <Zap className='text-purple-400 h-5 w-5' />
     },
     {
-        title: 'Course Overview',
+        title: 'Course Module',
         icon: <Presentation className='text-pink-400 h-5 w-5' />
     }
 ]
@@ -63,12 +63,12 @@ function Hero() {
             <DotGrid />
             <div className='max-w-3xl w-full flex flex-col gap-4 space-y-1 justify-center items-center relative z-10 text-center'>
                 {/* Content */}
-                <h1 className='text-3xl md:text-6xl font-bold tracking-tight'>Create presentations with <span className='text-primary'>ChalkTalk</span></h1>
-                <p className='text-lg md:text-xl text-muted-foreground'>Turn ideas into slides using AI. Generate, edit, and refine presentations directly in your browser.</p>
+                <h1 className='text-3xl md:text-6xl font-bold tracking-tight'>Create video tutorials with <span className='text-primary'>ChalkTalk</span></h1>
+                <p className='text-lg md:text-xl text-muted-foreground'>Transform written content into narrated video lessons. AI generates slides and speech, you focus on teaching.</p>
 
                 {/* Input Box */}
                 <div className='border rounded-2xl p-4 w-full max-w-2xl relative bg-card/60 backdrop-blur supports-[backdrop-filter]:bg-card/40'>
-                    <Textarea placeholder='Create a lesson on climate change impacts, including causes, effects, and solutions' className='w-full h-28 bg-transparent border-none focus-visible:ring-0 pr-12' />
+                    <Textarea placeholder='Create a three-slide tutorial on using the base pipe in R programming' className='w-full h-28 bg-transparent border-none focus-visible:ring-0 pr-12' />
                     <Button size="icon" className='absolute bottom-6 right-6 cursor-pointer hover:scale-105 transition-transform' onClick={() => onSend()}>
                         <Send className='h-4 w-4' />
                     </Button>

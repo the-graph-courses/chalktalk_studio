@@ -7,11 +7,13 @@
 /* Reset the frame wrapper to standard values */
 .gjs-frame-wrapper {
   min-height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
 /* Prevent theme styles from affecting the iframe body */
 .gjs-frame-wrapper iframe {
   color-scheme: light !important;
+  min-height: 720px !important;
+  background-color: white !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }

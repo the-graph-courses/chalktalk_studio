@@ -24,7 +24,7 @@ export default defineSchema({
         slideIndex: v.number(),
         elementIndex: v.number(), // order within slide
         ttsText: v.string(),
-        audioDataUrl: v.string(), // data:audio/mpeg;base64,... for prototype
+        audioFileId: v.id('_storage'), // Reference to Convex file storage
         duration: v.number(), // Audio duration in milliseconds
         createdAt: v.number(),
     }).index('by_project', ['projectId']).index('by_project_slide', ['projectId', 'slideIndex'])

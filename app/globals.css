@@ -128,4 +128,8 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  body.present-mode {
+    @apply bg-white;
+  }
 }

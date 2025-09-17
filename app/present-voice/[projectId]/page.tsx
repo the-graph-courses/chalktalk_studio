@@ -84,6 +84,10 @@ export default function PresentVoicePage({ params }: PageProps) {
                 // Process each TTS element and calculate durations
                 await Promise.all(Array.from(ttsElements).map(async (element, fragmentIndex) => {
                     const audioData = slideAudio[fragmentIndex]
+                    console.log(`🎵 Processing audio for slide ${slideIndex}, fragment ${fragmentIndex}:`, {
+                        hasAudioData: !!audioData,
+                        hasUrl: !!(audioData?.audioDataUrl || audioData?.audioUrl)
+                    })
                     if (!audioData) return
 
                     // Wrap element in fragment if not already
@@ -121,10 +125,17 @@ export default function PresentVoicePage({ params }: PageProps) {
                     const audio = doc.createElement('audio')
                     audio.setAttribute('data-autoplay', '')
                     const source = doc.createElement('source')
-                    source.src = audioData.audioDataUrl
+                    const audioSrc = audioData.audioDataUrl || audioData.audioUrl
+                    source.src = audioSrc
                     source.type = 'audio/mpeg'
                     audio.appendChild(source)
                     fragmentWrapper.appendChild(audio)
+
+                    console.log(`🔊 Created audio element for slide ${slideIndex}, fragment ${fragmentIndex}:`, {
+                        src: audioSrc ? audioSrc.substring(0, 100) + '...' : 'NO SRC',
+                        hasSrc: !!audioSrc,
+                        duration: audioData.duration
+                    })
                 }))
 
                 // Serialize back to HTML
@@ -146,20 +157,44 @@ export default function PresentVoicePage({ params }: PageProps) {
     useEffect(() => {
         const loadAudioCache = async () => {
             try {
+                console.log('🔍 Loading audio cache for project:', projectId)
+
                 // First try localStorage
                 const cached = localStorage.getItem(`ttsCache:${projectId}`)
                 if (cached) {
-                    setAudioCache(JSON.parse(cached))
+                    console.log('📦 Found audio cache in localStorage')
+                    const parsedCache = JSON.parse(cached)
+                    console.log('📊 localStorage cache contents:', {
+                        slideCount: Object.keys(parsedCache).length,
+                        slides: Object.entries(parsedCache).map(([idx, items]) => ({
+                            slideIndex: idx,
+                            itemCount: Array.isArray(items) ? items.length : 0
+                        }))
+                    })
+                    setAudioCache(parsedCache)
                 } else {
+                    console.log('🌐 No localStorage cache, fetching from server...')
                     // Fallback to server
                     const res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
+                    console.log('📡 Server response status:', res.status)
+
                     if (res.ok) {
                         const data = await res.json()
+                        console.log('✅ Audio cache loaded from server:', {
+                            slideCount: Object.keys(data || {}).length,
+                            slides: Object.entries(data || {}).map(([idx, items]) => ({
+                                slideIndex: idx,
+                                itemCount: Array.isArray(items) ? items.length : 0,
+                                hasAudioUrls: Array.isArray(items) ? items.every((item: any) => item.audioDataUrl || item.audioUrl) : false
+                            }))
+                        })
                         setAudioCache(data)
+                    } else {
+                        console.warn('⚠️ Failed to load audio cache from server:', res.statusText)
                     }
                 }
             } catch (e) {
-                console.error('Failed to load audio cache:', e)
+                console.error('❌ Failed to load audio cache:', e)
             }
         }
         loadAudioCache()
@@ -246,9 +281,49 @@ export default function PresentVoicePage({ params }: PageProps) {
         })
         setReveal(r)
 
+        // Handle fragment events for audio playback (works with data-autoslide)
+        r.on('fragmentshown', (event: any) => {
+            console.log('🎯 Fragment shown:', event.fragment)
+            const audio = event.fragment.querySelector('audio[data-autoplay]') as HTMLAudioElement
+            if (audio) {
+                console.log('🔊 Playing audio for fragment')
+                // Stop any currently playing audio
+                if (currentAudioRef.current) {
+                    currentAudioRef.current.pause()
+                    currentAudioRef.current.currentTime = 0
+                }
+
+                // Play the new audio
+                currentAudioRef.current = audio
+                audio.playbackRate = playbackRate
+                audio.volume = volume
+
+                audio.play().then(() => {
+                    console.log('✅ Audio started playing')
+                }).catch((e: any) => {
+                    console.error('❌ Audio play failed:', e)
+                    // If audio fails, log more details
+                    console.error('Audio element details:', {
+                        src: audio.querySelector('source')?.src,
+                        readyState: audio.readyState,
+                        error: audio.error
+                    })
+                })
+            } else {
+                console.log('⚠️ No audio found in fragment')
+            }
+        })
+
         // Apply playback rate on slide changes
         r.on('slidechanged', () => {
+            console.log('📄 Slide changed')
             applyPlaybackRate()
+            // Stop any playing audio when slide changes
+            if (currentAudioRef.current) {
+                currentAudioRef.current.pause()
+                currentAudioRef.current.currentTime = 0
+                currentAudioRef.current = null
+            }
         })
 
         return () => {
