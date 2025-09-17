@@ -27,6 +27,7 @@ export default function PresentVoicePage({ params }: PageProps) {
 
     const [reveal, setReveal] = useState<Reveal.Api | null>(null)
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
+    const [generationProgress, setGenerationProgress] = useState(0)
     const [audioCache, setAudioCache] = useState<Record<string, any>>({})
     const [playbackRate, setPlaybackRate] = useState(1)
     const [volume, setVolume] = useState(1)
@@ -38,6 +39,34 @@ export default function PresentVoicePage({ params }: PageProps) {
 
     // Store processed slides with duration calculations
     const [processedSlidesState, setProcessedSlidesState] = useState<typeof slides>([])
+
+    // Fake progress bar for audio generation
+    useEffect(() => {
+        let interval: NodeJS.Timeout | undefined
+        if (isGeneratingAudio) {
+            setGenerationProgress(1) // Start immediately
+            interval = setInterval(() => {
+                setGenerationProgress(prev => {
+                    if (prev >= 95) {
+                        if (interval) clearInterval(interval)
+                        return 95
+                    }
+                    // Non-linear progress, slows down as it approaches 95
+                    const remaining = 95 - prev
+                    const increment = Math.max(1, remaining / (10 + Math.random() * 10))
+                    return prev + increment
+                })
+            }, 500)
+        } else {
+            // When generation stops, if we were showing progress, complete it.
+            if (generationProgress > 0 && generationProgress < 100) {
+                setGenerationProgress(100)
+            }
+        }
+        return () => {
+            if (interval) clearInterval(interval)
+        }
+    }, [isGeneratingAudio, generationProgress])
 
     // Calculate audio duration using HTML5 Audio API
     const getAudioDuration = (dataUrl: string): Promise<number> => {
@@ -75,6 +104,7 @@ export default function PresentVoicePage({ params }: PageProps) {
                     const emptyFragment = doc.createElement('div')
                     emptyFragment.className = 'fragment'
                     emptyFragment.setAttribute('data-autoslide', '10')
+                    emptyFragment.setAttribute('data-fragment-index', '0') // Ensure it shows first
                     doc.body.insertBefore(emptyFragment, doc.body.firstChild)
                 }
 
@@ -112,25 +142,23 @@ export default function PresentVoicePage({ params }: PageProps) {
                         duration = audioData.duration || 1000
                     }
 
-                    fragmentWrapper.setAttribute('data-autoslide', String(duration))
+                    fragmentWrapper.setAttribute('data-autoslide', String(duration + 250)) // Add 250ms buffer
                     fragmentWrapper.setAttribute('data-tts', audioData.ttsText || '')
 
                     // Proper fragment indexing - account for empty fragment at start of non-first slides
                     const adjustedIndex = slideIndex > 0 ? fragmentIndex + 1 : fragmentIndex
-                    if (adjustedIndex > 0) {
-                        fragmentWrapper.setAttribute('data-fragment-index', String(adjustedIndex))
-                    }
+                    // Always set fragment index to ensure proper ordering (including index 0)
+                    fragmentWrapper.setAttribute('data-fragment-index', String(adjustedIndex))
 
-                    // Add audio element
+                    // Add audio element WITHOUT autoplay to prevent immediate playback
                     const audio = doc.createElement('audio')
-                    audio.setAttribute('data-autoplay', '')
-                    const source = doc.createElement('source')
-                    const audioSrc = audioData.audioDataUrl || audioData.audioUrl
-                    source.src = audioSrc
-                    source.type = 'audio/mpeg'
-                    audio.appendChild(source)
+                    // Store audio src as data attribute instead of setting it immediately
+                    audio.setAttribute('data-audio-src', audioData.audioDataUrl || audioData.audioUrl || '')
+                    audio.setAttribute('data-fragment-audio', 'true')
+                    // Don't add source element yet - we'll add it when fragment is shown
                     fragmentWrapper.appendChild(audio)
 
+                    const audioSrc = audioData.audioDataUrl || audioData.audioUrl
                     console.log(`🔊 Created audio element for slide ${slideIndex}, fragment ${fragmentIndex}:`, {
                         src: audioSrc ? audioSrc.substring(0, 100) + '...' : 'NO SRC',
                         hasSrc: !!audioSrc,
@@ -275,51 +303,74 @@ export default function PresentVoicePage({ params }: PageProps) {
             transition: 'none',
             keyboard: true,
             touch: true,
-            autoSlide: 100, // Enable auto-slide with short default
+            autoSlide: 999999, // Disable global autoslide, rely on data-autoslide
             autoSlideStoppable: true,
             fragments: true
         })
         setReveal(r)
 
+        const logEvent = (name: string, details: object = {}) => {
+            console.log(
+                `[${new Date().toLocaleTimeString('en-US', { hour12: false })}] 🔊 PRESENTER LOG: ${name}`,
+                details
+            )
+        }
+
         // Handle fragment events for audio playback (works with data-autoslide)
         r.on('fragmentshown', (event: any) => {
-            console.log('🎯 Fragment shown:', event.fragment)
-            const audio = event.fragment.querySelector('audio[data-autoplay]') as HTMLAudioElement
+            const fragment = event.fragment as HTMLElement
+            const slide = fragment.closest('section')
+            const slideIndex = Array.from(document.querySelectorAll('.reveal .slides section')).indexOf(slide as HTMLElement)
+            const fragmentIndex = fragment.getAttribute('data-fragment-index')
+
+            logEvent('fragmentshown', { slideIndex, fragmentIndex, element: fragment })
+
+            const audio = fragment.querySelector('audio[data-fragment-audio]') as HTMLAudioElement
             if (audio) {
-                console.log('🔊 Playing audio for fragment')
+                logEvent('Audio element found', { slideIndex, fragmentIndex })
+
                 // Stop any currently playing audio
                 if (currentAudioRef.current) {
+                    logEvent('Stopping previous audio', { src: currentAudioRef.current.currentSrc })
                     currentAudioRef.current.pause()
                     currentAudioRef.current.currentTime = 0
                 }
 
-                // Play the new audio
+                // Check if audio source needs to be loaded
+                const audioSrc = audio.getAttribute('data-audio-src')
+                if (audioSrc && !audio.querySelector('source')) {
+                    logEvent('Loading audio source', { slideIndex, fragmentIndex, src: audioSrc.substring(0, 50) })
+                    const source = document.createElement('source')
+                    source.src = audioSrc
+                    source.type = 'audio/mpeg'
+                    audio.appendChild(source)
+                    audio.load() // Important: load the new source
+                }
+
+                // Play the audio
                 currentAudioRef.current = audio
+                audio.currentTime = 0 // Reset audio to the beginning before playing
                 audio.playbackRate = playbackRate
                 audio.volume = volume
 
+                logEvent('Playing audio', { slideIndex, fragmentIndex, src: audio.currentSrc })
                 audio.play().then(() => {
-                    console.log('✅ Audio started playing')
+                    logEvent('Audio playback started successfully', { slideIndex, fragmentIndex })
                 }).catch((e: any) => {
-                    console.error('❌ Audio play failed:', e)
-                    // If audio fails, log more details
-                    console.error('Audio element details:', {
-                        src: audio.querySelector('source')?.src,
-                        readyState: audio.readyState,
-                        error: audio.error
-                    })
+                    logEvent('Audio playback failed', { slideIndex, fragmentIndex, error: e.message })
                 })
             } else {
-                console.log('⚠️ No audio found in fragment')
+                logEvent('No audio element found in fragment', { slideIndex, fragmentIndex })
             }
         })
 
         // Apply playback rate on slide changes
-        r.on('slidechanged', () => {
-            console.log('📄 Slide changed')
+        r.on('slidechanged', (event: any) => {
+            logEvent('slidechanged', { slideIndex: event.indexh })
             applyPlaybackRate()
             // Stop any playing audio when slide changes
             if (currentAudioRef.current) {
+                logEvent('Stopping audio on slide change', { src: currentAudioRef.current.currentSrc })
                 currentAudioRef.current.pause()
                 currentAudioRef.current.currentTime = 0
                 currentAudioRef.current = null
@@ -345,10 +396,13 @@ export default function PresentVoicePage({ params }: PageProps) {
 
     // Apply playback rate to all audio elements and update fragment durations
     const applyPlaybackRate = () => {
-        // Update all audio elements
+        // Update all audio elements that have been loaded
         document.querySelectorAll('audio').forEach((audio: HTMLAudioElement) => {
-            audio.playbackRate = playbackRate
-            audio.volume = volume
+            // Only update if the audio has a source (i.e., has been loaded)
+            if (audio.querySelector('source')) {
+                audio.playbackRate = playbackRate
+                audio.volume = volume
+            }
         })
 
         // Update fragment durations based on playback rate
@@ -408,14 +462,28 @@ export default function PresentVoicePage({ params }: PageProps) {
 
                         {!hasAudioCache && (
                             <div className="space-y-4">
-                                <p className="text-yellow-400">Audio not generated yet</p>
-                                <button
-                                    onClick={generateAudio}
-                                    disabled={isGeneratingAudio}
-                                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {isGeneratingAudio ? 'Generating Audio...' : 'Generate Audio'}
-                                </button>
+                                {isGeneratingAudio ? (
+                                    <div className="w-full max-w-sm mx-auto pt-4">
+                                        <p className="text-white mb-2 text-center">Generating audio, please wait...</p>
+                                        <div className="w-full bg-gray-700 rounded-full h-2.5">
+                                            <div
+                                                className="bg-blue-500 h-2.5 rounded-full"
+                                                style={{ width: `${generationProgress}%`, transition: 'width 0.5s ease-in-out' }}
+                                            ></div>
+                                        </div>
+                                        <p className="text-white mt-2 text-center text-sm">{`${Math.round(generationProgress)}%`}</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <p className="text-yellow-400">Audio not generated yet</p>
+                                        <button
+                                            onClick={generateAudio}
+                                            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        >
+                                            Generate Audio
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         )}
 
