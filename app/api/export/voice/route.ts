@@ -367,8 +367,16 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
         opacity: 1 !important;
     }
 
-    /* Hide default reveal controls in voice mode */
+    /* Style reveal controls for voice mode - keep only play/pause */
     .reveal .controls {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    /* Optionally hide navigation arrows but keep play/pause */
+    .reveal .controls .navigate-left,
+    .reveal .controls .navigate-right,
+    .reveal .controls .navigate-up,
+    .reveal .controls .navigate-down {
         display: none;
     }
     
@@ -427,14 +435,14 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
                 width: 1280,
                 height: 720,
                 margin: 0,
-                controls: false,
+                controls: true, // Enable controls to show play/pause button
                 progress: true,
                 center: false,
                 slideNumber: true,
                 transition: 'none',
                 keyboard: true,
                 touch: true,
-                autoSlide: 999999, // Disable global autoslide
+                autoSlide: 5000, // Set a default that will be overridden by data-autoslide
                 autoSlideStoppable: true,
                 fragments: true
             });
@@ -565,8 +573,6 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
                     playPauseBtn.textContent = '⏸ Pause';
                     deck.resume();
                     if (currentAudio) currentAudio.play();
-                    // Continue auto-advance
-                    deck.next();
                 }
             });
 

@@ -386,7 +386,7 @@ export default function PresentVoicePage({ params }: PageProps) {
             width: 1280,
             height: 720,
             margin: 0,
-            controls: false, // Hide controls like in your reference
+            controls: true, // Enable controls to show play/pause button
             progress: true,
             center: false, // Don't center vertically
             slideNumber: false,
@@ -394,7 +394,7 @@ export default function PresentVoicePage({ params }: PageProps) {
             transition: 'none',
             keyboard: true,
             touch: true,
-            autoSlide: 999999, // Disable global autoslide, rely on data-autoslide
+            autoSlide: 5000, // Set a default that will be overridden by data-autoslide
             autoSlideStoppable: true,
             fragments: true
         })
