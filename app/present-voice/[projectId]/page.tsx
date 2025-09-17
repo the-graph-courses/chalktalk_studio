@@ -32,6 +32,7 @@ export default function PresentVoicePage({ params }: PageProps) {
     const [playbackRate, setPlaybackRate] = useState(1)
     const [volume, setVolume] = useState(1)
     const [hasStarted, setHasStarted] = useState(false)
+    const hasStartedRef = useRef(false)
     const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map())
     const currentAudioRef = useRef<HTMLAudioElement | null>(null)
     const handledFragmentsRef = useRef(new WeakSet<HTMLElement>())
@@ -350,7 +351,7 @@ export default function PresentVoicePage({ params }: PageProps) {
 
     // Initialize Reveal after slides are in DOM
     useEffect(() => {
-        if (!processedSlides.length || !hasStarted) return
+        if (!processedSlides.length) return
 
         // Inject theme CSS
         try {
@@ -408,6 +409,9 @@ export default function PresentVoicePage({ params }: PageProps) {
 
         // Handle fragment events for audio playback (works with data-autoslide)
         r.on('fragmentshown', (event: any) => {
+            // Don't play audio until presentation has started
+            if (!hasStartedRef.current) return
+
             const fragment = event.fragment as HTMLElement
             const slide = fragment.closest('section')
             const slideIndex = Array.from(document.querySelectorAll('.reveal .slides section')).indexOf(slide as HTMLElement)
@@ -540,7 +544,7 @@ export default function PresentVoicePage({ params }: PageProps) {
                 r?.destroy()
             } catch { }
         }
-    }, [processedSlides.length, hasStarted])
+    }, [processedSlides.length, playbackRate, volume])
 
     // Store reveal instance when it changes
     useEffect(() => {
@@ -587,6 +591,7 @@ export default function PresentVoicePage({ params }: PageProps) {
 
     const handleStart = () => {
         setHasStarted(true)
+        hasStartedRef.current = true
         // The useEffect will handle advancing to the first slide
     }
 
@@ -702,8 +707,11 @@ export default function PresentVoicePage({ params }: PageProps) {
             )}
 
             {!hasStarted && (
-                <div className="absolute inset-0 z-40 flex items-center justify-center bg-black bg-opacity-90">
-                    <div className="text-center space-y-4">
+                <div className="absolute inset-0 z-40 flex items-center justify-center">
+                    {/* Semi-transparent overlay behind the button */}
+                    <div className="absolute inset-0 bg-black bg-opacity-50" />
+
+                    <div className="relative text-center space-y-4 bg-black/80 p-8 rounded-lg backdrop-blur-sm">
                         <h1 className="text-3xl font-bold text-white">{deckTitle}</h1>
                         <p className="text-gray-300">AI Voice Presentation Mode</p>
 
@@ -725,7 +733,7 @@ export default function PresentVoicePage({ params }: PageProps) {
                                         <p className="text-yellow-400">Audio not generated yet</p>
                                         <button
                                             onClick={generateAudio}
-                                            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                         >
                                             Generate Audio
                                         </button>
@@ -737,7 +745,7 @@ export default function PresentVoicePage({ params }: PageProps) {
                         {hasAudioCache && (
                             <button
                                 onClick={handleStart}
-                                className="px-8 py-4 bg-green-600 text-white text-xl rounded-lg hover:bg-green-700 transition-colors"
+                                className="px-8 py-4 bg-green-600 text-white text-xl rounded-lg hover:bg-green-700 transition-colors shadow-lg transform hover:scale-105"
                             >
                                 Start Presentation
                             </button>

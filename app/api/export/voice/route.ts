@@ -272,6 +272,43 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
         position: relative;
     }
 
+    /* Start presentation overlay */
+    #startOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+    }
+
+    #startOverlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    #startButton {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 20px 40px;
+        font-size: 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s, background 0.2s;
+    }
+
+    #startButton:hover {
+        background: #45a049;
+        transform: scale(1.05);
+    }
+
     /* Voice presentation controls */
     .voice-controls {
         position: fixed;
@@ -282,10 +319,14 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
         background: rgba(0, 0, 0, 0.7);
         padding: 10px 20px;
         border-radius: 8px;
-        display: flex;
+        display: none; /* Initially hidden */
         gap: 15px;
         align-items: center;
         color: white;
+    }
+
+    .voice-controls.active {
+        display: flex;
     }
 
     .voice-controls button {
@@ -348,9 +389,14 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
         </div>
     </div>
 
+    <!-- Start Presentation Overlay -->
+    <div id="startOverlay">
+        <button id="startButton">Start Presentation</button>
+    </div>
+
     <!-- Voice Presentation Controls -->
     <div class="voice-controls">
-        <button id="playPauseBtn">▶ Start</button>
+        <button id="playPauseBtn">⏸ Pause</button>
         <button id="restartBtn">⟲ Restart</button>
         <div>
             <label>Speed: <span class="speed-indicator" id="speedIndicator">1x</span></label>
@@ -370,6 +416,7 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
         (function() {
             let currentAudio = null;
             let isPlaying = false;
+            let hasStarted = false;
             let playbackRate = 1;
             let volume = 1;
             let handledFragments = new WeakSet();
@@ -395,15 +442,37 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
             deck.initialize();
 
             // Controls
+            const startOverlay = document.getElementById('startOverlay');
+            const startButton = document.getElementById('startButton');
+            const voiceControls = document.querySelector('.voice-controls');
             const playPauseBtn = document.getElementById('playPauseBtn');
             const restartBtn = document.getElementById('restartBtn');
             const speedControl = document.getElementById('speedControl');
             const speedIndicator = document.getElementById('speedIndicator');
             const volumeControl = document.getElementById('volumeControl');
 
+            // Start button handler
+            startButton.addEventListener('click', () => {
+                hasStarted = true;
+                isPlaying = true;
+                startOverlay.classList.add('hidden');
+                voiceControls.classList.add('active');
+                
+                // Set data-autoslide on first slide to 0, others to 100
+                document.querySelectorAll('.reveal .slides section').forEach((section, i) => {
+                    section.setAttribute('data-autoslide', i === 0 ? '0' : '100');
+                });
+                
+                // Start the presentation by advancing to next slide/fragment
+                setTimeout(() => deck.next(), 500);
+            });
+
             // Handle fragment events for audio playback
             deck.on('fragmentshown', (event) => {
                 const fragment = event.fragment;
+                
+                // Don't play audio until presentation has started
+                if (!hasStarted) return;
                 
                 if (handledFragments.has(fragment)) return;
                 handledFragments.add(fragment);
@@ -496,7 +565,7 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
                     playPauseBtn.textContent = '⏸ Pause';
                     deck.resume();
                     if (currentAudio) currentAudio.play();
-                    // Start auto-advance
+                    // Continue auto-advance
                     deck.next();
                 }
             });
@@ -504,9 +573,14 @@ function generateVoiceRevealHtml({ title, slides, themeCss, projectId, audioCach
             restartBtn.addEventListener('click', () => {
                 stopAudio();
                 deck.slide(0, 0, 0);
+                hasStarted = false;
                 isPlaying = false;
-                playPauseBtn.textContent = '▶ Start';
+                playPauseBtn.textContent = '⏸ Pause';
                 handledFragments = new WeakSet();
+                
+                // Show start overlay again
+                startOverlay.classList.remove('hidden');
+                voiceControls.classList.remove('active');
             });
 
             speedControl.addEventListener('input', (e) => {
