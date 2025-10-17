@@ -94,7 +94,7 @@ function extractTTSFragments(html: string, slideIndex: number): { fragments: Fra
 }
 
 // Process fragments with rate limiting - matches Python's process_media_fragments
-async function processFragments(fragments: Fragment[], maxWorkers: number = 9): Promise<ProcessedFragment[]> {
+async function processFragments(fragments: Fragment[], maxWorkers: number = 3): Promise<ProcessedFragment[]> {
     const results: ProcessedFragment[] = []
 
     // Process in batches to respect rate limits

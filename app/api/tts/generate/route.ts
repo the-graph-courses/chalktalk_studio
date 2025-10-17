@@ -111,9 +111,9 @@ export async function POST(req: NextRequest) {
     const processedTasks: ({ slideIndex: number; elementIndex: number; ttsText: string; audioFileId: any; duration: number } | null)[] = []
 
     // Process all TTS tasks in parallel with concurrency control
-    // Using batch size of 9 for Creator plan (10 concurrent limit, keeping 1 as buffer)
-    // Adjust this based on your ElevenLabs plan: Free=3, Starter=5, Creator=9-10, Pro=18-20
-    const BATCH_SIZE = 9
+    // Using batch size of 3 for Starter plan (5 concurrent limit, keeping 2 as buffer)
+    // Adjust this based on your ElevenLabs plan: Free=3, Starter=3-5, Creator=9-10, Pro=18-20
+    const BATCH_SIZE = 3
 
     for (let i = 0; i < ttsTasks.length; i += BATCH_SIZE) {
       const batch = ttsTasks.slice(i, i + BATCH_SIZE)
