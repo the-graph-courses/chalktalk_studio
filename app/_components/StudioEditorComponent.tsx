@@ -6,6 +6,7 @@ import { canvasAbsoluteMode } from '@grapesjs/studio-sdk-plugins'
 import { useRef, useEffect } from 'react'
 import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats'
 import { TEMPLATES } from '@/lib/slide-templates'
+import '@/lib/editor-commands' // Window type augmentation for grapesjsAITools
 
 interface StudioEditorComponentProps {
     licenseKey: string
@@ -29,7 +30,6 @@ export default function StudioEditorComponent({
     // Create global functions for AI tools to interact with the editor
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // @ts-ignore - Adding to window for AI tools access
             window.grapesjsAITools = {
                 addSlide: (name: string, content: string, insertAtIndex?: number) => {
                     if (!editorRef.current) return false
@@ -77,13 +77,66 @@ export default function StudioEditorComponent({
                     editor.setComponents(getSlideContainer(newContent));
                     return true
                 },
+                deleteSlide: (slideIndex: number) => {
+                    if (!editorRef.current) return false
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const pageToDelete = pages[slideIndex]
+                    if (!pageToDelete) return false
+
+                    // If deleting the selected page, select another one first
+                    const selectedPage = editor.Pages.getSelected()
+                    if (selectedPage && selectedPage.getId() === pageToDelete.getId()) {
+                        const remaining = pages.filter((p: any) => p.getId() !== pageToDelete.getId())
+                        if (remaining.length > 0) {
+                            editor.Pages.select(remaining[0])
+                        }
+                    }
+
+                    editor.Pages.remove(pageToDelete)
+                    return true
+                },
+                getSlideHtml: (slideIndex: number): string | null => {
+                    if (!editorRef.current) return null
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const page = pages[slideIndex]
+                    if (!page) return null
+
+                    const component = page.getMainComponent()
+                    return editor.getHtml({ component })
+                },
+                getSlideCss: (slideIndex: number): string | null => {
+                    if (!editorRef.current) return null
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+                    const page = pages[slideIndex]
+                    if (!page) return null
+
+                    const component = page.getMainComponent()
+                    return editor.getCss({ component })
+                },
+                getAllSlidesHtmlCss: (): Array<{ index: number; name: string; html: string; css: string }> | null => {
+                    if (!editorRef.current) return null
+                    const editor = editorRef.current
+                    const pages = editor.Pages.getAll()
+
+                    return pages.map((page: any, index: number) => {
+                        const component = page.getMainComponent()
+                        return {
+                            index,
+                            name: page.getName?.() || page.getId?.() || `Slide ${index + 1}`,
+                            html: editor.getHtml({ component }),
+                            css: editor.getCss({ component }),
+                        }
+                    })
+                },
                 getEditor: () => editorRef.current
             }
         }
 
         return () => {
             if (typeof window !== 'undefined') {
-                // @ts-ignore
                 delete window.grapesjsAITools
             }
         }

@@ -5,11 +5,9 @@ import AppSidebar from "./Sidebar";
 import Header from "./Header";
 import TestPanel from "./TestPanel";
 import EphemeralChatPanel from "@/app/_components/EphemeralChatPanel";
-import SlideThumbnailPanel from "./SlideThumbnailPanel";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { createContext, useContext, useState } from "react";
 import { useParams, usePathname } from 'next/navigation';
-import { FEATURES } from '@/lib/feature-flags';
 
 const SidebarAvailableContext = createContext<{ hasSidebar: boolean }>({ hasSidebar: false });
 
@@ -21,16 +19,12 @@ export const PanelControlsContext = createContext<{
     isTestPanelOpen: boolean;
     toggleAIChat: () => void;
     toggleTestPanel: () => void;
-    isThumbnailPanelOpen: boolean;
-    toggleThumbnailPanel: () => void;
 }>({
     isSignedIn: false,
     isAIChatOpen: false,
     isTestPanelOpen: false,
     toggleAIChat: () => { },
     toggleTestPanel: () => { },
-    isThumbnailPanelOpen: true,
-    toggleThumbnailPanel: () => { },
 });
 
 export const usePanelControls = () => useContext(PanelControlsContext);
@@ -50,9 +44,9 @@ export default function LayoutWrapper({
     const isEditorMode = pathname?.startsWith('/editor/');
     const isPresentVoiceMode = pathname?.startsWith('/present-voice/');
 
+    const isDev = process.env.NODE_ENV === 'development';
     const [isTestPanelOpen, setIsTestPanelOpen] = useState(false);
     const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-    const [isThumbnailPanelOpen, setIsThumbnailPanelOpen] = useState<boolean>(FEATURES.THUMBNAIL_PANEL);
 
     const toggleTestPanel = () => {
         setIsTestPanelOpen(prev => !prev);
@@ -62,13 +56,6 @@ export default function LayoutWrapper({
     const toggleAIChat = () => {
         setIsAIChatOpen(prev => !prev);
         if (!isAIChatOpen) setIsTestPanelOpen(false);
-    };
-
-    const toggleThumbnailPanel = () => {
-        // Only allow toggling if the feature is enabled
-        if (FEATURES.THUMBNAIL_PANEL) {
-            setIsThumbnailPanelOpen(prev => !prev);
-        }
     };
 
     // If in present mode, render without any layout wrapper
@@ -81,8 +68,6 @@ export default function LayoutWrapper({
                     isTestPanelOpen: false,
                     toggleAIChat: () => { },
                     toggleTestPanel: () => { },
-                    isThumbnailPanelOpen: FEATURES.THUMBNAIL_PANEL,
-                    toggleThumbnailPanel: () => { },
                 }}>
                     {children}
                 </PanelControlsContext.Provider>
@@ -99,8 +84,6 @@ export default function LayoutWrapper({
                     isTestPanelOpen,
                     toggleAIChat,
                     toggleTestPanel,
-                    isThumbnailPanelOpen: true,
-                    toggleThumbnailPanel: () => { },
                 }}>
                     <div className="min-h-screen">
                         <Header
@@ -133,8 +116,6 @@ export default function LayoutWrapper({
                     isTestPanelOpen,
                     toggleAIChat,
                     toggleTestPanel,
-                    isThumbnailPanelOpen,
-                    toggleThumbnailPanel,
                 }}>
                     <SidebarProvider defaultOpen={false}>
                         <AppSidebar />
@@ -142,7 +123,7 @@ export default function LayoutWrapper({
                             {/* Only show main Header when NOT in editor mode (editor has its own EditorHeader) */}
                             {!isEditorMode && (
                                 <Header
-                                    onToggleTestPanel={toggleTestPanel}
+                                    onToggleTestPanel={isDev ? toggleTestPanel : undefined}
                                     onToggleAIChat={projectId ? toggleAIChat : undefined}
                                 />
                             )}
@@ -158,11 +139,6 @@ export default function LayoutWrapper({
                                 </div>
                             </div>
 
-                            <div className="flex-shrink-0">
-                                {projectId && isThumbnailPanelOpen && (
-                                    <SlideThumbnailPanel />
-                                )}
-                            </div>
                             {projectId && (
                                 <>
                                     <EphemeralChatPanel
@@ -170,7 +146,7 @@ export default function LayoutWrapper({
                                         onClose={() => setIsAIChatOpen(false)}
                                         isTestPanelOpen={isTestPanelOpen}
                                     />
-                                    <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
+                                    {isDev && <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />}
                                 </>
                             )}
                         </SidebarInset>
@@ -188,12 +164,10 @@ export default function LayoutWrapper({
                 isTestPanelOpen,
                 toggleAIChat,
                 toggleTestPanel,
-                isThumbnailPanelOpen: FEATURES.THUMBNAIL_PANEL, // Controlled by feature flag
-                toggleThumbnailPanel: () => { }, // No-op for non-sidebar layout
             }}>
                 <div className="min-h-screen flex flex-col">
                     <Header
-                        onToggleTestPanel={toggleTestPanel}
+                        onToggleTestPanel={isDev ? toggleTestPanel : undefined}
                         onToggleAIChat={projectId ? toggleAIChat : undefined}
                     />
                     <div className="flex-1 relative">
@@ -208,15 +182,6 @@ export default function LayoutWrapper({
                         </div>
                     </div>
 
-                    {/* Thumbnail Panel - TEMPORARILY DISABLED for debugging */}
-                    {FEATURES.THUMBNAIL_PANEL && (
-                        <div className="flex-shrink-0">
-                            {projectId && (
-                                <SlideThumbnailPanel />
-                            )}
-                        </div>
-                    )}
-
                     {projectId && (
                         <>
                             <EphemeralChatPanel
@@ -224,7 +189,7 @@ export default function LayoutWrapper({
                                 onClose={() => setIsAIChatOpen(false)}
                                 isTestPanelOpen={isTestPanelOpen}
                             />
-                            <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />
+                            {isDev && <TestPanel isOpen={isTestPanelOpen} onClose={() => setIsTestPanelOpen(false)} />}
                         </>
                     )}
                 </div>

@@ -4,7 +4,9 @@
       "Bash(npm install:*)",
       "Bash(npx playwright:*)",
       "Bash(npm run test:e2e:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git -C /Users/kendavidn/Dropbox/tgc_github_projects/chalktalk_studio log --oneline -20)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

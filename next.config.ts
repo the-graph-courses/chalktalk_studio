@@ -33,8 +33,6 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['@radix-ui/react-icons'],
   },
-  // Disable font optimization for Google Fonts to prevent network delays
-  optimizeFonts: false,
 };
 
 export default nextConfig;

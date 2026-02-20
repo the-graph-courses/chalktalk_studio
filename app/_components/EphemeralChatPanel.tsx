@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play, Settings, ChevronDown, ChevronUp, Upload, Brain, Trash2, AlertTriangle, Square, RefreshCcw } from 'lucide-react';
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
+import { executeEditorCommand, triggerEditorSave } from '@/lib/editor-commands';
 
 interface EphemeralChatPanelProps {
     isOpen: boolean;
@@ -101,81 +102,6 @@ function getToolIcon(toolName: string) {
             return <Trash2 className="size-4" />;
         default:
             return <Play className="size-4" />;
-    }
-}
-
-// Helper function to execute editor commands
-function executeEditorCommand(output: any): any {
-    if (typeof window === 'undefined') return false;
-
-    // @ts-ignore - Access global grapesjsAITools
-    const aiTools = window.grapesjsAITools;
-    if (!aiTools || !output?.command) return false;
-
-    const { command, data: commandData } = output;
-
-    try {
-        switch (command) {
-            case 'addSlide':
-                return aiTools.addSlide(
-                    commandData.name,
-                    commandData.content,
-                    commandData.insertAtIndex
-                );
-            case 'replaceSlide':
-                return aiTools.replaceSlide(
-                    commandData.slideIndex,
-                    commandData.newContent,
-                    commandData.newName
-                );
-            case 'deleteSlide':
-                return aiTools.deleteSlide(
-                    commandData.slideIndex
-                );
-            case 'readSlide': {
-                const html = aiTools.getSlideHtml(commandData.slideIndex);
-                const css = aiTools.getSlideCss(commandData.slideIndex);
-
-                if (html === null || css === null) {
-                    return { error: `Slide ${commandData.slideIndex} not found` };
-                }
-
-                const editor = aiTools.getEditor();
-                const pages = editor?.Pages?.getAll();
-                const page = pages?.[commandData.slideIndex];
-                const slideName = page?.getName() || page?.getId() || `Slide ${commandData.slideIndex + 1}`;
-
-                return {
-                    success: true,
-                    slideIndex: commandData.slideIndex,
-                    slideName,
-                    html,
-                    css
-                };
-            }
-            case 'readDeck': {
-                const slidesData = aiTools.getAllSlidesHtmlCss();
-                if (!slidesData) return { error: 'Failed to read slides' };
-
-                const slides = slidesData.map(slide => ({
-                    index: slide.index,
-                    name: commandData.includeNames ? slide.name : undefined,
-                    html: slide.html,
-                    css: slide.css
-                }));
-
-                return {
-                    success: true,
-                    totalSlides: slides.length,
-                    slides
-                };
-            }
-            default:
-                return false;
-        }
-    } catch (error) {
-        console.error('Error executing editor command:', error);
-        return false;
     }
 }
 
@@ -366,7 +292,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
 
     // Available AI models
     const models = [
-        { id: 'cerebras', name: 'Qwen 3 480B', icon: '🧠', description: 'Cerebras' },
+        { id: 'cerebras', name: 'GPT OSS 120B', icon: '🧠', description: 'Cerebras' },
         { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', icon: '🎭', description: 'Anthropic' },
         { id: 'gpt-4o', name: 'GPT-4o', icon: '🤖', description: 'OpenAI' },
     ];
@@ -415,10 +341,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                                 part.output = executed;
                             } else {
                                 // For write commands, trigger a save to persist the state
-                                if (window.grapesjsAITools?.getEditor) {
-                                    const editor = window.grapesjsAITools.getEditor();
-                                    editor?.store();
-                                }
+                                triggerEditorSave();
                             }
 
                             setExecutedCommandIds(prev => {
@@ -441,10 +364,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
         // At the start of a new conversation, save the current editor state
         // to ensure the AI has the latest version of the presentation.
         if (messages.length === 0) {
-            if (window.grapesjsAITools?.getEditor) {
-                const editor = window.grapesjsAITools.getEditor();
-                editor?.store();
-            }
+            triggerEditorSave();
         }
 
         const fileParts = files && files.length > 0 ? await convertFilesToDataURLs(files) : [];

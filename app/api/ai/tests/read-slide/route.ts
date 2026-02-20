@@ -2,6 +2,10 @@ import { auth } from '@clerk/nextjs/server';
 import { executeSlideToolServer } from '@/lib/slide-tools-server';
 
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV !== 'development') {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     const { userId } = await auth();
     if (!userId) {

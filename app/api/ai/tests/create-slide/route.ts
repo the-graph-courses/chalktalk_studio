@@ -3,6 +3,10 @@ import { executeSlideToolServer } from '@/lib/slide-tools-server';
 import { getSlideContainer } from '@/lib/slide-formats';
 
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV !== 'development') {
+    return Response.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     const { userId } = await auth();
     if (!userId) {

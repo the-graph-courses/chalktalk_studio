@@ -5,7 +5,6 @@ import '@grapesjs/studio-sdk/style'
 import '@/styles/grapesjs-overrides.css'
 import { canvasAbsoluteMode, canvasFullSize, rteProseMirror, iconifyComponent } from '@grapesjs/studio-sdk-plugins'
 import grapesRevealTraits from '@/lib/grapes-reveal-traits'
-import marqueeSelect from '@/lib/marquee-select'
 import { useMemo, use, useRef, useEffect, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useMutation, useQuery, useConvex } from 'convex/react'
@@ -14,24 +13,9 @@ import { useUserDetail } from '@/app/provider'
 import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from '@/lib/slide-formats'
 import { TEMPLATES } from '@/lib/slide-templates';
 import EditorHeader from '@/app/_components/EditorHeader'
+import '@/lib/editor-commands' // Window type augmentation for grapesjsAITools
 
 type PageProps = { params: Promise<{ projectId: string }> }
-
-// Global type declaration for AI tools
-declare global {
-    interface Window {
-        grapesjsAITools?: {
-            addSlide: (name: string, content: string, insertAtIndex?: number) => boolean
-            editSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
-            replaceSlide: (slideIndex: number, newContent: string, newName?: string) => boolean
-            deleteSlide: (slideIndex: number) => boolean
-            getEditor: () => any
-            getSlideHtml: (slideIndex: number) => string | null
-            getSlideCss: (slideIndex: number) => string | null
-            getAllSlidesHtmlCss: () => Array<{ index: number; name: string; html: string; css: string }> | null
-        }
-    }
-}
 
 export default function EditorPage({ params }: PageProps) {
     const { projectId } = use(params)
@@ -151,7 +135,6 @@ export default function EditorPage({ params }: PageProps) {
     // Create global functions for AI tools to interact with the editor
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            // @ts-ignore - Adding to window for AI tools access
             window.grapesjsAITools = {
                 addSlide: (name: string, content: string, insertAtIndex?: number) => {
                     if (!editorRef.current) return false
@@ -299,7 +282,6 @@ export default function EditorPage({ params }: PageProps) {
 
         return () => {
             if (typeof window !== 'undefined') {
-                // @ts-ignore
                 delete window.grapesjsAITools
             }
         }
@@ -588,7 +570,6 @@ export default function EditorPage({ params }: PageProps) {
                                 canvasOffsetY: 50,
                             }),
                             canvasAbsoluteMode,
-                            marqueeSelect,
                             grapesRevealTraits,
                             iconifyComponent.init({
                                 block: {

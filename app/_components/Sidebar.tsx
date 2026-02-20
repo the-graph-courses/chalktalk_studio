@@ -12,7 +12,6 @@ import {
     Sun,
     Moon,
     Home,
-    LayoutPanelTop
 } from 'lucide-react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
@@ -28,13 +27,10 @@ import {
     SidebarTrigger,
     SidebarFooter,
 } from "@/components/ui/sidebar"
-import { usePanelControls } from './LayoutWrapper'
-
 export default function AppSidebar() {
     const { user } = useUser()
     const router = useRouter()
     const { theme, setTheme } = useTheme()
-    const { isThumbnailPanelOpen, toggleThumbnailPanel } = usePanelControls()
     const [mounted, setMounted] = useState(false)
 
     // Prevent hydration mismatch
@@ -126,15 +122,6 @@ export default function AppSidebar() {
                         >
                             <Star className={commonIconClass} />
                             <span>Starred</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            onClick={toggleThumbnailPanel}
-                            tooltip={isThumbnailPanelOpen ? 'Hide Thumbnails' : 'Show Thumbnails'}
-                        >
-                            <LayoutPanelTop className={commonIconClass} />
-                            <span>{isThumbnailPanelOpen ? 'Hide Thumbnails' : 'Show Thumbnails'}</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
