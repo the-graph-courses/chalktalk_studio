@@ -9,17 +9,23 @@ export const CreateNewUser = mutation({
         clerkId: v.string(), // Add this
     },
     handler: async (ctx, args) => {
-        // Check by clerkId instead of email for better reliability
+        const identity = await ctx.auth.getUserIdentity();
+        if (identity === null) {
+            throw new Error("Not authenticated");
+        }
+
+        // Trust the Clerk subject from the Convex token, not the client argument.
+        const clerkId = identity.subject;
         const user = await ctx.db.query('UserTable')
-            .filter((q) => q.eq(q.field('clerkId'), args.clerkId))
+            .filter((q) => q.eq(q.field('clerkId'), clerkId))
             .collect();
 
         if (user?.length == 0) {
             const userData = {
-                name: args.name,
-                email: args.email,
-                imageUrl: args.imageUrl,
-                clerkId: args.clerkId // Add this
+                name: identity.name || args.name,
+                email: identity.email || args.email,
+                imageUrl: identity.pictureUrl || args.imageUrl,
+                clerkId,
             }
             const result = await ctx.db.insert('UserTable', userData)
             return {

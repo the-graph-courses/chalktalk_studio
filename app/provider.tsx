@@ -2,7 +2,7 @@
 import React, { useEffect, useState, createContext, useContext } from 'react'
 import Header from './_components/Header';
 import { api } from '@/convex/_generated/api';
-import { useMutation } from 'convex/react';
+import { useConvexAuth, useMutation } from 'convex/react';
 import { useUser } from '@clerk/nextjs';
 import { ThemeProvider } from 'next-themes';
 
@@ -22,22 +22,26 @@ function Provider({
     const CreateUser = useMutation(api.user.CreateNewUser)
     const [userDetail, setUserDetail] = useState<any>(null);
     const { user } = useUser();
+    const { isAuthenticated } = useConvexAuth();
 
     useEffect(() => {
-        if (user) {
-            CreateNewUser()
-        }
-    }, [user])
+        if (!isAuthenticated || !user) return;
 
-    const CreateNewUser = async () => {
-        const result = await CreateUser({
-            email: user?.primaryEmailAddress?.emailAddress || "",
-            imageUrl: user?.imageUrl || "",
-            name: user?.fullName || "",
-            clerkId: user?.id || "", // Add this
-        });
-        setUserDetail(result)
-    }
+        let cancelled = false;
+        (async () => {
+            const result = await CreateUser({
+                email: user.primaryEmailAddress?.emailAddress || "",
+                imageUrl: user.imageUrl || "",
+                name: user.fullName || "",
+                clerkId: user.id,
+            });
+            if (!cancelled) setUserDetail(result);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuthenticated, user, CreateUser])
 
     return (
         <ThemeProvider

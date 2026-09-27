@@ -292,7 +292,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
 
     // Available AI models
     const models = [
-        { id: 'cerebras', name: 'GPT OSS 120B', icon: '🧠', description: 'Cerebras' },
+        { id: 'cerebras', name: 'Qwen 3.8 27B', icon: '🧠', description: 'Cerebras' },
         { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', icon: '🎭', description: 'Anthropic' },
         { id: 'gpt-4o', name: 'GPT-4o', icon: '🤖', description: 'OpenAI' },
     ];

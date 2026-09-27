@@ -1,6 +1,5 @@
 'use client';
 import './globals.css';
-import Provider from './provider';
 import { ClerkProvider } from '@clerk/nextjs';
 import { ConvexClientProvider } from './ConvexClientProvider';
 import LayoutWrapper from './_components/LayoutWrapper';
@@ -23,9 +22,7 @@ export default function RootLayout({
           suppressHydrationWarning
         >
           <ConvexClientProvider>
-            <Provider>
-              <LayoutWrapper>{children}</LayoutWrapper>
-            </Provider>
+            <LayoutWrapper>{children}</LayoutWrapper>
           </ConvexClientProvider>
         </body>
       </html>

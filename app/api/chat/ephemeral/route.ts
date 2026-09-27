@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       break;
     case 'cerebras':
     default:
-      selectedModel = cerebras('gpt-oss-120b');
+      selectedModel = cerebras('qwen-3.8-27b');
       break;
   }
 
