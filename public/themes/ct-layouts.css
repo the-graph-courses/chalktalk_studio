@@ -1,0 +1,411 @@
+/*
+ * ChalkTalk slide layouts.
+ *
+ * A small layout vocabulary the AI assistant composes slides from (see lib/slide-design.ts).
+ * Loaded in the editor canvas, both present modes and HTML exports.
+ *
+ * - Sizes are fixed px for a 1280x720 slide so a slide that fits in the editor fits when presenting.
+ * - Colors and fonts follow the active Reveal theme via its --r-* variables (with fallbacks for the
+ *   editor canvas, where the variables are not defined).
+ * - Specificity is kept low (`.ct h2`, `.ct .ct-card`) so the model's scoped custom CSS
+ *   (`.s-pricing h2`) can override it. It ties with Reveal theme rules like `.reveal h2`, so this
+ *   file must load after the theme, and slide custom CSS after this file.
+ */
+
+.ct {
+  --ct-accent: var(--r-link-color, #2563eb);
+  --ct-text: var(--r-main-color, #1f2328);
+  --ct-heading: var(--r-heading-color, var(--ct-text));
+  --ct-surface: color-mix(in srgb, var(--ct-text) 6%, transparent);
+  --ct-border: color-mix(in srgb, var(--ct-text) 14%, transparent);
+  --ct-muted: color-mix(in srgb, var(--ct-text) 65%, transparent);
+
+  box-sizing: border-box;
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  padding: 64px 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  text-align: left;
+  color: var(--ct-text);
+  font-family: var(--r-main-font, inherit);
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.ct *,
+.ct *::before,
+.ct *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- Base text ---------- */
+
+.ct h1,
+.ct h2,
+.ct h3 {
+  margin: 0;
+  color: var(--ct-heading);
+  font-family: var(--r-heading-font, inherit);
+  font-weight: var(--r-heading-font-weight, 700);
+  text-transform: var(--r-heading-text-transform, none);
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+.ct h1 { font-size: 68px; line-height: 1.05; }
+.ct h2 { font-size: 46px; line-height: 1.12; }
+.ct h3 { font-size: 30px; line-height: 1.2; }
+
+.ct p {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.ct strong { font-weight: 700; }
+.ct .ct-accent { color: var(--ct-accent); font-weight: 700; }
+.ct .ct-muted { color: var(--ct-muted); }
+
+/* Small uppercase label above a heading */
+.ct .ct-kicker {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ct-accent);
+}
+
+/* One-sentence intro under a heading */
+.ct .ct-lead {
+  font-size: 30px;
+  color: var(--ct-muted);
+  max-width: 980px;
+}
+
+/* Source / footnote pinned to the bottom of the slide */
+.ct .ct-footnote {
+  position: absolute;
+  left: 88px;
+  right: 88px;
+  bottom: 32px;
+  font-size: 16px;
+  color: var(--ct-muted);
+}
+
+/* ---------- Title slide ---------- */
+
+.ct.ct-title-slide {
+  justify-content: center;
+  gap: 24px;
+  padding: 88px 112px;
+}
+
+.ct.ct-title-slide h1 { font-size: 76px; max-width: 1000px; }
+
+.ct .ct-subtitle {
+  font-size: 32px;
+  color: var(--ct-muted);
+  max-width: 900px;
+}
+
+.ct.ct-title-slide::after {
+  content: "";
+  position: absolute;
+  left: 112px;
+  bottom: 88px;
+  width: 96px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ct-accent);
+}
+
+/* ---------- Section divider ---------- */
+
+.ct.ct-section {
+  justify-content: center;
+  gap: 20px;
+  padding: 88px 112px;
+  border-left: 16px solid var(--ct-accent);
+}
+
+.ct.ct-section h2 { font-size: 64px; max-width: 980px; }
+
+/* ---------- Bullet points ---------- */
+
+.ct .ct-points {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  max-width: 1040px;
+}
+
+/* Points that are the slide body share the space under the heading, centered vertically */
+.ct > .ct-points {
+  flex: 1;
+  padding-bottom: 40px;
+}
+
+.ct .ct-points > p,
+.ct .ct-point {
+  position: relative;
+  padding-left: 36px;
+  font-size: 30px;
+}
+
+.ct .ct-points > p::before,
+.ct .ct-point::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--ct-accent);
+}
+
+/* ---------- Columns & comparison ---------- */
+
+.ct .ct-cols {
+  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 48px;
+  align-content: center;
+  padding-bottom: 40px;
+  min-height: 0;
+}
+
+.ct .ct-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ct .ct-col h3 {
+  padding-bottom: 12px;
+  border-bottom: 4px solid var(--ct-accent);
+}
+
+.ct .ct-col p { font-size: 26px; }
+
+/* ---------- Cards ---------- */
+
+.ct .ct-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  align-content: center;
+  padding-bottom: 40px;
+  min-height: 0;
+}
+
+.ct .ct-grid.ct-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.ct .ct-grid.ct-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.ct .ct-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 16px;
+  background: var(--ct-surface);
+  border-top: 6px solid var(--ct-accent);
+}
+
+.ct .ct-card h3 { font-size: 28px; }
+.ct .ct-card p { font-size: 22px; line-height: 1.4; }
+
+/* ---------- Big numbers ---------- */
+
+.ct .ct-stats {
+  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.ct .ct-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ct .ct-stat-value {
+  font-size: 104px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ct-accent);
+}
+
+.ct .ct-stat-label {
+  font-size: 24px;
+  color: var(--ct-muted);
+  max-width: 360px;
+}
+
+/* ---------- Steps / timeline ---------- */
+
+.ct .ct-steps {
+  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 28px;
+  align-content: center;
+  counter-reset: ct-step;
+}
+
+.ct .ct-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 72px;
+  counter-increment: ct-step;
+}
+
+.ct .ct-step::before {
+  content: counter(ct-step);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--ct-accent);
+}
+
+.ct .ct-step::after {
+  content: "";
+  position: absolute;
+  top: 25px;
+  left: 64px;
+  right: -16px;
+  height: 3px;
+  background: var(--ct-border);
+}
+
+.ct .ct-step:last-child::after { display: none; }
+.ct .ct-step h3 { font-size: 26px; }
+.ct .ct-step p { font-size: 21px; line-height: 1.4; color: var(--ct-muted); }
+
+/* ---------- Quote ---------- */
+
+.ct.ct-quote {
+  justify-content: center;
+  padding: 88px 136px;
+}
+
+.ct .ct-quote-text {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  width: auto;
+  font-size: 48px;
+  line-height: 1.25;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ct-heading);
+}
+
+.ct .ct-quote-text::before {
+  content: "\201C";
+  display: block;
+  height: 72px;
+  font-size: 140px;
+  line-height: 1;
+  color: var(--ct-accent);
+}
+
+.ct .ct-quote-source {
+  font-size: 24px;
+  color: var(--ct-muted);
+}
+
+/* ---------- Table ---------- */
+
+.ct .ct-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 22px;
+}
+
+.ct .ct-table th,
+.ct .ct-table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--ct-border);
+}
+
+.ct .ct-table th {
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ct-muted);
+  border-bottom: 3px solid var(--ct-accent);
+}
+
+/* ---------- Code ---------- */
+
+.ct .ct-code {
+  margin: 0;
+  padding: 24px 28px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--ct-border);
+  background: #0f172a;
+  box-shadow: none;
+  font-size: 22px;
+  line-height: 1.45;
+  text-align: left;
+  overflow: hidden;
+}
+
+.ct .ct-code code {
+  display: block;
+  padding: 0;
+  max-height: none;
+  color: #e2e8f0;
+  background: none;
+  font-family: var(--r-code-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+  white-space: pre;
+}
+
+/* ---------- Media + text ---------- */
+
+.ct .ct-split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  min-height: 0;
+}
+
+.ct .ct-media {
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 520px;
+  object-fit: cover;
+  border-radius: 16px;
+}

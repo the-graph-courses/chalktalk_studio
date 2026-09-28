@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
-import { extractRevealSlides } from '@/lib/reveal-export'
+import { extractRevealSlides, projectCustomCss } from '@/lib/reveal-export'
 import { extractTTSFromSlideHtml } from '@/lib/tts-extract'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
@@ -57,6 +57,10 @@ export async function GET(req: NextRequest) {
                 themeCss = ':root { --r-background-color: #fff; --r-main-color: #000; }'
             }
         }
+
+        // Slide layouts, then the deck's custom CSS: both must come after the theme to win ties
+        const layoutCss = await readFile(join(process.cwd(), 'public', 'themes', 'ct-layouts.css'), 'utf-8').catch(() => '')
+        themeCss = [themeCss, layoutCss, projectCustomCss(deck.project as any)].filter(Boolean).join('\n')
 
         // Process slides to inject audio elements and timing
         const processedSlides = await processSlideWithAudio(slides, audioCache)

@@ -1,12 +1,11 @@
 'use client'
 
-import { use, useEffect, useMemo, useState, useRef } from 'react'
+import { memo, use, useEffect, useMemo, useState, useRef } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import Reveal from 'reveal.js'
 import 'reveal.js/dist/reveal.css'
-import { extractRevealSlides } from '@/lib/reveal-export'
-import { extractTTSFromSlideHtml } from '@/lib/tts-extract'
+import { extractRevealSlides, projectCustomCss, type RevealSlide } from '@/lib/reveal-export'
 
 // Helper to scope CSS selectors
 const scopeCss = (css: string, scope: string) => {
@@ -18,24 +17,119 @@ const scopeCss = (css: string, scope: string) => {
     })
 }
 
+type AudioClip = { elementIndex: number; ttsText: string; audioUrl: string | null; duration: number }
+
+// Pause after a clip ends before moving on
+const GAP_MS = 250
+// How long to linger on a slide that has no narration at all
+const SILENT_SLIDE_MS = 3000
+
+// Inject <audio> elements into a slide's HTML. Clips are ordered the same way the
+// generator (lib/tts-extract.ts) orders them: by data-fragment-index, then DOM order.
+// Slides without data-tts elements get a single slide-level clip (generator fallback).
+const attachAudioToSlide = (slide: RevealSlide, clips: AudioClip[] | undefined): RevealSlide => {
+    if (!clips?.length) return slide
+
+    const doc = new DOMParser().parseFromString(`<body>${slide.html}</body>`, 'text/html')
+    const createAudio = (src: string, attr: string) => {
+        const audio = doc.createElement('audio')
+        audio.setAttribute(attr, 'true')
+        // Clips load on demand; the upcoming one is prefetched during playback
+        audio.setAttribute('preload', 'none')
+        audio.setAttribute('src', src)
+        return audio
+    }
+
+    const ttsElements = Array.from(doc.body.querySelectorAll<HTMLElement>('[data-tts]'))
+        .filter(el => el.getAttribute('data-tts'))
+        .map((el, order) => {
+            const idx = parseInt(el.getAttribute('data-fragment-index') ?? '', 10)
+            return { el, order, idx: Number.isFinite(idx) ? idx : Number.MAX_SAFE_INTEGER }
+        })
+        .sort((a, b) => a.idx - b.idx || a.order - b.order)
+
+    if (!ttsElements.length) {
+        const src = clips[0]?.audioUrl
+        if (src) doc.body.appendChild(createAudio(src, 'data-slide-audio'))
+        return { ...slide, html: doc.body.innerHTML }
+    }
+
+    ttsElements.forEach(({ el }, i) => {
+        const src = clips[i]?.audioUrl
+        if (!src) return
+        let fragment = el.closest('.fragment')
+        if (!fragment) {
+            fragment = doc.createElement('div')
+            fragment.className = 'fragment'
+            el.parentNode?.insertBefore(fragment, el)
+            fragment.appendChild(el)
+        }
+        fragment.setAttribute('data-fragment-index', String(i))
+        fragment.appendChild(createAudio(src, 'data-fragment-audio'))
+    })
+
+    return { ...slide, html: doc.body.innerHTML }
+}
+
+// Memoized so parent re-renders (pause, controls auto-hide, volume...) don't touch the deck.
+// React 19 re-assigns innerHTML whenever a new dangerouslySetInnerHTML object is passed,
+// which would wipe Reveal's fragment state and detach the playing <audio> element.
+const RevealSlides = memo(function RevealSlides({ slides, customCss }: { slides: RevealSlide[]; customCss: string }) {
+    return (
+        <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
+            {/* Deck-wide custom CSS from the editor; after the theme and layout stylesheets so it wins ties */}
+            {customCss ? <style dangerouslySetInnerHTML={{ __html: customCss }} /> : null}
+            <div className="slides">
+                {slides.map((s, i) => (
+                    <section key={i} data-slide-scope={`s${i}`}>
+                        <div
+                            className="ct-slide"
+                            style={s.containerStyle ? (() => {
+                                const styles: Record<string, string> = {}
+                                s.containerStyle.split(';').filter(Boolean).forEach((p: string) => {
+                                    const [k, v] = p.split(':')
+                                    if (k && v) {
+                                        styles[k.trim()] = v.trim()
+                                    }
+                                })
+                                return styles as React.CSSProperties
+                            })() : undefined}
+                            dangerouslySetInnerHTML={{ __html: s.html }}
+                        />
+                        {s.css?.length ? (
+                            <style
+                                dangerouslySetInnerHTML={{ __html: scopeCss(s.css.join('\n'), `[data-slide-scope=\"s${i}\"] .ct-slide`) }}
+                            />
+                        ) : null}
+                    </section>
+                ))}
+            </div>
+        </div>
+    )
+})
+
 type PageProps = { params: Promise<{ projectId: string }> }
 
 export default function PresentVoicePage({ params }: PageProps) {
     const { projectId } = use(params)
     const deck = useQuery(api.slideDeck.GetProject, { projectId })
     const deckTitle = deck?.title || 'Presentation'
+    // Reactive: updates automatically once audio generation persists new clips
+    const audioData = useQuery(api.ttsAudio.GetForProject, { projectId }) as Record<string, AudioClip[]> | undefined
 
-    const [reveal, setReveal] = useState<Reveal.Api | null>(null)
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
     const [generationProgress, setGenerationProgress] = useState(0)
-    const [audioCache, setAudioCache] = useState<Record<string, any>>({})
     const [playbackRate, setPlaybackRate] = useState(1)
     const [volume, setVolume] = useState(1)
     const [hasStarted, setHasStarted] = useState(false)
-    const hasStartedRef = useRef(false)
-    const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map())
+    const [isPlaying, setIsPlaying] = useState(false)
+
+    // Refs read from Reveal event handlers so settings changes don't re-initialize the deck
+    const isPlayingRef = useRef(false)
+    const playbackRateRef = useRef(1)
+    const volumeRef = useRef(1)
     const currentAudioRef = useRef<HTMLAudioElement | null>(null)
-    const handledFragmentsRef = useRef(new WeakSet<HTMLElement>())
+    const playStepRef = useRef<() => void>(() => { })
 
     const [showExportMenu, setShowExportMenu] = useState(false)
     const [exportTheme, setExportTheme] = useState('white')
@@ -43,37 +137,32 @@ export default function PresentVoicePage({ params }: PageProps) {
     const [isControlsHovered, setIsControlsHovered] = useState(false)
 
     const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
+    const customCss = useMemo(() => projectCustomCss(deck?.project as any), [deck?.project])
 
-    // Store processed slides with duration calculations
-    const [processedSlidesState, setProcessedSlidesState] = useState<typeof slides>([])
+    const hasAudioCache = !!audioData && Object.keys(audioData).length > 0
+
+    const processedSlides = useMemo(() => {
+        if (!slides.length || !audioData || !hasAudioCache) return slides
+        return slides.map((slide, i) => attachAudioToSlide(slide, audioData[String(i)]))
+    }, [slides, audioData, hasAudioCache])
 
     // Fake progress bar for audio generation
     useEffect(() => {
-        let interval: NodeJS.Timeout | undefined
-        if (isGeneratingAudio) {
-            setGenerationProgress(1) // Start immediately
-            interval = setInterval(() => {
-                setGenerationProgress(prev => {
-                    if (prev >= 95) {
-                        if (interval) clearInterval(interval)
-                        return 95
-                    }
-                    // Non-linear progress, slows down as it approaches 95
-                    const remaining = 95 - prev
-                    const increment = Math.max(1, remaining / (10 + Math.random() * 10))
-                    return prev + increment
-                })
-            }, 500)
-        } else {
-            // When generation stops, if we were showing progress, complete it.
-            if (generationProgress > 0 && generationProgress < 100) {
-                setGenerationProgress(100)
-            }
+        if (!isGeneratingAudio) {
+            setGenerationProgress(prev => (prev > 0 && prev < 100 ? 100 : prev))
+            return
         }
-        return () => {
-            if (interval) clearInterval(interval)
-        }
-    }, [isGeneratingAudio, generationProgress])
+        setGenerationProgress(1)
+        const interval = setInterval(() => {
+            setGenerationProgress(prev => {
+                if (prev >= 95) return 95
+                // Non-linear progress, slows down as it approaches 95
+                const remaining = 95 - prev
+                return prev + Math.max(1, remaining / (10 + Math.random() * 10))
+            })
+        }, 500)
+        return () => clearInterval(interval)
+    }, [isGeneratingAudio])
 
     // Auto-hide controls after 3 seconds of no interaction
     useEffect(() => {
@@ -112,119 +201,6 @@ export default function PresentVoicePage({ params }: PageProps) {
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [showExportMenu])
-
-    // Calculate audio duration using HTML5 Audio API
-    const getAudioDuration = (dataUrl: string): Promise<number> => {
-        return new Promise((resolve) => {
-            const audio = new Audio()
-            audio.addEventListener('loadedmetadata', () => {
-                const durationMs = Math.round(audio.duration * 1000)
-                resolve(durationMs || 1000) // Fallback to 1 second if duration is invalid
-            })
-            audio.addEventListener('error', () => {
-                resolve(1000) // Fallback to 1 second on error
-            })
-            audio.src = dataUrl
-        })
-    }
-
-    // Process slides to inject audio elements and timing
-    useEffect(() => {
-        if (!slides.length || Object.keys(audioCache).length === 0) {
-            setProcessedSlidesState(slides)
-            return
-        }
-
-        const processSlides = async () => {
-            const processed = await Promise.all(slides.map(async (slide, slideIndex) => {
-                const slideAudio = audioCache[slideIndex]
-                if (!slideAudio || !Array.isArray(slideAudio)) return slide
-
-                // Parse the HTML to inject audio elements
-                const parser = new DOMParser()
-                const doc = parser.parseFromString(slide.html, 'text/html')
-
-                // Add empty fragment at beginning of non-first slides
-                if (slideIndex > 0) {
-                    const emptyFragment = doc.createElement('div')
-                    emptyFragment.className = 'fragment'
-                    emptyFragment.setAttribute('data-autoslide', '10')
-                    emptyFragment.setAttribute('data-fragment-index', '0') // Ensure it shows first
-                    doc.body.insertBefore(emptyFragment, doc.body.firstChild)
-                }
-
-                // Find all elements with data-tts attribute
-                const ttsElements = doc.querySelectorAll('[data-tts]')
-
-                // Process each TTS element and calculate durations
-                await Promise.all(Array.from(ttsElements).map(async (element, fragmentIndex) => {
-                    const audioData = slideAudio[fragmentIndex]
-                    console.log(`🎵 Processing audio for slide ${slideIndex}, fragment ${fragmentIndex}:`, {
-                        hasAudioData: !!audioData,
-                        hasUrl: !!(audioData?.audioDataUrl || audioData?.audioUrl)
-                    })
-                    if (!audioData) return
-
-                    // Wrap element in fragment if not already
-                    let fragmentWrapper = element.closest('.fragment')
-                    if (!fragmentWrapper) {
-                        fragmentWrapper = doc.createElement('div')
-                        fragmentWrapper.className = 'fragment'
-                        element.parentNode?.insertBefore(fragmentWrapper, element)
-                        fragmentWrapper.appendChild(element)
-                    }
-
-                    // Calculate actual duration using HTML5 Audio API
-                    let duration = 1000 // Default fallback
-                    if (audioData.audioDataUrl) {
-                        try {
-                            duration = await getAudioDuration(audioData.audioDataUrl)
-                        } catch (e) {
-                            console.warn('Failed to get audio duration:', e)
-                            duration = audioData.duration || 1000
-                        }
-                    } else {
-                        duration = audioData.duration || 1000
-                    }
-
-                    fragmentWrapper.setAttribute('data-autoslide', String(duration + 250)) // Add 250ms buffer
-                    fragmentWrapper.setAttribute('data-tts', audioData.ttsText || '')
-
-                    // Proper fragment indexing - account for empty fragment at start of non-first slides
-                    const adjustedIndex = slideIndex > 0 ? fragmentIndex + 1 : fragmentIndex
-                    // Always set fragment index to ensure proper ordering (including index 0)
-                    fragmentWrapper.setAttribute('data-fragment-index', String(adjustedIndex))
-
-                    // Add audio element WITHOUT autoplay to prevent immediate playback
-                    const audio = doc.createElement('audio')
-                    // Store audio src as data attribute instead of setting it immediately
-                    audio.setAttribute('data-audio-src', audioData.audioDataUrl || audioData.audioUrl || '')
-                    audio.setAttribute('data-fragment-audio', 'true')
-                    // Don't add source element yet - we'll add it when fragment is shown
-                    fragmentWrapper.appendChild(audio)
-
-                    const audioSrc = audioData.audioDataUrl || audioData.audioUrl
-                    console.log(`🔊 Created audio element for slide ${slideIndex}, fragment ${fragmentIndex}:`, {
-                        src: audioSrc ? audioSrc.substring(0, 100) + '...' : 'NO SRC',
-                        hasSrc: !!audioSrc,
-                        duration: audioData.duration
-                    })
-                }))
-
-                // Serialize back to HTML
-                const processedHtml = doc.body.innerHTML
-
-                return { ...slide, html: processedHtml }
-            }))
-
-            setProcessedSlidesState(processed)
-        }
-
-        processSlides()
-    }, [slides, audioCache])
-
-    // Use the processed slides
-    const processedSlides = processedSlidesState
 
     // Handle export functionality
     const handleExport = async () => {
@@ -271,54 +247,7 @@ export default function PresentVoicePage({ params }: PageProps) {
         }
     }
 
-    // Load audio cache from localStorage or server
-    useEffect(() => {
-        const loadAudioCache = async () => {
-            try {
-                console.log('🔍 Loading audio cache for project:', projectId)
-
-                // First try localStorage
-                const cached = localStorage.getItem(`ttsCache:${projectId}`)
-                if (cached) {
-                    console.log('📦 Found audio cache in localStorage')
-                    const parsedCache = JSON.parse(cached)
-                    console.log('📊 localStorage cache contents:', {
-                        slideCount: Object.keys(parsedCache).length,
-                        slides: Object.entries(parsedCache).map(([idx, items]) => ({
-                            slideIndex: idx,
-                            itemCount: Array.isArray(items) ? items.length : 0
-                        }))
-                    })
-                    setAudioCache(parsedCache)
-                } else {
-                    console.log('🌐 No localStorage cache, fetching from server...')
-                    // Fallback to server
-                    const res = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
-                    console.log('📡 Server response status:', res.status)
-
-                    if (res.ok) {
-                        const data = await res.json()
-                        console.log('✅ Audio cache loaded from server:', {
-                            slideCount: Object.keys(data || {}).length,
-                            slides: Object.entries(data || {}).map(([idx, items]) => ({
-                                slideIndex: idx,
-                                itemCount: Array.isArray(items) ? items.length : 0,
-                                hasAudioUrls: Array.isArray(items) ? items.every((item: any) => item.audioDataUrl || item.audioUrl) : false
-                            }))
-                        })
-                        setAudioCache(data)
-                    } else {
-                        console.warn('⚠️ Failed to load audio cache from server:', res.statusText)
-                    }
-                }
-            } catch (e) {
-                console.error('❌ Failed to load audio cache:', e)
-            }
-        }
-        loadAudioCache()
-    }, [projectId])
-
-    // Generate audio if not cached
+    // Generate audio; the audioData query picks up the persisted clips automatically
     const generateAudio = async () => {
         setIsGeneratingAudio(true)
         try {
@@ -328,19 +257,6 @@ export default function PresentVoicePage({ params }: PageProps) {
                 body: JSON.stringify({ projectId })
             })
             if (!res.ok) throw new Error(await res.text())
-            const data = await res.json()
-
-            // Store in localStorage
-            try {
-                localStorage.setItem(`ttsCache:${projectId}`, JSON.stringify(data))
-            } catch { }
-
-            // Reload from server to get the stored data
-            const cacheRes = await fetch(`/api/tts/cache?projectId=${encodeURIComponent(projectId)}`)
-            if (cacheRes.ok) {
-                const cacheData = await cacheRes.json()
-                setAudioCache(cacheData)
-            }
         } catch (e) {
             console.error('Audio generation failed:', e)
             alert('Failed to generate audio. Please try again.')
@@ -349,9 +265,9 @@ export default function PresentVoicePage({ params }: PageProps) {
         }
     }
 
-    // Initialize Reveal after slides are in DOM
+    // Initialize Reveal once slides (with audio attached) are in the DOM
     useEffect(() => {
-        if (!processedSlides.length) return
+        if (audioData === undefined || !processedSlides.length) return
 
         // Inject theme CSS
         try {
@@ -374,19 +290,20 @@ export default function PresentVoicePage({ params }: PageProps) {
                 }
             })()
             addLink(`/themes/${themeId}.css`, 'reveal-theme')
+            // Slide layouts must load after the theme (equal specificity, later wins)
+            addLink('/themes/ct-layouts.css', 'ct-layouts')
         } catch { }
 
         const deckEl = document.querySelector('.reveal') as HTMLElement | null
         if (!deckEl) return
 
         const r = new (Reveal as any)(deckEl)
-        handledFragmentsRef.current = new WeakSet()
         r.initialize({
             hash: true,
             width: 1280,
             height: 720,
             margin: 0,
-            controls: true, // Enable controls to show play/pause button
+            controls: true,
             progress: true,
             center: false, // Don't center vertically
             slideNumber: false,
@@ -394,205 +311,149 @@ export default function PresentVoicePage({ params }: PageProps) {
             transition: 'none',
             keyboard: true,
             touch: true,
-            autoSlide: 5000, // Set a default that will be overridden by data-autoslide
-            autoSlideStoppable: true,
+            // Advancing is driven by audio 'ended' events below, not Reveal's timers
+            autoSlide: false,
             fragments: true
         })
-        setReveal(r)
 
-        const logEvent = (name: string, details: object = {}) => {
-            console.log(
-                `[${new Date().toLocaleTimeString('en-US', { hour12: false })}] 🔊 PRESENTER LOG: ${name}`,
-                details
-            )
+        let stepTimer: ReturnType<typeof setTimeout> | undefined
+        const clearStepTimer = () => {
+            if (stepTimer) clearTimeout(stepTimer)
+            stepTimer = undefined
         }
 
-        // Handle fragment events for audio playback (works with data-autoslide)
-        r.on('fragmentshown', (event: any) => {
-            // Don't play audio until presentation has started
-            if (!hasStartedRef.current) return
+        const stopAudio = () => {
+            const audio = currentAudioRef.current
+            if (!audio) return
+            audio.onended = null
+            audio.onerror = null
+            audio.pause()
+            audio.currentTime = 0
+            currentAudioRef.current = null
+        }
 
-            const fragment = event.fragment as HTMLElement
-            const slide = fragment.closest('section')
-            const slideIndex = Array.from(document.querySelectorAll('.reveal .slides section')).indexOf(slide as HTMLElement)
-            const fragmentIndex = fragment.getAttribute('data-fragment-index')
+        const isAtEnd = () => r.isLastSlide() && !r.availableFragments().next
 
-            logEvent('fragmentshown', {
-                slideIndex,
-                fragmentIndex,
-                fragmentClassList: Array.from(fragment.classList),
-                fragmentDataset: { ...fragment.dataset },
-                handledAlready: handledFragmentsRef.current.has(fragment)
-            })
-
-            if (handledFragmentsRef.current.has(fragment)) {
-                logEvent('Skipping audio - fragment already handled for current reveal', { slideIndex, fragmentIndex })
+        const advance = () => {
+            clearStepTimer()
+            if (!isPlayingRef.current) return
+            if (isAtEnd()) {
+                isPlayingRef.current = false
+                setIsPlaying(false)
                 return
             }
-            handledFragmentsRef.current.add(fragment)
-            logEvent('Registered fragment for playback', { slideIndex, fragmentIndex })
+            r.next()
+        }
 
-            const audio = fragment.querySelector('audio[data-fragment-audio]') as HTMLAudioElement
-            if (audio) {
-                logEvent('Audio element found', {
-                    slideIndex,
-                    fragmentIndex,
-                    currentSrc: audio.currentSrc,
-                    hasSourceChild: !!audio.querySelector('source'),
-                    readyState: audio.readyState
-                })
+        const scheduleAdvance = (ms: number) => {
+            clearStepTimer()
+            stepTimer = setTimeout(advance, ms)
+        }
 
-                // Stop any currently playing audio
-                if (currentAudioRef.current) {
-                    logEvent('Stopping previous audio', { src: currentAudioRef.current.currentSrc })
-                    currentAudioRef.current.pause()
-                    currentAudioRef.current.currentTime = 0
+        // Play the narration for whatever step Reveal is currently showing
+        const runStep = () => {
+            if (!isPlayingRef.current) return
+            const slide = r.getCurrentSlide() as HTMLElement | undefined
+            if (!slide) return
+
+            const currentFragment = slide.querySelector('.fragment.current-fragment')
+            const audio = (currentFragment
+                ? currentFragment.querySelector(':scope > audio[data-fragment-audio]')
+                : slide.querySelector('.fragment.visible') ? null : slide.querySelector('audio[data-slide-audio]')
+            ) as HTMLAudioElement | null
+
+            if (!audio) {
+                // No narration for this step: move on quickly if the slide has more to reveal
+                if (isAtEnd()) {
+                    isPlayingRef.current = false
+                    setIsPlaying(false)
+                    return
                 }
-
-                // Check if audio source needs to be loaded
-                const audioSrc = audio.getAttribute('data-audio-src')
-                if (audioSrc && !audio.querySelector('source')) {
-                    logEvent('Loading audio source', { slideIndex, fragmentIndex, src: audioSrc.substring(0, 50) })
-                    const source = document.createElement('source')
-                    source.src = audioSrc
-                    source.type = 'audio/mpeg'
-                    audio.appendChild(source)
-                    audio.load() // Important: load the new source
-                }
-
-                const startPlayback = () => {
-                    logEvent('Preparing to start playback', {
-                        slideIndex,
-                        fragmentIndex,
-                        playbackRate,
-                        volume,
-                        currentTime: audio.currentTime,
-                        readyState: audio.readyState
-                    })
-                    currentAudioRef.current = audio
-                    audio.currentTime = 0 // Reset audio to the beginning before playing
-                    audio.playbackRate = playbackRate
-                    audio.volume = volume
-
-                    logEvent('Playing audio', { slideIndex, fragmentIndex, src: audio.currentSrc })
-                    audio.play().then(() => {
-                        logEvent('Audio playback started successfully', { slideIndex, fragmentIndex })
-                    }).catch((e: any) => {
-                        logEvent('Audio playback failed', { slideIndex, fragmentIndex, error: e.message })
-                    })
-                }
-
-                // Wait for the fragment to render before starting playback to avoid early audio
-                requestAnimationFrame(() => {
-                    logEvent('Post-animation-frame fragment check', {
-                        slideIndex,
-                        fragmentIndex,
-                        classList: Array.from(fragment.classList),
-                        boundingRect: fragment.getBoundingClientRect(),
-                        isVisibleClass: fragment.classList.contains('visible'),
-                        styleDisplay: (fragment as HTMLElement).style.display
-                    })
-                    if (!fragment.classList.contains('visible')) {
-                        handledFragmentsRef.current.delete(fragment)
-                        logEvent('Fragment no longer visible, skipping audio playback', { slideIndex, fragmentIndex })
-                        return
-                    }
-                    startPlayback()
-                })
-            } else {
-                logEvent('No audio element found in fragment', { slideIndex, fragmentIndex })
+                scheduleAdvance(r.availableFragments().next ? GAP_MS : SILENT_SLIDE_MS)
+                return
             }
-        })
 
-        r.on('fragmenthidden', (event: any) => {
-            const fragment = event.fragment as HTMLElement
-            const slide = fragment.closest('section')
-            const slideIndex = Array.from(document.querySelectorAll('.reveal .slides section')).indexOf(slide as HTMLElement)
-            const fragmentIndex = fragment.getAttribute('data-fragment-index')
-
-            handledFragmentsRef.current.delete(fragment)
-            logEvent('fragmenthidden', {
-                slideIndex,
-                fragmentIndex,
-                fragmentClassList: Array.from(fragment.classList)
+            currentAudioRef.current = audio
+            audio.currentTime = 0
+            audio.playbackRate = playbackRateRef.current
+            audio.volume = volumeRef.current
+            audio.onended = () => scheduleAdvance(GAP_MS)
+            audio.onerror = () => {
+                console.warn('Audio failed to load, skipping', audio.src)
+                scheduleAdvance(GAP_MS)
+            }
+            const upcoming = slide.querySelector('.fragment:not(.visible) > audio[data-fragment-audio]') as HTMLAudioElement | null
+            if (upcoming) upcoming.preload = 'auto'
+            audio.play().catch((e: DOMException) => {
+                if (currentAudioRef.current !== audio || e.name === 'AbortError') return
+                if (e.name === 'NotAllowedError') {
+                    // Browser blocked autoplay; wait for the user to press play
+                    isPlayingRef.current = false
+                    setIsPlaying(false)
+                    return
+                }
+                console.warn('Audio playback failed, skipping', e)
+                scheduleAdvance(GAP_MS)
             })
+        }
 
-            const audio = fragment.querySelector('audio[data-fragment-audio]') as HTMLAudioElement | null
-            if (audio && currentAudioRef.current === audio) {
-                logEvent('Stopping audio on fragmenthidden', { slideIndex, fragmentIndex, src: audio.currentSrc })
-                audio.pause()
-                audio.currentTime = 0
-                currentAudioRef.current = null
-            }
-        })
+        // Reveal can fire several events for one navigation; collapse them into one step
+        const playStep = () => {
+            stopAudio()
+            clearStepTimer()
+            if (!isPlayingRef.current) return
+            stepTimer = setTimeout(runStep, 50)
+        }
+        playStepRef.current = playStep
 
-        // Apply playback rate on slide changes
-        r.on('slidechanged', (event: any) => {
-            logEvent('slidechanged', { slideIndex: event.indexh })
-            applyPlaybackRate()
-            // Stop any playing audio when slide changes
-            if (currentAudioRef.current) {
-                logEvent('Stopping audio on slide change', { src: currentAudioRef.current.currentSrc })
-                currentAudioRef.current.pause()
-                currentAudioRef.current.currentTime = 0
-                currentAudioRef.current = null
-            }
-        })
+        r.on('slidechanged', playStep)
+        r.on('fragmentshown', playStep)
+        r.on('fragmenthidden', playStep)
 
         return () => {
+            clearStepTimer()
+            stopAudio()
+            playStepRef.current = () => { }
             try {
                 r?.destroy()
             } catch { }
         }
-    }, [processedSlides.length, playbackRate, volume])
+    }, [processedSlides, audioData === undefined, projectId])
 
-    // Store reveal instance when it changes
+    // Apply speed/volume to the clip that's currently playing
     useEffect(() => {
-        if (reveal && hasStarted) {
-            // Trigger first slide after a short delay
-            setTimeout(() => {
-                reveal.next()
-            }, 500)
-        }
-    }, [reveal, hasStarted])
+        playbackRateRef.current = playbackRate
+        if (currentAudioRef.current) currentAudioRef.current.playbackRate = playbackRate
+    }, [playbackRate])
 
-    // Apply playback rate to all audio elements and update fragment durations
-    const applyPlaybackRate = () => {
-        // Update all audio elements that have been loaded
-        document.querySelectorAll('audio').forEach((audio: HTMLAudioElement) => {
-            // Only update if the audio has a source (i.e., has been loaded)
-            if (audio.querySelector('source')) {
-                audio.playbackRate = playbackRate
-                audio.volume = volume
-            }
-        })
-
-        // Update fragment durations based on playback rate
-        document.querySelectorAll('.fragment[data-autoslide]').forEach((fragment: Element) => {
-            const originalDuration = parseInt(
-                fragment.getAttribute('data-original-autoslide') ||
-                fragment.getAttribute('data-autoslide') || '0'
-            )
-
-            // Store original duration if not already stored
-            if (!fragment.getAttribute('data-original-autoslide')) {
-                fragment.setAttribute('data-original-autoslide', String(originalDuration))
-            }
-
-            // Adjust duration based on playback rate
-            fragment.setAttribute('data-autoslide', String(Math.round(originalDuration * (1 / playbackRate))))
-        })
-    }
-
-    // Update playback settings when they change
     useEffect(() => {
-        applyPlaybackRate()
-    }, [playbackRate, volume])
+        volumeRef.current = volume
+        if (currentAudioRef.current) currentAudioRef.current.volume = volume
+    }, [volume])
 
     const handleStart = () => {
         setHasStarted(true)
-        hasStartedRef.current = true
-        // The useEffect will handle advancing to the first slide
+        setIsPlaying(true)
+        isPlayingRef.current = true
+        playStepRef.current()
+    }
+
+    const handlePlayPause = () => {
+        if (isPlayingRef.current) {
+            isPlayingRef.current = false
+            setIsPlaying(false)
+            currentAudioRef.current?.pause()
+            return
+        }
+        isPlayingRef.current = true
+        setIsPlaying(true)
+        const audio = currentAudioRef.current
+        if (audio && audio.currentTime > 0 && !audio.ended) {
+            // Resume the interrupted clip where it left off
+            audio.play().catch(() => playStepRef.current())
+        } else {
+            playStepRef.current()
+        }
     }
 
     const playbackRates = [0.75, 1, 1.5, 2]
@@ -601,6 +462,14 @@ export default function PresentVoicePage({ params }: PageProps) {
     const handleSpeedToggle = () => {
         const nextIndex = (currentRateIndex + 1) % playbackRates.length
         setPlaybackRate(playbackRates[nextIndex])
+    }
+
+    if (deck === null) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-lg">Presentation not found</div>
+            </div>
+        )
     }
 
     if (!deck) {
@@ -612,8 +481,6 @@ export default function PresentVoicePage({ params }: PageProps) {
             </div>
         )
     }
-
-    const hasAudioCache = Object.keys(audioCache).length > 0
 
     return (
         <div className="relative w-full h-screen overflow-hidden bg-black">
@@ -715,7 +582,11 @@ export default function PresentVoicePage({ params }: PageProps) {
                         <h1 className="text-3xl font-bold text-white">{deckTitle}</h1>
                         <p className="text-gray-300">AI Voice Presentation Mode</p>
 
-                        {!hasAudioCache && (
+                        {audioData === undefined && (
+                            <p className="text-gray-400">Loading audio...</p>
+                        )}
+
+                        {audioData !== undefined && !hasAudioCache && (
                             <div className="space-y-4">
                                 {isGeneratingAudio ? (
                                     <div className="w-full max-w-sm mx-auto pt-4">
@@ -758,6 +629,13 @@ export default function PresentVoicePage({ params }: PageProps) {
             {hasStarted && (
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-40 flex items-center gap-4 bg-black bg-opacity-50 p-2 rounded-lg">
                     <button
+                        onClick={handlePlayPause}
+                        className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 min-w-[5rem]"
+                    >
+                        {isPlaying ? 'Pause' : 'Play'}
+                    </button>
+
+                    <button
                         onClick={handleSpeedToggle}
                         className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
                     >
@@ -789,37 +667,7 @@ export default function PresentVoicePage({ params }: PageProps) {
                 </div>
             )}
 
-            <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
-                <div className="slides">
-                    {processedSlides.map((s, i) => (
-                        <section
-                            key={i}
-                            data-slide-scope={`s${i}`}
-                            data-autoslide={i === 0 ? "0" : "100"}
-                        >
-                            <div
-                                className="ct-slide"
-                                style={s.containerStyle ? (() => {
-                                    const styles: Record<string, string> = {}
-                                    s.containerStyle.split(';').filter(Boolean).forEach((p: string) => {
-                                        const [k, v] = p.split(':')
-                                        if (k && v) {
-                                            styles[k.trim()] = v.trim()
-                                        }
-                                    })
-                                    return styles as React.CSSProperties
-                                })() : undefined}
-                                dangerouslySetInnerHTML={{ __html: s.html }}
-                            />
-                            {s.css?.length ? (
-                                <style
-                                    dangerouslySetInnerHTML={{ __html: scopeCss(s.css.join('\n'), `[data-slide-scope=\"s${i}\"] .ct-slide`) }}
-                                />
-                            ) : null}
-                        </section>
-                    ))}
-                </div>
-            </div>
+            <RevealSlides slides={processedSlides} customCss={customCss} />
         </div>
     )
 }

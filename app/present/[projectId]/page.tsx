@@ -1,13 +1,84 @@
 "use client"
 
 import { use } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import Reveal from 'reveal.js'
 import 'reveal.js/dist/reveal.css'
 import 'reveal.js/dist/theme/white.css'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { extractRevealSlides } from '@/lib/reveal-export'
+import { extractRevealSlides, projectCustomCss, type RevealSlide } from '@/lib/reveal-export'
+
+// Basic CSS scoping: prefixes selectors so per-slide CSS only affects this slide
+const scopeCss = (cssText: string, scopeSelector: string): string => {
+  try {
+    // Handle @media blocks by scoping their inner rules
+    const scoped: string = cssText.replace(/@media[^\{]+\{([\s\S]*?)\}/g, (m: string, inner: string) => {
+      const innerScoped: string = scopeCss(inner, scopeSelector)
+      return m.replace(inner, innerScoped)
+    })
+    // Scope simple rules
+    return scoped
+      .split('}')
+      .map((chunk: string) => chunk.trim())
+      .filter(Boolean)
+      .map((rule: string) => {
+        const parts: string[] = rule.split('{')
+        if (parts.length < 2) return rule + '}'
+        const sel: string = parts[0].trim()
+        const body: string = parts.slice(1).join('{') // in case of nested braces in values
+        // Skip at-rules other than @media already handled
+        if (/^@/i.test(sel)) return `${sel}{${body}}`
+        const scopedSel: string = sel
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+          .map((s: string) => {
+            // Replace bare html/body with scope
+            if (/^html\b/i.test(s) || /^body\b/i.test(s)) {
+              // remove leading html/body and following space
+              s = s.replace(/^html\b\s*/i, '').replace(/^body\b\s*/i, '')
+              return `${scopeSelector}${s ? ' ' + s : ''}`
+            }
+            return `${scopeSelector} ${s}`
+          })
+          .join(', ')
+        return `${scopedSel}{${body}}`
+      })
+      .join('\n')
+  } catch {
+    return cssText
+  }
+}
+
+// Memoized so parent re-renders (controls auto-hide, export menu...) don't touch the deck.
+// React 19 re-assigns innerHTML whenever a new dangerouslySetInnerHTML object is passed,
+// which would reset Reveal's fragment state.
+const RevealSlides = memo(function RevealSlides({ slides, customCss }: { slides: RevealSlide[]; customCss: string }) {
+  return (
+    <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
+      {/* Deck-wide custom CSS from the editor; after the theme and layout stylesheets so it wins ties */}
+      {customCss ? <style dangerouslySetInnerHTML={{ __html: customCss }} /> : null}
+      <div className="slides">
+        {slides.map((s, i) => (
+          <section key={i} data-slide-scope={`s${i}`}>
+            <div
+              className="ct-slide"
+              style={s.containerStyle ? (Object.fromEntries(s.containerStyle.split(';').filter(Boolean).map(p => p.split(':')).map(([k, v]) => [k.trim() as string, (v || '').trim()])) as React.CSSProperties) : undefined}
+              dangerouslySetInnerHTML={{ __html: s.html }}
+            />
+            {s.css?.length ? (
+              <style
+                // Scope per-slide CSS to this slide only
+                dangerouslySetInnerHTML={{ __html: scopeCss(s.css.join('\n'), `[data-slide-scope=\"s${i}\"] .ct-slide`) }}
+              />
+            ) : null}
+          </section>
+        ))}
+      </div>
+    </div>
+  )
+})
 
 type PageProps = { params: Promise<{ projectId: string }> }
 
@@ -23,27 +94,33 @@ export default function PresentPage({ params }: PageProps) {
   const [isControlsHovered, setIsControlsHovered] = useState(false)
 
   const slides = useMemo(() => (deck?.project ? extractRevealSlides(deck.project as any) : []), [deck?.project])
+  const customCss = useMemo(() => projectCustomCss(deck?.project as any), [deck?.project])
 
   // Initialize Reveal after slides are in DOM
   useEffect(() => {
     if (!slides.length) return
 
     // Inject theme CSS
+    const stylesheets: HTMLLinkElement[] = []
     try {
       const head = document.head
       const addLink = (href: string, id: string) => {
-        if (!document.getElementById(id)) {
-          const l = document.createElement('link')
+        let l = document.getElementById(id) as HTMLLinkElement | null
+        if (!l) {
+          l = document.createElement('link')
           l.rel = 'stylesheet'
           l.href = href
           l.id = id
           head.appendChild(l)
         }
+        stylesheets.push(l)
       }
       const themeId = ((): string => {
         try { return localStorage.getItem(`selectedThemeId:${projectId}`) || localStorage.getItem('selectedThemeId') || 'white' } catch { return 'white' }
       })()
       addLink(`/themes/${themeId}.css`, 'reveal-theme')
+      // Slide layouts must load after the theme (equal specificity, later wins)
+      addLink('/themes/ct-layouts.css', 'ct-layouts')
     } catch { }
 
     const deckEl = document.querySelector('.reveal') as HTMLElement | null
@@ -66,7 +143,15 @@ export default function PresentPage({ params }: PageProps) {
     })
     setReveal(r)
 
+    // With center: true, Reveal positions each slide from its height at layout time. Stylesheets
+    // that finish loading afterwards change those heights, so lay out again once they arrive.
+    const relayout = () => { try { r.layout() } catch { } }
+    for (const link of stylesheets) {
+      if (!link.sheet) link.addEventListener('load', relayout)
+    }
+
     return () => {
+      for (const link of stylesheets) link.removeEventListener('load', relayout)
       try { r?.destroy() } catch { }
     }
   }, [slides.length])
@@ -156,48 +241,6 @@ export default function PresentPage({ params }: PageProps) {
 
   if (deck === undefined) return <div>Loading...</div>
   if (!deck) return <div>Not found</div>
-
-  // Basic CSS scoping: prefixes selectors so per-slide CSS only affects this slide
-  const scopeCss = (cssText: string, scopeSelector: string): string => {
-    try {
-      // Handle @media blocks by scoping their inner rules
-      const scoped: string = cssText.replace(/@media[^\{]+\{([\s\S]*?)\}/g, (m: string, inner: string) => {
-        const innerScoped: string = scopeCss(inner, scopeSelector)
-        return m.replace(inner, innerScoped)
-      })
-      // Scope simple rules
-      return scoped
-        .split('}')
-        .map((chunk: string) => chunk.trim())
-        .filter(Boolean)
-        .map((rule: string) => {
-          const parts: string[] = rule.split('{')
-          if (parts.length < 2) return rule + '}'
-          const sel: string = parts[0].trim()
-          const body: string = parts.slice(1).join('{') // in case of nested braces in values
-          // Skip at-rules other than @media already handled
-          if (/^@/i.test(sel)) return `${sel}{${body}}`
-          const scopedSel: string = sel
-            .split(',')
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-            .map((s: string) => {
-              // Replace bare html/body with scope
-              if (/^html\b/i.test(s) || /^body\b/i.test(s)) {
-                // remove leading html/body and following space
-                s = s.replace(/^html\b\s*/i, '').replace(/^body\b\s*/i, '')
-                return `${scopeSelector}${s ? ' ' + s : ''}`
-              }
-              return `${scopeSelector} ${s}`
-            })
-            .join(', ')
-          return `${scopedSel}{${body}}`
-        })
-        .join('\n')
-    } catch {
-      return cssText
-    }
-  }
 
   return (
     <div className="w-screen h-screen bg-white relative">
@@ -290,25 +333,7 @@ export default function PresentPage({ params }: PageProps) {
         </button>
       )}
 
-      <div className="reveal" style={{ width: '100%', height: '100%', background: '#fff' }}>
-        <div className="slides">
-          {slides.map((s, i) => (
-            <section key={i} data-slide-scope={`s${i}`}>
-              <div
-                className="ct-slide"
-                style={s.containerStyle ? (Object.fromEntries(s.containerStyle.split(';').filter(Boolean).map(p => p.split(':')).map(([k, v]) => [k.trim() as string, (v || '').trim()])) as React.CSSProperties) : undefined}
-                dangerouslySetInnerHTML={{ __html: s.html }}
-              />
-              {s.css?.length ? (
-                <style
-                  // Scope per-slide CSS to this slide only
-                  dangerouslySetInnerHTML={{ __html: scopeCss(s.css.join('\n'), `[data-slide-scope=\"s${i}\"] .ct-slide`) }}
-                />
-              ) : null}
-            </section>
-          ))}
-        </div>
-      </div>
+      <RevealSlides slides={slides} customCss={customCss} />
     </div>
   )
 }

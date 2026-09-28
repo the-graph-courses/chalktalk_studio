@@ -9,6 +9,37 @@ import { X, Send, Paperclip, Loader2, Bot, User, Zap, FileText, Plus, Code, Play
 import Image from 'next/image';
 import { getCurrentProjectId } from '@/utils/project';
 import { executeEditorCommand, triggerEditorSave } from '@/lib/editor-commands';
+import { DEFAULT_PREFERENCES, normalizePreferences, type GenerationPreferences } from '@/lib/slide-design';
+
+const preferencesKey = (projectId: string | null) => `ctGenerationPrefs:${projectId ?? 'default'}`;
+
+// Segmented control for one generation preference
+function PreferenceOptions<T extends string>({ label, value, options, onChange }: {
+    label: string;
+    value: T;
+    options: { value: T; label: string; hint: string }[];
+    onChange: (value: T) => void;
+}) {
+    return (
+        <div>
+            <div className="text-xs font-medium mb-1">{label}</div>
+            <div className="flex rounded-md border border-border overflow-hidden">
+                {options.map(option => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        title={option.hint}
+                        onClick={() => onChange(option.value)}
+                        className={`flex-1 px-2 py-1 text-xs transition-colors ${value === option.value ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                    >
+                        {option.label}
+                    </button>
+                ))}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-1">{options.find(o => o.value === value)?.hint}</div>
+        </div>
+    );
+}
 
 interface EphemeralChatPanelProps {
     isOpen: boolean;
@@ -168,8 +199,7 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                                     {part.output.slideIndex !== undefined ? ` (Index: ${part.output.slideIndex})` : ''}
                                 </div>
 
-                                {part.output.html && part.output.css ? (
-                                    // New format with separate HTML and CSS
+                                {part.output.html ? (
                                     <div className="space-y-2 mt-1">
                                         <div>
                                             <div className="text-xs font-medium mb-1">HTML:</div>
@@ -179,14 +209,16 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                                                 maxLines={8}
                                             />
                                         </div>
-                                        <div>
-                                            <div className="text-xs font-medium mb-1">CSS:</div>
-                                            <CollapsibleContent
-                                                content={part.output.css}
-                                                className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border"
-                                                maxLines={6}
-                                            />
-                                        </div>
+                                        {(part.output.customCss || part.output.css) && (
+                                            <div>
+                                                <div className="text-xs font-medium mb-1">CSS:</div>
+                                                <CollapsibleContent
+                                                    content={part.output.customCss || part.output.css}
+                                                    className="overflow-x-auto whitespace-pre-wrap text-xs bg-background/50 p-2 rounded border"
+                                                    maxLines={6}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     // Fallback to old format
@@ -210,34 +242,20 @@ function renderToolCall(part: any, messageId: string, index: number, executedCom
                                                 Slide {slide.index}: {slide.name}
                                             </div>
 
-                                            {slide.html && slide.css ? (
-                                                // New format with separate HTML and CSS
-                                                <div className="space-y-1">
-                                                    <div>
-                                                        <div className="text-xs font-medium mb-1">HTML:</div>
-                                                        <CollapsibleContent
-                                                            content={slide.html}
-                                                            className="text-xs overflow-x-auto whitespace-pre-wrap bg-background/50 p-1 rounded border"
-                                                            maxLines={6}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-xs font-medium mb-1">CSS:</div>
-                                                        <CollapsibleContent
-                                                            content={slide.css}
-                                                            className="text-xs overflow-x-auto whitespace-pre-wrap bg-background/50 p-1 rounded border"
-                                                            maxLines={4}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                // Fallback to old format
+                                            <div className="space-y-1">
                                                 <CollapsibleContent
-                                                    content={slide.content}
-                                                    className="text-xs overflow-x-auto whitespace-pre-wrap"
-                                                    maxLines={8}
+                                                    content={slide.html ?? slide.content ?? ''}
+                                                    className="text-xs overflow-x-auto whitespace-pre-wrap bg-background/50 p-1 rounded border"
+                                                    maxLines={6}
                                                 />
-                                            )}
+                                                {(slide.customCss || slide.css) && (
+                                                    <CollapsibleContent
+                                                        content={slide.customCss || slide.css}
+                                                        className="text-xs overflow-x-auto whitespace-pre-wrap bg-background/50 p-1 rounded border"
+                                                        maxLines={4}
+                                                    />
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -275,20 +293,39 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [executedCommandIds, setExecutedCommandIds] = useState<Set<string>>(new Set());
     const [showSettings, setShowSettings] = useState(false);
-    const [preferAbsolutePositioning, setPreferAbsolutePositioning] = useState(false);
+    const [preferences, setPreferences] = useState<GenerationPreferences>(DEFAULT_PREFERENCES);
     const [isDragOver, setIsDragOver] = useState(false);
     const [selectedModel, setSelectedModel] = useState('cerebras');
     const [showModelPicker, setShowModelPicker] = useState(false);
     const settingsRef = useRef<HTMLDivElement>(null);
     const modelPickerRef = useRef<HTMLDivElement>(null);
 
-    const { messages, sendMessage, status, setMessages, stop } = useChat({
+    const { messages, sendMessage, status, setMessages, stop, error } = useChat({
         transport: new DefaultChatTransport({
             api: '/api/chat/ephemeral',
         }),
     });
 
     const isLoading = status === 'streaming' || status === 'submitted';
+
+    // Generation preferences are remembered per deck
+    React.useEffect(() => {
+        try {
+            const saved = localStorage.getItem(preferencesKey(getCurrentProjectId()));
+            if (saved) setPreferences(normalizePreferences(JSON.parse(saved)));
+        } catch { }
+    }, []);
+
+    const updatePreferences = (patch: Partial<GenerationPreferences>) => {
+        setPreferences(prev => {
+            const next = { ...prev, ...patch };
+            try { localStorage.setItem(preferencesKey(getCurrentProjectId()), JSON.stringify(next)); } catch { }
+            return next;
+        });
+    };
+
+    const hasCustomPreferences = (Object.keys(DEFAULT_PREFERENCES) as (keyof GenerationPreferences)[])
+        .some(key => preferences[key] !== DEFAULT_PREFERENCES[key]);
 
     // Available AI models
     const models = [
@@ -326,7 +363,17 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
     React.useEffect(() => {
         for (const message of messages) {
             if (message.role === 'assistant') {
+                // Apply commands strictly in call order. The model often issues several createSlide
+                // calls in parallel and their results arrive in completion order; running each one as
+                // it lands would shuffle the slides. So stop at the first call still in flight.
+                let blocked = false;
                 message.parts?.forEach((part: any, index: number) => {
+                    const isToolPart = part.type?.startsWith?.('tool-') || part.type === 'dynamic-tool';
+                    if (blocked || !isToolPart) return;
+                    if (part.state === 'input-streaming' || part.state === 'input-available') {
+                        blocked = true;
+                        return;
+                    }
                     const toolCallId = `${message.id}-tool-${index}`;
                     if (
                         (part.type?.startsWith?.('tool-') || part.type === 'dynamic-tool') &&
@@ -376,9 +423,7 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
             body: {
                 projectId: getCurrentProjectId(),
                 model: selectedModel,
-                preferences: {
-                    preferAbsolutePositioning,
-                },
+                preferences,
             },
         });
 
@@ -523,32 +568,79 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setShowSettings(!showSettings)}
-                                className={`relative ${preferAbsolutePositioning ? 'text-primary' : ''}`}
-                                title="AI Generation Settings"
+                                className={`relative ${hasCustomPreferences ? 'text-primary' : ''}`}
+                                title="Deck brief and generation settings"
                             >
                                 <Settings className="size-4" />
-                                {preferAbsolutePositioning && (
+                                {hasCustomPreferences && (
                                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
                                 )}
                             </Button>
                             {showSettings && (
-                                <div className="absolute right-0 top-full mt-1 w-64 bg-background border border-border rounded-md shadow-lg z-10">
-                                    <div className="p-3">
-                                        <div className="text-sm font-medium mb-2">AI Generation Settings</div>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={preferAbsolutePositioning}
-                                                onChange={(e) => setPreferAbsolutePositioning(e.target.checked)}
-                                                className="rounded border-border"
-                                            />
-                                            <div className="flex-1">
-                                                <div className="text-sm">Prefer Absolute Positioning</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    Guide AI to use absolute positioning and avoid nested divs
-                                                </div>
+                                <div className="absolute right-0 top-full mt-1 w-80 max-h-[80vh] overflow-y-auto bg-background border border-border rounded-md shadow-lg z-10">
+                                    <div className="p-3 space-y-3">
+                                        <div>
+                                            <div className="text-sm font-medium">Deck brief</div>
+                                            <div className="text-[11px] text-muted-foreground mb-1">
+                                                Standing instructions for every request on this deck: audience, tone, language, brand colors, things to avoid.
                                             </div>
-                                        </label>
+                                            <textarea
+                                                value={preferences.instructions}
+                                                onChange={(e) => updatePreferences({ instructions: e.target.value })}
+                                                placeholder="e.g. For first-year pharmacy students. Friendly, concrete, one clinical example per section. Accent color #0f766e."
+                                                rows={4}
+                                                maxLength={4000}
+                                                className="w-full text-xs rounded-md border border-border bg-background p-2 resize-y"
+                                            />
+                                        </div>
+                                        <PreferenceOptions
+                                            label="Text density"
+                                            value={preferences.density}
+                                            onChange={(density) => updatePreferences({ density })}
+                                            options={[
+                                                { value: 'minimal', label: 'Minimal', hint: 'Headlines and a few words; the narration explains.' },
+                                                { value: 'balanced', label: 'Balanced', hint: 'Short phrases, up to about six points per slide.' },
+                                                { value: 'detailed', label: 'Detailed', hint: 'Full sentences, for decks that are read rather than presented.' },
+                                            ]}
+                                        />
+                                        <PreferenceOptions
+                                            label="Narration"
+                                            value={preferences.narration}
+                                            onChange={(narration) => updatePreferences({ narration })}
+                                            options={[
+                                                { value: 'off', label: 'Off', hint: 'No voice-over script.' },
+                                                { value: 'brief', label: 'Brief', hint: 'One short sentence per step.' },
+                                                { value: 'standard', label: 'Standard', hint: 'One or two sentences per step.' },
+                                                { value: 'detailed', label: 'Detailed', hint: 'Two or three sentences with context and examples.' },
+                                            ]}
+                                        />
+                                        <PreferenceOptions
+                                            label="Reveal"
+                                            value={preferences.reveal}
+                                            onChange={(reveal) => updatePreferences({ reveal })}
+                                            options={[
+                                                { value: 'stepwise', label: 'Step by step', hint: 'Points appear one at a time, each with its own narration.' },
+                                                { value: 'whole', label: 'Whole slide', hint: 'Each slide appears at once with one narration.' },
+                                            ]}
+                                        />
+                                        <PreferenceOptions
+                                            label="Layout"
+                                            value={preferences.layoutMode}
+                                            onChange={(layoutMode) => updatePreferences({ layoutMode })}
+                                            options={[
+                                                { value: 'layouts', label: 'Designed', hint: 'Built from ChalkTalk layouts that follow the deck theme.' },
+                                                { value: 'freeform', label: 'Freeform', hint: 'Absolutely positioned elements, easy to drag around.' },
+                                            ]}
+                                        />
+                                        {hasCustomPreferences && (
+                                            <button
+                                                type="button"
+                                                onClick={() => updatePreferences(DEFAULT_PREFERENCES)}
+                                                className="text-xs text-muted-foreground hover:underline"
+                                            >
+                                                Reset to defaults
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -655,6 +747,16 @@ export default function EphemeralChatPanel({ isOpen, onClose, isTestPanelOpen = 
                                     <Loader2 className="size-4 animate-spin" />
                                     AI is thinking...
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {error && !isLoading && (
+                        <div className="flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-3 text-sm text-red-700 dark:text-red-400">
+                            <AlertTriangle className="size-4 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <div className="font-medium">The AI request failed.</div>
+                                <div className="text-xs mt-1 break-words">{error.message || 'Unknown error'}. Try again, or pick another model.</div>
                             </div>
                         </div>
                     )}

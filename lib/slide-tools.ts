@@ -1,21 +1,65 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { executeSlideToolServer } from './slide-tools-server';
+import { lintSlideHtml } from './slide-lint';
+import { DEFAULT_PREFERENCES, type GenerationPreferences } from './slide-design';
 
 /**
  * Slide deck tools for AI chat interfaces
  * These tools interact with the current slide deck in the editor
  */
 
-export function createSlideTools(projectId?: string, userId?: string, preferences?: { preferAbsolutePositioning?: boolean }) {
+const forceSchema = z.boolean().optional().describe(
+    'Apply the slide even if the checks report issues. Only set this when the user explicitly asked for what the checks flag (e.g. a dense slide, an unscoped style).'
+);
+
+const contentSchema = z.string().min(10).describe(
+    'HTML for the slide body: normally a single <div class="ct ..."> layout root, optionally followed by a scoped <style>. No <html>/<body> and no slide container.'
+);
+
+type WriteResult = {
+    success: boolean;
+    command?: string;
+    data?: Record<string, any>;
+    message?: string;
+    issues?: string[];
+    warnings?: string[];
+    error?: string;
+};
+
+// What the model sees for write tools: status and feedback, without the slide HTML echoed back
+// (the full output, including the editor command, still goes to the chat UI)
+const writeResultForModel = (output: WriteResult) => {
+    const value: Record<string, string | boolean | string[]> = { success: output.success };
+    if (output.message) value.message = output.message;
+    if (output.error) value.error = output.error;
+    if (output.issues?.length) value.issues = output.issues;
+    if (output.warnings?.length) value.warnings = output.warnings;
+    return { type: 'json' as const, value };
+};
+
+export function createSlideTools(projectId?: string, userId?: string, preferences: GenerationPreferences = DEFAULT_PREFERENCES) {
     // Both projectId and userId are required for authenticated tool calls
     if (!projectId || !userId) {
         return undefined;
     }
 
+    const check = (content: string, force?: boolean): WriteResult | null => {
+        const { issues, warnings } = lintSlideHtml(content, preferences);
+        if (issues.length && !force) {
+            return {
+                success: false,
+                message: 'Not applied. Fix the issues and call the tool again (or pass force: true if the user explicitly asked for this).',
+                issues,
+                warnings,
+            };
+        }
+        return { success: true, warnings: [...issues.map(i => `(forced) ${i}`), ...warnings] };
+    };
+
     return {
         readDeck: tool({
-            description: 'Read the entire slide deck. Use this to get an overview of all slides in the presentation.',
+            description: 'Read every slide in the deck as HTML (plus any custom CSS each slide uses). Use this before deck-wide edits.',
             inputSchema: z.object({
                 includeNames: z.boolean().default(true).describe('Whether to include slide names in the response'),
             }),
@@ -25,65 +69,72 @@ export function createSlideTools(projectId?: string, userId?: string, preference
         }),
 
         readSlide: tool({
-            description: 'Read a specific slide by its index (starting from 0). Returns the HTML content and CSS styles for the slide.',
+            description: 'Read one slide by index (starting from 0) as HTML, plus any custom CSS it uses. Use this before editing a slide.',
             inputSchema: z.object({
                 slideIndex: z.number().min(0).describe('The index of the slide to read (starting from 0)'),
             }),
             execute: async ({ slideIndex }) => {
-                // This needs to actually return the data, not just a command
-                // For now, return a message that the operation needs client-side execution
                 return await executeSlideToolServer('read_slide', { slideIndex }, projectId, userId);
             },
         }),
 
         createSlide: tool({
-            description: `Create a new slide. Always provide non-empty HTML content only (no JSON).${preferences?.preferAbsolutePositioning ? ' Prefer absolute positioning and avoid deep nesting.' : ''}`,
+            description: 'Create one new slide from HTML. The slide is checked first; if the result has "issues" it was NOT created.',
             inputSchema: z.object({
-                name: z.string().min(1).describe('Optional slide name/title').optional(),
-                content: z.string().min(10).describe('Complete HTML markup for the slide body (no <html> or <body>)'),
-                insertAtIndex: z.number().int().min(0).describe('Index to insert the slide at (0-based)').optional()
+                name: z.string().min(1).describe('Short slide name shown in the editor, e.g. "Pricing"').optional(),
+                content: contentSchema,
+                insertAtIndex: z.number().int().min(0).describe('Index to insert the slide at (0-based). Omit to append at the end.').optional(),
+                force: forceSchema,
             }),
-            execute: async ({ name, content, insertAtIndex }) => {
+            execute: async ({ name, content, insertAtIndex, force }): Promise<WriteResult> => {
+                const checked = check(content, force);
+                if (!checked?.success) return checked!;
                 try {
                     const slideData = { name, content, insertAtIndex };
                     const result = await executeSlideToolServer('create_slide', { slideData }, projectId, userId);
 
-                    // The result now contains a `command` field that the client can use.
-                    // We simply pass it through.
+                    // The result contains a `command` field that the client executes in the editor
                     return {
                         ...result,
-                        message: 'Slide created successfully. The editor will now add it.'
+                        message: insertAtIndex === undefined ? 'Slide created at the end of the deck.' : `Slide created at index ${insertAtIndex}.`,
+                        warnings: checked.warnings,
                     };
                 } catch (error) {
-                    return { error: error instanceof Error ? error.message : 'Unknown error' };
+                    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
                 }
             },
+            toModelOutput: (output) => writeResultForModel(output),
         }),
 
         replaceSlide: tool({
-            description: `Replace the content of an existing slide. Always provide non-empty HTML content only (no JSON).${preferences?.preferAbsolutePositioning ? ' Prefer absolute positioning and avoid deep nesting.' : ''}`,
+            description: 'Replace the whole content of an existing slide with new HTML. Read the slide first and keep what you were not asked to change. If the result has "issues" the slide was NOT changed.',
             inputSchema: z.object({
                 slideIndex: z.number().min(0).describe('The index of the slide to replace (starting from 0)'),
-                content: z.string().min(10).describe('Complete HTML markup for the slide body (no <html> or <body>)'),
-                name: z.string().min(1).optional()
+                content: contentSchema,
+                name: z.string().min(1).optional(),
+                force: forceSchema,
             }),
-            execute: async ({ slideIndex, content, name }) => {
+            execute: async ({ slideIndex, content, name, force }): Promise<WriteResult> => {
+                const checked = check(content, force);
+                if (!checked?.success) return checked!;
                 try {
                     const slideData = { content, name };
                     const result = await executeSlideToolServer('replace_slide', { slideIndex, slideData }, projectId, userId);
 
                     return {
                         ...result,
-                        message: 'Slide replaced successfully. The editor will now update it.'
+                        message: `Slide ${slideIndex} replaced.`,
+                        warnings: checked.warnings,
                     };
                 } catch (error) {
-                    return { error: error instanceof Error ? error.message : 'Unknown error' };
+                    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
                 }
             },
+            toModelOutput: (output) => writeResultForModel(output),
         }),
 
         deleteSlide: tool({
-            description: 'Delete a slide by its index (starting from 0). Use this to remove a slide from the presentation.',
+            description: 'Delete a slide by its index (starting from 0). Ask the user to confirm before calling this.',
             inputSchema: z.object({
                 slideIndex: z.number().min(0).describe('The index of the slide to delete (starting from 0)'),
             }),

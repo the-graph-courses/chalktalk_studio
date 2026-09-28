@@ -1,14 +1,10 @@
 import { fetchMutation, fetchQuery } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
-import { getSlideContainer, DEFAULT_SLIDE_FORMAT } from './slide-formats';
+import { getSlideContainer } from './slide-formats';
+import { projectCustomCss, slideBodyHtml, cssRelevantToHtml } from './reveal-export';
 
-export async function executeSlideToolServer(
-    toolName: string,
-    parameters: any,
-    projectId: string,
-    userId: string // Pass the authenticated user ID
-) {
-    // Get user and verify project ownership
+/** Load a project the user owns, with its project JSON parsed */
+async function loadOwnedProject(projectId: string, userId: string) {
     const user = await fetchQuery(api.user.getUserByClerkId, { clerkId: userId });
     if (!user) {
         throw new Error('User not found');
@@ -32,16 +28,43 @@ export async function executeSlideToolServer(
             throw new Error('Invalid project data format');
         }
     }
+    return projectData;
+}
 
-    const isCompleteSlideContainer = (content: string): boolean =>
-        content.includes('data-slide-container') || content.includes('<style>');
+const headingOf = (html: string): string => {
+    const m = html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/i);
+    return m ? m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : '';
+};
 
-    const enforceProjectDimensions = (content: string): string => {
-        if (!isCompleteSlideContainer(content)) return content;
-        return content
-            .replace(/width:\s*\d+px/g, `width: ${DEFAULT_SLIDE_FORMAT.width}px`)
-            .replace(/height:\s*\d+px/g, `height: ${DEFAULT_SLIDE_FORMAT.height}px`);
-    };
+/** One line per slide (index, name, headline) for the assistant's system prompt */
+export async function getDeckOutline(projectId: string, userId: string, maxSlides = 60): Promise<string> {
+    const projectData = await loadOwnedProject(projectId, userId);
+    const pages: any[] = projectData.pages || [];
+    if (!pages.length) return 'The deck is empty.';
+    const lines = pages.slice(0, maxSlides).map((page, index) => {
+        const html = slideBodyHtml(page);
+        const heading = headingOf(html);
+        const empty = !html.replace(/<[^>]+>/g, '').trim();
+        const name = page.name || `Slide ${index + 1}`;
+        return `${index}. ${name}${heading && heading !== name ? ` | "${heading}"` : ''}${empty ? ' (empty)' : ''}`;
+    });
+    if (pages.length > maxSlides) lines.push(`... and ${pages.length - maxSlides} more slides`);
+    return `${pages.length} slide(s):\n${lines.join('\n')}`;
+}
+
+export async function executeSlideToolServer(
+    toolName: string,
+    parameters: any,
+    projectId: string,
+    userId: string // Pass the authenticated user ID
+) {
+    const projectData = await loadOwnedProject(projectId, userId);
+
+    // Wrap slide bodies in the slide container unless the caller already sent one.
+    // (Custom <style> blocks are part of the body: they must not skip wrapping, and their
+    // width/height values must not be touched.)
+    const toSlideComponent = (content: string): string =>
+        content.includes('data-slide-container') ? content : getSlideContainer(content);
 
     // Execute the tool logic directly
     switch (toolName) {
@@ -53,43 +76,29 @@ export async function executeSlideToolServer(
                 throw new Error(`Slide ${slideIndex} not found`);
             }
 
-            // Return the raw component data for now
-            // Ideally this would be HTML/CSS but that requires client-side extraction
-            let content = '';
-            if (slide.component) {
-                content = slide.component;
-            } else if (slide.frames?.[0]?.component) {
-                // For complex structures, try to extract readable content
-                const frame = slide.frames[0];
-                const component = frame.component;
-                content = JSON.stringify(component, null, 2);
-            }
-
+            const html = slideBodyHtml(slide);
+            const customCss = cssRelevantToHtml(projectCustomCss(projectData), html);
             return {
                 success: true,
                 slideIndex,
                 slideName: slide.name || `Slide ${slideIndex + 1}`,
-                slideContent: content,
-                note: 'This is raw component data. For proper HTML/CSS, the editor must be open.'
+                html,
+                ...(customCss && { customCss }),
+                note: 'Saved version of the slide; very recent edits may not be included yet.'
             };
         }
 
         case 'read_deck': {
             const { includeNames } = parameters;
+            const allCss = projectCustomCss(projectData);
             const slides = projectData.pages?.map((page: any, index: number) => {
-                let content = '';
-                if (page.component) {
-                    content = page.component;
-                } else if (page.frames?.[0]?.component) {
-                    const frame = page.frames[0];
-                    const component = frame.component;
-                    content = JSON.stringify(component, null, 2);
-                }
-
+                const html = slideBodyHtml(page);
+                const customCss = cssRelevantToHtml(allCss, html);
                 return {
                     index,
                     name: includeNames ? (page.name || `Slide ${index + 1}`) : undefined,
-                    content: content
+                    html,
+                    ...(customCss && { customCss }),
                 };
             }) || [];
 
@@ -97,7 +106,7 @@ export async function executeSlideToolServer(
                 success: true,
                 totalSlides: slides.length,
                 slides,
-                note: 'This is raw component data. For proper HTML/CSS, the editor must be open.'
+                note: 'Saved version of the deck; very recent edits may not be included yet.'
             };
         }
 
@@ -128,11 +137,7 @@ export async function executeSlideToolServer(
                 content = `<h1 style="position:absolute;left:60px;top:40px">${safeTitle}</h1>`;
             }
 
-            if (!isCompleteSlideContainer(content)) {
-                content = getSlideContainer(content);
-            } else {
-                content = enforceProjectDimensions(content);
-            }
+            content = toSlideComponent(content);
 
             return {
                 success: true,
@@ -174,11 +179,7 @@ export async function executeSlideToolServer(
                 newContent = placeholder;
             }
 
-            if (!isCompleteSlideContainer(newContent)) {
-                newContent = getSlideContainer(newContent);
-            } else {
-                newContent = enforceProjectDimensions(newContent);
-            }
+            newContent = toSlideComponent(newContent);
 
             return {
                 success: true,

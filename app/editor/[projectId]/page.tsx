@@ -385,6 +385,19 @@ export default function EditorPage({ params }: PageProps) {
                             }
                         });
 
+                        // Load the ChalkTalk slide layouts (used by AI-generated slides) into every canvas frame.
+                        // A <link> in the frame head keeps them out of the saved project CSS.
+                        const injectLayoutCss = (doc?: Document | null) => {
+                            if (!doc?.head || doc.getElementById('ct-layouts')) return
+                            const link = doc.createElement('link')
+                            link.id = 'ct-layouts'
+                            link.rel = 'stylesheet'
+                            link.href = `${window.location.origin}/themes/ct-layouts.css`
+                            doc.head.appendChild(link)
+                        }
+                        editor.on('canvas:frame:load', ({ window: frameWindow }: { window: Window }) => injectLayoutCss(frameWindow?.document))
+                        injectLayoutCss(editor.Canvas.getDocument?.())
+
                         // If this is a new project (deck is null), open the template browser.
                         if (!deckMeta) {
                             // New project: clear any previous template id and hold off applying styles
